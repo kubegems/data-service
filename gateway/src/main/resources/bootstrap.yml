@@ -1,0 +1,41 @@
+server:
+  port: 8001
+# 默认的profile为dev，其他环境通过指定启动参数使用不同的profile，比如：
+#   测试环境：java -jar my-spring-boot.jar --spring.profiles.active=test
+#   生产环境：java -jar my-spring-boot.jar --spring.profiles.active=prod
+spring:
+  cloud:
+    nacos:
+      config:
+        group: bigdata
+        prefix: gateway
+        file-extension: yaml
+      discovery:
+        group: bigdata
+  profiles:
+    active: dev
+  application:
+    name: dataServer-gateway
+
+
+---
+#开发环境配置
+spring:    
+  profiles: dev
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.01:8848
+      discovery:
+        server-addr: 127.0.01:8848
+  
+---
+#测试环境配置
+spring:    
+  profiles: test
+  cloud:
+    nacos:
+      config:
+        server-addr: 172.16.23.85:31215
+      discovery:
+        server-addr: 172.16.23.85:31215
