@@ -23,6 +23,5 @@
 	</properties>
 	<modules>
 		<module>gateway</module>
-		<module>example</module>
 	</modules>
 </project>

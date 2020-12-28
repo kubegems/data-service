@@ -9,8 +9,8 @@
 		<artifactId>bigdata-dataservice</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<groupId>cloudminds.com.gateway</groupId>
-	<artifactId>gateway</artifactId>
+	<groupId>cloudminds.com</groupId>
+	<artifactId>bigdata-dataservice-gateway</artifactId>
 	<version>1.0.0</version>
 	<name>gateway</name>
 	<url>http://maven.apache.org</url>
