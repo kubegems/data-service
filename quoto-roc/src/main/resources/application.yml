@@ -1,0 +1,17 @@
+server:
+  port: 8070
+spring:
+  profiles:
+    active: dev
+  application:
+    name: dataServer-quotoRoc
+  cloud:
+    nacos:
+      discovery:
+        group: bigdata
+  datasource:
+    url: jdbc:clickhouse://172.16.31.116:8123
+    username: readonly
+    password: 123456
+    driver-class-name: ru.yandex.clickhouse.ClickHouseDriver
+    
