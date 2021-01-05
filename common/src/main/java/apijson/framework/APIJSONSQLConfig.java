@@ -40,8 +40,8 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	public static Callback SIMPLE_CALLBACK;
 	public static APIJSONCreator APIJSON_CREATOR;
 	static {
-		DEFAULT_DATABASE = DATABASE_MYSQL;  //TODO 默认数据库类型，改成你自己的
-		DEFAULT_SCHEMA = "sys";  //TODO 默认模式名，改成你自己的，默认情况是 MySQL: sys, PostgreSQL: public, SQL Server: dbo, Oracle: 
+		DEFAULT_DATABASE = DATABASE_CLICKHOUSE;  //TODO 默认数据库类型，改成你自己的
+		DEFAULT_SCHEMA = "harix";  //TODO 默认模式名，改成你自己的，默认情况是 MySQL: sys, PostgreSQL: public, SQL Server: dbo, Oracle: 
 		//		TABLE_KEY_MAP.put(Access.class.getSimpleName(), "apijson_access");
 
 		//  由 APIJSONVerifier.init 方法读取数据库 Access 表来替代手动输入配置
@@ -88,7 +88,7 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	@Override
 	public String getDBVersion() {
 		if (isMySQL()) {
-			return "5.7.22"; //"8.0.11"; //TODO 改成你自己的 MySQL 或 PostgreSQL 数据库版本号 //MYSQL 8 和 7 使用的 JDBC 配置不一样
+			return "5.7.24"; //"8.0.11"; //TODO 改成你自己的 MySQL 或 PostgreSQL 数据库版本号 //MYSQL 8 和 7 使用的 JDBC 配置不一样
 		}
 		if (isPostgreSQL()) {
 			return "9.6.15"; //TODO 改成你自己的
@@ -99,13 +99,16 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		if (isOracle()) {
 			return "18c"; //TODO 改成你自己的
 		}
+		if (isCLICKHOUSE()) {
+			return "5.7.24"; //TODO 改成你自己的
+		}
 		return null;
 	}
 
 	@Override
 	public String getDBUri() {
 		if (isMySQL()) {
-			return "jdbc:mysql://localhost:3306"; //TODO 改成你自己的，TiDB 可以当成 MySQL 使用，默认端口为 4000
+			return "jdbc:mysql://10.12.32.229:3306"; //TODO 改成你自己的，TiDB 可以当成 MySQL 使用，默认端口为 4000
 		}
 		if (isPostgreSQL()) {
 			return "jdbc:postgresql://localhost:5432/postgres"; //TODO 改成你自己的
@@ -115,6 +118,9 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		}
 		if (isOracle()) {
 			return "jdbc:oracle:thin:@localhost:1521:orcl"; //TODO 改成你自己的
+		}
+		if (isCLICKHOUSE()) {
+			return "jdbc:clickhouse://172.16.31.116:8123"; //TODO 改成你自己的
 		}
 		return null;
 	}
@@ -134,6 +140,9 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		if (isOracle()) {
 			return "scott";  //TODO 改成你自己的
 		}
+		if (isCLICKHOUSE()) {
+			return "readonly";  //TODO 改成你自己的
+		}
 		return null;
 	}
 
@@ -141,7 +150,7 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	@Override
 	public String getDBPassword() {
 		if (isMySQL()) {
-			return "apijson";  //TODO 改成你自己的，TiDB 可以当成 MySQL 使用， 默认密码为空字符串 ""
+			return "root";  //TODO 改成你自己的，TiDB 可以当成 MySQL 使用， 默认密码为空字符串 ""
 		}
 		if (isPostgreSQL()) {
 			return null;  //TODO 改成你自己的
@@ -151,6 +160,9 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		}
 		if (isOracle()) {
 			return "tiger";  //TODO 改成你自己的
+		}
+		if (isCLICKHOUSE()) {
+			return "123456";  //TODO 改成你自己的
 		}
 		return null;
 	}

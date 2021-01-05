@@ -18,6 +18,7 @@ import apijson.RequestRole;
 public interface SQLConfig {
 
 	String DATABASE_MYSQL = "MYSQL";
+	String DATABASE_CLICKHOUSE = "CLICKHOUSE";
 	String DATABASE_POSTGRESQL = "POSTGRESQL";
 	String DATABASE_SQLSERVER = "SQLSERVER";
 	String DATABASE_ORACLE = "ORACLE";
@@ -37,6 +38,7 @@ public interface SQLConfig {
 	boolean isSQLServer();
 	boolean isOracle();
 	boolean isDb2();
+	boolean isCLICKHOUSE();
 	//暂时只兼容以上 5 种
 	//	boolean isSQL();
 	//	boolean isTSQL();
