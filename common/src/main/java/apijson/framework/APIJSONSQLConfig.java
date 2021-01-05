@@ -40,8 +40,8 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	public static Callback SIMPLE_CALLBACK;
 	public static APIJSONCreator APIJSON_CREATOR;
 	static {
-		DEFAULT_DATABASE = DATABASE_CLICKHOUSE;  //TODO 默认数据库类型，改成你自己的
-		DEFAULT_SCHEMA = "harix";  //TODO 默认模式名，改成你自己的，默认情况是 MySQL: sys, PostgreSQL: public, SQL Server: dbo, Oracle: 
+		DEFAULT_DATABASE = DATABASE_MYSQL;  //TODO 默认数据库类型，改成你自己的
+		DEFAULT_SCHEMA = "sys";  //TODO 默认模式名，改成你自己的，默认情况是 MySQL: sys, PostgreSQL: public, SQL Server: dbo, Oracle: 
 		//		TABLE_KEY_MAP.put(Access.class.getSimpleName(), "apijson_access");
 
 		//  由 APIJSONVerifier.init 方法读取数据库 Access 表来替代手动输入配置

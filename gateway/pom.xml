@@ -5,11 +5,11 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>cloudminds.com</groupId>
+		<groupId>com.cloudminds.bigdata.dataservice</groupId>
 		<artifactId>bigdata-dataservice</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<groupId>cloudminds.com</groupId>
+	<groupId>com.cloudminds.bigdata.dataservice.gateway</groupId>
 	<artifactId>bigdata-dataservice-gateway</artifactId>
 	<version>1.0.0</version>
 	<name>gateway</name>
