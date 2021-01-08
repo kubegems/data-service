@@ -2,4 +2,4 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.23.85:31215
+        server-addr: nacos.cloudminds.com
