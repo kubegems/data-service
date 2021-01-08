@@ -39,3 +39,14 @@ spring:
         server-addr: 172.16.23.85:31215
       discovery:
         server-addr: 172.16.23.85:31215
+        
+---
+#线上环境配置
+spring:    
+  profiles: online
+  cloud:
+    nacos:
+      config:
+        server-addr: nacos.cloudminds.com
+      discovery:
+        server-addr: nacos.cloudminds.com
