@@ -23,6 +23,7 @@ public interface SQLConfig {
 	String DATABASE_SQLSERVER = "SQLSERVER";
 	String DATABASE_ORACLE = "ORACLE";
 	String DATABASE_DB2 = "DB2";
+	String DATABASE_DATASERVICE="DATASERVICE";
 
 	String SCHEMA_INFORMATION = "information_schema";  //MySQL, PostgreSQL, SQL Server 都有的系统模式
 	String SCHEMA_SYS = "sys";  //SQL Server 系统模式
@@ -39,6 +40,7 @@ public interface SQLConfig {
 	boolean isOracle();
 	boolean isDb2();
 	boolean isCLICKHOUSE();
+	boolean isDATASERVICE();
 	//暂时只兼容以上 5 种
 	//	boolean isSQL();
 	//	boolean isTSQL();
@@ -53,6 +55,7 @@ public interface SQLConfig {
 	String getUserIdKey();
 
 
+	String getDefaultSchema();
 	/**获取数据库版本号，可通过判断版本号解决一些 JDBC 驱动连接数据库的兼容问题
 	 * MYSQL: 8.0, 5.7, 5.6 等； PostgreSQL: 11, 10, 9.6 等
 	 * @return

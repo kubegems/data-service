@@ -85,22 +85,13 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	/**
 	 * 表名映射，隐藏真实表名，对安全要求很高的表可以这么做
 	 */
-	public static final Map<String, String> TABLE_KEY_MAP;
+	public static Map<String, String> TABLE_KEY_MAP= new HashMap<String, String>();
 	public static final List<String> CONFIG_TABLE_LIST;
 	public static final List<String> DATABASE_LIST;
 	// 自定义where条件拼接
 	public static final Map<String, String> RAW_MAP;
 	public static Map<String, Map<String, String>> tableColumnMap = new HashMap<String, Map<String, String>>();
 	static {
-		TABLE_KEY_MAP = new HashMap<String, String>();
-		TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
-		TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
-		TABLE_KEY_MAP.put(PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
-		TABLE_KEY_MAP.put(PgAttribute.class.getSimpleName(), PgAttribute.TABLE_NAME);
-		TABLE_KEY_MAP.put(SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
-		TABLE_KEY_MAP.put(SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
-		TABLE_KEY_MAP.put(ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
-
 		CONFIG_TABLE_LIST = new ArrayList<>(); // Table, Column 等是系统表 AbstractVerifier.SYSTEM_ACCESS_MAP.keySet());
 		CONFIG_TABLE_LIST.add(Function.class.getSimpleName());
 		CONFIG_TABLE_LIST.add(Request.class.getSimpleName());
@@ -117,6 +108,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		DATABASE_LIST.add(DATABASE_ORACLE);
 		DATABASE_LIST.add(DATABASE_DB2);
 		DATABASE_LIST.add(DATABASE_CLICKHOUSE);
+		DATABASE_LIST.add(DATABASE_DATASERVICE);
 
 		RAW_MAP = new HashMap<>();
 	}
@@ -306,6 +298,15 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		return isCLICKHOUSE(getSQLDatabase());
 	}
 
+	@Override
+	public boolean isDATASERVICE() {
+		return isDATASERVICE(getSQLDatabase());
+	}
+
+	public static boolean isDATASERVICE(String db) {
+		return DATABASE_DATASERVICE.equals(db);
+	}
+
 	public static boolean isCLICKHOUSE(String db) {
 		return DATABASE_CLICKHOUSE.equals(db);
 	}
@@ -352,7 +353,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 	@Override
 	public String getQuote() {
-		return isMySQL() ? "`" : "\"";
+		return isMySQL()||isDATASERVICE() ? "`" : "\"";
 	}
 
 	@Override

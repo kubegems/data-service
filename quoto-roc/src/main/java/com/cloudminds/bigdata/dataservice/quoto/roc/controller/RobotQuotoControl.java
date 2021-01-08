@@ -2,16 +2,18 @@ package com.cloudminds.bigdata.dataservice.quoto.roc.controller;
 
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import apijson.framework.APIJSONController;
+import apijson.framework.APIJSONParser;
 import apijson.orm.Parser;
 
 @RestController
-@RequestMapping("/roc/robot")
+@RequestMapping("/quoto")
 public class RobotQuotoControl extends APIJSONController {	
 	@Override
 	public Parser<Long> newParser(HttpSession session,apijson.RequestMethod method) {
@@ -23,6 +25,11 @@ public class RobotQuotoControl extends APIJSONController {
 	public String get(@RequestBody String request, HttpSession session) {
 		return super.get(request, session);
 	}
-
+	
+	@GetMapping(value="refreshConfig")
+	public void refush() {
+		APIJSONParser abstractParser=new APIJSONParser();
+		abstractParser.loadAliasConfig();
+	}
 
 }

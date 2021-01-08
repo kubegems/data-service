@@ -19,12 +19,6 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>ru.yandex.clickhouse</groupId>
-			<artifactId>clickhouse-jdbc</artifactId>
-			<version>0.2.3</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
 			<version>1.2.74</version>
@@ -50,6 +44,11 @@
 			<groupId>com.github.TommyLemon</groupId>
 			<artifactId>unitauto-jar</artifactId>
 			<version>2.5.3</version>
+		</dependency>
+		<!-- APIJSONBoot 需要用的数据库 JDBC 驱动 -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
 	</dependencies>
 	<repositories>

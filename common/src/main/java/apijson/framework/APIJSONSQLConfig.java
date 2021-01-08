@@ -102,13 +102,16 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		if (isCLICKHOUSE()) {
 			return "5.7.24"; //TODO 改成你自己的
 		}
+		if (isDATASERVICE()) {
+			return "5.7.24"; //TODO 改成你自己的
+		}
 		return null;
 	}
 
 	@Override
 	public String getDBUri() {
 		if (isMySQL()) {
-			return "jdbc:mysql://10.12.32.229:3306"; //TODO 改成你自己的，TiDB 可以当成 MySQL 使用，默认端口为 4000
+			return "jdbc:mysql://localhost:3306"; //TODO 改成你自己的，TiDB 可以当成 MySQL 使用，默认端口为 4000
 		}
 		if (isPostgreSQL()) {
 			return "jdbc:postgresql://localhost:5432/postgres"; //TODO 改成你自己的
@@ -120,7 +123,10 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 			return "jdbc:oracle:thin:@localhost:1521:orcl"; //TODO 改成你自己的
 		}
 		if (isCLICKHOUSE()) {
-			return "jdbc:clickhouse://172.16.31.116:8123"; //TODO 改成你自己的
+			return "jdbc:clickhouse://localhost:8123"; //TODO 改成你自己的
+		}
+		if (isDATASERVICE()) {
+			return "jdbc:mysql://localhost:3306"; //TODO 改成你自己的
 		}
 		return null;
 	}
@@ -143,6 +149,9 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		if (isCLICKHOUSE()) {
 			return "readonly";  //TODO 改成你自己的
 		}
+		if (isDATASERVICE()) {
+			return "root"; //TODO 改成你自己的
+		}
 		return null;
 	}
 
@@ -163,6 +172,9 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		}
 		if (isCLICKHOUSE()) {
 			return "123456";  //TODO 改成你自己的
+		}
+		if (isDATASERVICE()) {
+			return "root"; //TODO 改成你自己的
 		}
 		return null;
 	}
@@ -247,6 +259,12 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	 */
 	public static SQLConfig newSQLConfig(RequestMethod method, String table, String alias, JSONObject request, List<Join> joinList, boolean isProcedure) throws Exception {
 		return newSQLConfig(method, table, alias, request, joinList, isProcedure, SIMPLE_CALLBACK);
+	}
+
+	@Override
+	public String getDefaultSchema() {
+		// TODO Auto-generated method stub
+		return DEFAULT_SCHEMA;
 	}
 
 

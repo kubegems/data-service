@@ -1,0 +1,17 @@
+server:
+  port: 8071
+spring:
+  profiles:
+    active: dev
+  application:
+    name: dataServer-quotoConfig
+  cloud:
+    nacos:
+      discovery:
+        group: bigdata
+  datasource:
+    url: jdbc:mysql://10.12.32.229:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
+    
