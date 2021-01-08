@@ -18,10 +18,13 @@ public interface TableInfoMapper {
 
 	@Update("update table_info set is_delete=#{delete} where id=#{id}")
 	public int updateTableInfoDelete(int id, int delete);
+	
+	@Update("update table_info set table_alias=#{table_alias} where id=#{id}")
+	public int updateTableInfoAlias(int id, String table_alias);
 
 	@Select("SELECT * FROM Table_info WHERE table=#{table} AND database_id=#{database_id} ")
 	public TableInfo getTableInfo(TableInfo tableInfo);
 
-	@Update("insert into Table_info(table,database_id) VALUES(#{table},#{database_id})")
+	@Update("insert into Table_info(table,database_id,table_alias) VALUES(#{table},#{database_id},#{table_alias})")
 	public int insertTableInfo(TableInfo tableInfo);
 }

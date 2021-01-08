@@ -263,4 +263,13 @@ public class DataServiceConfig {
 		}
 		return commonResponse;
 	}
+	
+	public CommonResponse updateTableInfoAlias(int id, String table_alias) {
+		CommonResponse commonResponse = new CommonResponse();
+		if (tableInfoMapper.updateTableInfoAlias(id, table_alias) != 1) {
+			commonResponse.setMessage("更新失败,请稍后再试！");
+			commonResponse.setSuccess(false);
+		}
+		return commonResponse;
+	}
 }
