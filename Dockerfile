@@ -1,0 +1,13 @@
+FROM maven:3-openjdk-8 as builder
+
+ENV HOME=/home/usr/app
+RUN mkdir -p $HOME
+WORKDIR $HOME
+ADD pom.xml $HOME
+RUN mvn -T4 verify clean --fail-never
+ADD . $HOME
+RUN mvn -T4 -Dmaven.test.skip=true package
+
+FROM openjdk:jdk-oraclelinux8
+COPY --from=builder /home/usr/app/gateway/target/bigdata-dataservice-gateway.jar /
+RUN java -jar bigdata-dataservice-gateway.jar --spring.profiles.active=test
