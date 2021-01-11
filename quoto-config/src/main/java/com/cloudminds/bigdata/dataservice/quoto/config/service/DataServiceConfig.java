@@ -1,19 +1,27 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
+import java.io.IOException;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableInfoMapper;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
 @Service
@@ -24,8 +32,6 @@ public class DataServiceConfig {
 	private DatabaseInfoMapper databaseInfoMapper;
 	@Autowired
 	private QuotoInfoMapper quotoInfoMapper;
-	@Autowired
-	private TableAliasMapper tableAliasMapper;
 	@Autowired
 	private TableInfoMapper tableInfoMapper;
 
@@ -62,7 +68,9 @@ public class DataServiceConfig {
 				commonResponse.setMessage("数据已存在,请不要重复新增！");
 				commonResponse.setSuccess(false);
 			} else {
-				if (columnAliasMapper.updateColumnAliasDelete(columnAliasOld.getId(), 0) != 1) {
+				columnAliasOld.setDes(columnAlias.getDes());
+				columnAliasOld.setColumn_alias(columnAlias.getColumn_alias());
+				if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
 					commonResponse.setMessage("新增数据失败,请稍后再试！");
 					commonResponse.setSuccess(false);
 				}
@@ -72,6 +80,15 @@ public class DataServiceConfig {
 				commonResponse.setMessage("新增数据失败,请稍后再试！");
 				commonResponse.setSuccess(false);
 			}
+		}
+		return commonResponse;
+	}
+
+	public CommonResponse updateColumnAlias(ColumnAlias columnAlias) {
+		CommonResponse commonResponse = new CommonResponse();
+		if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
+			commonResponse.setMessage("更新失败,请稍后再试！");
+			commonResponse.setSuccess(false);
 		}
 		return commonResponse;
 	}
@@ -156,7 +173,9 @@ public class DataServiceConfig {
 				commonResponse.setMessage("数据已存在,请不要重复新增！");
 				commonResponse.setSuccess(false);
 			} else {
-				if (quotoInfoMapper.updateQuotoInfoDelete(quotoInfoOld.getId(), 0) != 1) {
+				quotoInfoOld.setDes(quotoInfo.getDes());
+				quotoInfoOld.setQuoto_sql(quotoInfo.getQuoto_sql());
+				if (quotoInfoMapper.updateQuotoInfo(quotoInfoOld) != 1) {
 					commonResponse.setMessage("新增数据失败,请稍后再试！");
 					commonResponse.setSuccess(false);
 				}
@@ -169,61 +188,70 @@ public class DataServiceConfig {
 		}
 		return commonResponse;
 	}
-	
-	//tableAlias
-	public CommonResponse getTableAlias(int tableId) {
+
+	public CommonResponse updateQuotoInfo(QuotoInfo quotoInfo) {
 		CommonResponse commonResponse = new CommonResponse();
-		commonResponse.setData(tableAliasMapper.getTableAliasByTableId(tableId));
-		return commonResponse;
-	}
-	
-	public CommonResponse updateTableAliasStatus(int id, int status) {
-		CommonResponse commonResponse = new CommonResponse();
-		if (tableAliasMapper.updateTableAliasStatus(id, status) != 1) {
+		if (quotoInfoMapper.updateQuotoInfo(quotoInfo) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
 		}
 		return commonResponse;
 	}
 
-	public CommonResponse deleteTableAlias(int id) {
-		CommonResponse commonResponse = new CommonResponse();
-		if (tableAliasMapper.updateTableAliasDelete(id, 1) != 1) {
-			commonResponse.setMessage("删除失败,请稍后再试！");
-			commonResponse.setSuccess(false);
-		}
-		return commonResponse;
-	}
+	// tableAlias
+//	public CommonResponse getTableAlias(int tableId) {
+//		CommonResponse commonResponse = new CommonResponse();
+//		commonResponse.setData(tableAliasMapper.getTableAliasByTableId(tableId));
+//		return commonResponse;
+//	}
+//	
+//	public CommonResponse updateTableAliasStatus(int id, int status) {
+//		CommonResponse commonResponse = new CommonResponse();
+//		if (tableAliasMapper.updateTableAliasStatus(id, status) != 1) {
+//			commonResponse.setMessage("更新失败,请稍后再试！");
+//			commonResponse.setSuccess(false);
+//		}
+//		return commonResponse;
+//	}
+//
+//	public CommonResponse deleteTableAlias(int id) {
+//		CommonResponse commonResponse = new CommonResponse();
+//		if (tableAliasMapper.updateTableAliasDelete(id, 1) != 1) {
+//			commonResponse.setMessage("删除失败,请稍后再试！");
+//			commonResponse.setSuccess(false);
+//		}
+//		return commonResponse;
+//	}
+//
+//	public CommonResponse insertTableAlias(TableAlias tableAlias) {
+//		CommonResponse commonResponse = new CommonResponse();
+//		TableAlias tableAliasOld = tableAliasMapper.getTableAlias(tableAlias);
+//		if (tableAliasOld != null) {
+//			if (tableAliasOld.getIs_delete() == 0) {
+//				commonResponse.setMessage("数据已存在,请不要重复新增！");
+//				commonResponse.setSuccess(false);
+//			} else {
+//				if (tableAliasMapper.updateTableAliasDelete(tableAliasOld.getId(), 0) != 1) {
+//					commonResponse.setMessage("新增数据失败,请稍后再试！");
+//					commonResponse.setSuccess(false);
+//				}
+//			}
+//		} else {
+//			if (tableAliasMapper.insertTableAlias(tableAlias) != 1) {
+//				commonResponse.setMessage("新增数据失败,请稍后再试！");
+//				commonResponse.setSuccess(false);
+//			}
+//		}
+//		return commonResponse;
+//	}
 
-	public CommonResponse insertTableAlias(TableAlias tableAlias) {
-		CommonResponse commonResponse = new CommonResponse();
-		TableAlias tableAliasOld = tableAliasMapper.getTableAlias(tableAlias);
-		if (tableAliasOld != null) {
-			if (tableAliasOld.getIs_delete() == 0) {
-				commonResponse.setMessage("数据已存在,请不要重复新增！");
-				commonResponse.setSuccess(false);
-			} else {
-				if (tableAliasMapper.updateTableAliasDelete(tableAliasOld.getId(), 0) != 1) {
-					commonResponse.setMessage("新增数据失败,请稍后再试！");
-					commonResponse.setSuccess(false);
-				}
-			}
-		} else {
-			if (tableAliasMapper.insertTableAlias(tableAlias) != 1) {
-				commonResponse.setMessage("新增数据失败,请稍后再试！");
-				commonResponse.setSuccess(false);
-			}
-		}
-		return commonResponse;
-	}
-	
-    //tableInfo
+	// tableInfo
 	public CommonResponse getTableInfo(int databaseId) {
 		CommonResponse commonResponse = new CommonResponse();
 		commonResponse.setData(tableInfoMapper.getTableInfoByDataBaseId(databaseId));
 		return commonResponse;
 	}
-	
+
 	public CommonResponse updateTableInfoStatus(int id, int status) {
 		CommonResponse commonResponse = new CommonResponse();
 		if (tableInfoMapper.updateTableInfoStatus(id, status) != 1) {
@@ -250,7 +278,8 @@ public class DataServiceConfig {
 				commonResponse.setMessage("数据已存在,请不要重复新增！");
 				commonResponse.setSuccess(false);
 			} else {
-				if (tableInfoMapper.updateTableInfoDelete(tableInfoOld.getId(), 0) != 1) {
+				tableInfoOld.setTable_alias(tableInfo.getTable_alias());
+				if (tableInfoMapper.updateTableInfo(tableInfoOld) != 1) {
 					commonResponse.setMessage("新增数据失败,请稍后再试！");
 					commonResponse.setSuccess(false);
 				}
@@ -263,10 +292,10 @@ public class DataServiceConfig {
 		}
 		return commonResponse;
 	}
-	
-	public CommonResponse updateTableInfoAlias(int id, String table_alias) {
+
+	public CommonResponse updateTableInfo(TableInfo tableInfo) {
 		CommonResponse commonResponse = new CommonResponse();
-		if (tableInfoMapper.updateTableInfoAlias(id, table_alias) != 1) {
+		if (tableInfoMapper.updateTableInfo(tableInfo) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
 		}

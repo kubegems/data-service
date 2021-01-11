@@ -10,7 +10,6 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.service.DataServiceConfig;
 
@@ -41,6 +40,11 @@ public class DataServiceControl {
 	@RequestMapping(value = "insertColumnAlias", method = RequestMethod.POST)
 	public CommonResponse insertColumnAlias(@RequestBody ColumnAlias columnAlias) {
 		return dataServiceConfig.insertColumnAlias(columnAlias);
+	}
+	
+	@RequestMapping(value = "updateColumnAlias", method = RequestMethod.POST)
+	public CommonResponse updateColumnAlias(@RequestBody ColumnAlias columnAlias) {
+		return dataServiceConfig.updateColumnAlias(columnAlias);
 	}
 
 	// database
@@ -83,6 +87,11 @@ public class DataServiceControl {
 	@RequestMapping(value = "insertQuotoInfo", method = RequestMethod.POST)
 	public CommonResponse insertQuotoInfo(@RequestBody QuotoInfo quotoInfo) {
 		return dataServiceConfig.insertQuotoInfo(quotoInfo);
+	}
+	
+	@RequestMapping(value = "updateQuotoInfo", method = RequestMethod.POST)
+	public CommonResponse updateQuotoInfo(@RequestBody QuotoInfo quotoInfo) {
+		return dataServiceConfig.updateQuotoInfo(quotoInfo);
 	}
 
 //	// tableAlias
@@ -127,8 +136,8 @@ public class DataServiceControl {
 		return dataServiceConfig.insertTableInfo(tableInfo);
 	}
 	
-	@RequestMapping(value = "updateTableInfoAlias", method = RequestMethod.POST)
-	public CommonResponse updateTableInfoAlias(int id, String table_alias) {
-		return dataServiceConfig.updateTableInfoAlias(id, table_alias);
+	@RequestMapping(value = "updateTableInfo", method = RequestMethod.POST)
+	public CommonResponse updateTableInfo(@RequestBody TableInfo tableInfo) {
+		return dataServiceConfig.updateTableInfo(tableInfo);
 	}
 }

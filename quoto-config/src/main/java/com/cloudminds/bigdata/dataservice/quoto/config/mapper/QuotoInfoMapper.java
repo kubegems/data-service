@@ -20,9 +20,12 @@ public interface QuotoInfoMapper {
 	@Update("update Quoto_info set is_delete=#{delete} where id=#{id}")
 	public int updateQuotoInfoDelete(int id,int delete);
 	
-	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quoto_name} AND table_id=#{table_id} AND quoto_sql=#{quoto_sql}")
+	@Update("update Quoto_info set quoto_name=#{quoto_name},des=#{des},quoto_sql=#{quoto_sql},is_delete=0,state=1 where id=#{id}")
+	public int updateQuotoInfo(QuotoInfo quotoInfo);
+	
+	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quoto_name} AND table_id=#{table_id}")
 	public QuotoInfo getQuotoInfo(QuotoInfo quotoInfo);
 	
-	@Update("insert into QuotoInfo(table_id,quoto_name,quoto_sql) VALUES(#{table_id},#{quoto_name},#{quoto_sql})")
+	@Update("insert into QuotoInfo(table_id,quoto_name,quoto_sql,des) VALUES(#{table_id},#{quoto_name},#{quoto_sql},#{des})")
 	public int insertQuotoInfo(QuotoInfo quotoInfo);
 }

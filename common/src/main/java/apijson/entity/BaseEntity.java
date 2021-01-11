@@ -6,5 +6,5 @@ import lombok.Data;
 public class BaseEntity {
 	private int state;
 	private int is_delete;
-	private String desc;
+	private String des;
 }

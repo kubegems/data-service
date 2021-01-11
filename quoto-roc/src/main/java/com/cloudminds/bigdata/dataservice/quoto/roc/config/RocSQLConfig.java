@@ -15,7 +15,7 @@ public class RocSQLConfig extends APIJSONSQLConfig {
 			return "jdbc:clickhouse://172.16.31.116:8123"; // TODO 改成你自己的
 		}
 		if (isDATASERVICE()) {
-			return "jdbc:mysql://localhost:3306"; // TODO 改成你自己的
+			return "jdbc:mysql://10.12.32.229:3306"; // TODO 改成你自己的
 		}
 		return null;
 	}

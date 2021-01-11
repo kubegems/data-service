@@ -22,7 +22,7 @@ public interface Parser<T> {
 
 	int DEFAULT_QUERY_COUNT = 10;
 	int MAX_QUERY_PAGE = 100;
-	int MAX_QUERY_COUNT = 100;
+	int MAX_QUERY_COUNT = 100000;
 	int MAX_UPDATE_COUNT = 10;
 	int MAX_SQL_COUNT = 200;
 	int MAX_OBJECT_COUNT = 5;

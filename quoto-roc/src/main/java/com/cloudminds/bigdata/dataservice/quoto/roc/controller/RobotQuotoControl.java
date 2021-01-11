@@ -13,7 +13,7 @@ import apijson.framework.APIJSONParser;
 import apijson.orm.Parser;
 
 @RestController
-@RequestMapping("/quoto")
+@RequestMapping("/roc/quoto")
 public class RobotQuotoControl extends APIJSONController {	
 	@Override
 	public Parser<Long> newParser(HttpSession session,apijson.RequestMethod method) {

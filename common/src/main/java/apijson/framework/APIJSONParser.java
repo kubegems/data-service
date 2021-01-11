@@ -31,7 +31,6 @@ import apijson.NotNull;
 import apijson.RequestMethod;
 import apijson.entity.ColumnAlias;
 import apijson.entity.QuotoInfo;
-import apijson.entity.TableAlias;
 import apijson.entity.TableInfo;
 import apijson.orm.AbstractParser;
 import apijson.orm.AbstractSQLConfig;
@@ -205,8 +204,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 	// }
 	public void loadAliasConfig() {
 		// 查询配置的数据库信息
-		SQLConfig sqlConfig=APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
-		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Database_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""+sqlConfig.getDBUri()+"\",\"database\":\""+sqlConfig.getDefaultSchema()+"\"}}";
+		SQLConfig sqlConfig = APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
+		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Database_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
+				+ sqlConfig.getDBUri() + "\",\"database\":\"" + sqlConfig.getDefaultSchema() + "\"}}";
 		setNeedVerify(false);
 		JSONObject object = parseResponse(request);
 		if (object.get("Database_info") == null) {
@@ -216,7 +216,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 		// 根据数据库id查询表信息
 		int dataBaseId = (int) JSONObject.parseObject(object.get("Database_info").toString()).get("id");
 		request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_info\": {\"is_delete\":0,\"state\":1,\"database_id\":"
-				+ dataBaseId + "}}}";
+				+ dataBaseId + "},\"count\":0}}";
 		object = parseResponse(request);
 		if (object.get("[]") == null) {
 			return;
@@ -225,9 +225,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 		for (int i = 0; i < tableInfos.size(); i++) {
 			TableInfo tableInfo = JSONObject.parseObject(tableInfos.get(i).getString("Table_info"), TableInfo.class);
 			// 根据表信息查询表别名信息
-			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_alias\": {\"is_delete\":0,\"state\":1,\"table_id\":"
-					+ tableInfo.getId() + "}}}";
-			object = parseResponse(request);
+			if (tableInfo.getTable_alias() != null & (!tableInfo.getTable_alias().equals(""))) {
+				AbstractSQLConfig.TABLE_KEY_MAP.put(tableInfo.getTable_alias(), tableInfo.getTable_name());
+			}
 			AbstractSQLConfig.TABLE_KEY_MAP.clear();
 			AbstractSQLConfig.TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
 			AbstractSQLConfig.TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
@@ -236,20 +236,12 @@ public class APIJSONParser extends AbstractParser<Long> {
 			AbstractSQLConfig.TABLE_KEY_MAP.put(SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
 			AbstractSQLConfig.TABLE_KEY_MAP.put(SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
 			AbstractSQLConfig.TABLE_KEY_MAP.put(ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
-			if (object.get("[]") != null) {
-				List<JSONObject> tableAliass = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
-				for (int j = 0; j < tableAliass.size(); j++) {
-					TableAlias tableAlias = JSONObject.parseObject(tableAliass.get(j).getString("Table_alias"),
-							TableAlias.class);
-					AbstractSQLConfig.TABLE_KEY_MAP.put(tableAlias.getTable_alias(), tableInfo.getTable());
-				}
-			}
 			// 根据表信息查询列别名信息
 			Map<String, String> valueAlias = new HashMap<String, String>();
 			Map<String, String> valueReal = new HashMap<String, String>();
 			Map<String, String> value = new HashMap<String, String>();
 			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Column_alias\": {\"is_delete\":0,\"state\":1,\"table_id\":"
-					+ tableInfo.getId() + "}}}";
+					+ tableInfo.getId() + "},\"count\":0}}";
 			object = parseResponse(request);
 			if (object.get("[]") != null) {
 				List<JSONObject> columnAliass = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
@@ -260,13 +252,13 @@ public class APIJSONParser extends AbstractParser<Long> {
 					valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn() + "\"");
 					valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn());
 				}
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable() + "_processColumn", value);
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable() + "_realColumn", valueReal);
+				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_processColumn", value);
+				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_realColumn", valueReal);
 			}
 
 			// 根据表信息查询指标信息
 			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Quoto_info\": {\"is_delete\":0,\"state\":1,\"table_id\":"
-					+ tableInfo.getId() + "}}}";
+					+ tableInfo.getId() + "},\"count\":0}}";
 			object = parseResponse(request);
 			if (object.get("[]") != null) {
 				List<JSONObject> quotoInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
@@ -275,7 +267,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 							QuotoInfo.class);
 					valueAlias.put("\"" + quotoInfo.getQuoto_name() + "\"", quotoInfo.getQuoto_sql());
 				}
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable() + "_aliasColumn", valueAlias);
+				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_aliasColumn", valueAlias);
 			}
 		}
 	}
