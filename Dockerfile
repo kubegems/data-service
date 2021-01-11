@@ -11,4 +11,4 @@ RUN mvn -T4 -Dmaven.test.skip=true package
 FROM openjdk:jdk-oraclelinux8
 COPY --from=builder /home/usr/app/gateway/target/bigdata-dataservice-gateway.jar /dataservice/gateway/
 COPY --from=builder /home/usr/app/quoto-config/target/bigdata-dataservice-quoto-config.jar /dataservice/quoto-config/
-COPY --from=builder /home/usr/app/quoto-config/target/bigdata-dataservice-quoto-roc.jar /dataservice/quoto-roc/
+COPY --from=builder /home/usr/app/quoto-roc/target/bigdata-dataservice-quoto-roc.jar /dataservice/quoto-roc/
