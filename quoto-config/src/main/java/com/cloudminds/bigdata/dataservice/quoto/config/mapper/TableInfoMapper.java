@@ -13,13 +13,13 @@ public interface TableInfoMapper {
 	@Select("SELECT * FROM Table_info WHERE is_delete=0 AND database_id=#{dataBaseId}")
 	public List<TableInfo> getTableInfoByDataBaseId(int dataBaseId);
 
-	@Update("update table_info set state=#{state} where id=#{id}")
+	@Update("update Table_info set state=#{state} where id=#{id}")
 	public int updateTableInfoStatus(int id, int state);
 
-	@Update("update table_info set is_delete=#{delete} where id=#{id}")
+	@Update("update Table_info set is_delete=#{delete} where id=#{id}")
 	public int updateTableInfoDelete(int id, int delete);
 	
-	@Update("update table_info set table_alias=#{table_alias},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
+	@Update("update Table_info set table_alias=#{table_alias},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
 	public int updateTableInfo(TableInfo tableInfo);
 
 	@Select("SELECT * FROM Table_info WHERE table_name=#{table_name} AND database_id=#{database_id} ")
