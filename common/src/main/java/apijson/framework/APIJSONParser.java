@@ -221,6 +221,14 @@ public class APIJSONParser extends AbstractParser<Long> {
 		if (object.get("[]") == null) {
 			return;
 		}
+		AbstractSQLConfig.TABLE_KEY_MAP.clear();
+		AbstractSQLConfig.TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(PgAttribute.class.getSimpleName(), PgAttribute.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
+		AbstractSQLConfig.TABLE_KEY_MAP.put(ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
 		List<JSONObject> tableInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
 		for (int i = 0; i < tableInfos.size(); i++) {
 			TableInfo tableInfo = JSONObject.parseObject(tableInfos.get(i).getString("Table_info"), TableInfo.class);
@@ -228,14 +236,6 @@ public class APIJSONParser extends AbstractParser<Long> {
 			if (tableInfo.getTable_alias() != null & (!tableInfo.getTable_alias().equals(""))) {
 				AbstractSQLConfig.TABLE_KEY_MAP.put(tableInfo.getTable_alias(), tableInfo.getTable_name());
 			}
-			AbstractSQLConfig.TABLE_KEY_MAP.clear();
-			AbstractSQLConfig.TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(PgAttribute.class.getSimpleName(), PgAttribute.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
-			AbstractSQLConfig.TABLE_KEY_MAP.put(ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
 			// 根据表信息查询列别名信息
 			Map<String, String> valueAlias = new HashMap<String, String>();
 			Map<String, String> valueReal = new HashMap<String, String>();
@@ -248,9 +248,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 				for (int j = 0; j < columnAliass.size(); j++) {
 					ColumnAlias columnAlias = JSONObject.parseObject(columnAliass.get(j).getString("Column_alias"),
 							ColumnAlias.class);
-					value.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn() + "\"");
-					valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn() + "\"");
-					valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn());
+					value.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
+					valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
+					valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn_name());
 				}
 				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_processColumn", value);
 				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_realColumn", valueReal);

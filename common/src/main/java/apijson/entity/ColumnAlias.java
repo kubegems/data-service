@@ -8,6 +8,6 @@ import lombok.EqualsAndHashCode;
 public class ColumnAlias extends BaseEntity {
 	private int id;
 	private int table_id;
-	private String column;
+	private String column_name;
 	private String column_alias;
 }
