@@ -7,9 +7,10 @@ spring:
   cloud:
     nacos:
       config:
-        group: bigdata
+        group: bigdata-service-gw.bj-fit-86
         prefix: gateway
         file-extension: yaml
+        namespace: dataservice
       discovery:
         group: bigdata
   profiles:
