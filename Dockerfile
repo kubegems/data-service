@@ -6,7 +6,7 @@ WORKDIR $HOME
 ADD pom.xml $HOME
 RUN mvn -T4 verify clean --fail-never
 ADD . $HOME
-RUN mvn -T4 -Dmaven.test.skip=true package
+RUN mvn -Dmaven.test.skip=true package
 
 FROM openjdk:jdk-oraclelinux8
 COPY run.sh /run.sh
