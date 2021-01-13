@@ -26,6 +26,6 @@ public interface QuotoInfoMapper {
 	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quoto_name} AND table_id=#{table_id}")
 	public QuotoInfo getQuotoInfo(QuotoInfo quotoInfo);
 	
-	@Update("insert into QuotoInfo(table_id,quoto_name,quoto_sql,des) VALUES(#{table_id},#{quoto_name},#{quoto_sql},#{des})")
+	@Update("insert into Quoto_info(table_id,quoto_name,quoto_sql,des) VALUES(#{table_id},#{quoto_name},#{quoto_sql},#{des})")
 	public int insertQuotoInfo(QuotoInfo quotoInfo);
 }
