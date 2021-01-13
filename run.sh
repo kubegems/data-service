@@ -7,11 +7,11 @@ run_service() {
         java -jar /dataservice/gateway/bigdata-dataservice-gateway.jar --spring.profiles.active=${2}
         ;;
 
-    "quote-config")
+    "quoto-config")
         java -jar /dataservice/quote-config/bigdata-dataservice-quoto-config.jar --spring.profiles.active=${2}
         ;;
 
-    "quote-roc")
+    "quoto-roc")
         java -jar /dataservice/quote-roc/bigdata-dataservice-quoto-roc.jar --spring.profiles.active=${2}
         ;;
 
