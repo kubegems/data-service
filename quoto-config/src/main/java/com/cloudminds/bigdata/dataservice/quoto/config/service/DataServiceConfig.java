@@ -1,15 +1,5 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
-import java.io.IOException;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -197,53 +187,6 @@ public class DataServiceConfig {
 		}
 		return commonResponse;
 	}
-
-	// tableAlias
-//	public CommonResponse getTableAlias(int tableId) {
-//		CommonResponse commonResponse = new CommonResponse();
-//		commonResponse.setData(tableAliasMapper.getTableAliasByTableId(tableId));
-//		return commonResponse;
-//	}
-//	
-//	public CommonResponse updateTableAliasStatus(int id, int status) {
-//		CommonResponse commonResponse = new CommonResponse();
-//		if (tableAliasMapper.updateTableAliasStatus(id, status) != 1) {
-//			commonResponse.setMessage("更新失败,请稍后再试！");
-//			commonResponse.setSuccess(false);
-//		}
-//		return commonResponse;
-//	}
-//
-//	public CommonResponse deleteTableAlias(int id) {
-//		CommonResponse commonResponse = new CommonResponse();
-//		if (tableAliasMapper.updateTableAliasDelete(id, 1) != 1) {
-//			commonResponse.setMessage("删除失败,请稍后再试！");
-//			commonResponse.setSuccess(false);
-//		}
-//		return commonResponse;
-//	}
-//
-//	public CommonResponse insertTableAlias(TableAlias tableAlias) {
-//		CommonResponse commonResponse = new CommonResponse();
-//		TableAlias tableAliasOld = tableAliasMapper.getTableAlias(tableAlias);
-//		if (tableAliasOld != null) {
-//			if (tableAliasOld.getIs_delete() == 0) {
-//				commonResponse.setMessage("数据已存在,请不要重复新增！");
-//				commonResponse.setSuccess(false);
-//			} else {
-//				if (tableAliasMapper.updateTableAliasDelete(tableAliasOld.getId(), 0) != 1) {
-//					commonResponse.setMessage("新增数据失败,请稍后再试！");
-//					commonResponse.setSuccess(false);
-//				}
-//			}
-//		} else {
-//			if (tableAliasMapper.insertTableAlias(tableAlias) != 1) {
-//				commonResponse.setMessage("新增数据失败,请稍后再试！");
-//				commonResponse.setSuccess(false);
-//			}
-//		}
-//		return commonResponse;
-//	}
 
 	// tableInfo
 	public CommonResponse getTableInfo(int databaseId) {

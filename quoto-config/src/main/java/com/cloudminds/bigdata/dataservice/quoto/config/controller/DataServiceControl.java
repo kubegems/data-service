@@ -94,27 +94,6 @@ public class DataServiceControl {
 		return dataServiceConfig.updateQuotoInfo(quotoInfo);
 	}
 
-//	// tableAlias
-//	@RequestMapping(value = "getTableAlias", method = RequestMethod.GET)
-//	public CommonResponse getTableAlias(int tableId) {
-//		return dataServiceConfig.getTableAlias(tableId);
-//	}
-//
-//	@RequestMapping(value = "updateTableAliasStatus", method = RequestMethod.POST)
-//	public CommonResponse updateTableAliasStatus(int id, int status) {
-//		return dataServiceConfig.updateTableAliasStatus(id, status);
-//	}
-//
-//	@RequestMapping(value = "deleteTableAlias", method = RequestMethod.POST)
-//	public CommonResponse deleteTableAlias(int id) {
-//		return dataServiceConfig.deleteTableAlias(id);
-//	}
-//
-//	@RequestMapping(value = "insertTableAlias", method = RequestMethod.POST)
-//	public CommonResponse insertTableAlias(@RequestBody TableAlias tableAlias) {
-//		return dataServiceConfig.insertTableAlias(tableAlias);
-//	}
-
 	// tableInfo
 	@RequestMapping(value = "getTableInfo", method = RequestMethod.GET)
 	public CommonResponse getTableInfo(int databaseId) {
