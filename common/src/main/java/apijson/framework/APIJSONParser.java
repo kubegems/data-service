@@ -30,6 +30,7 @@ import com.alibaba.fastjson.JSONObject;
 import apijson.NotNull;
 import apijson.RequestMethod;
 import apijson.entity.ColumnAlias;
+import apijson.entity.CommonResponse;
 import apijson.entity.QuotoInfo;
 import apijson.entity.TableInfo;
 import apijson.orm.AbstractParser;
@@ -202,7 +203,8 @@ public class APIJSONParser extends AbstractParser<Long> {
 	// public int getMaxQueryCount() {
 	// return 50;
 	// }
-	public void loadAliasConfig() {
+	public CommonResponse loadAliasConfig() {
+		CommonResponse commonResponse=new CommonResponse();
 		// 查询配置的数据库信息
 		SQLConfig sqlConfig = APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
 		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Database_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
@@ -210,7 +212,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 		setNeedVerify(false);
 		JSONObject object = parseResponse(request);
 		if (object.get("Database_info") == null) {
-			return;
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("数据源不存在，请稍后再试");
+			return commonResponse;
 		}
 
 		// 根据数据库id查询表信息
@@ -218,10 +222,11 @@ public class APIJSONParser extends AbstractParser<Long> {
 		request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_info\": {\"is_delete\":0,\"state\":1,\"database_id\":"
 				+ dataBaseId + "},\"count\":0}}";
 		object = parseResponse(request);
-		if (object.get("[]") == null) {
-			return;
-		}
 		AbstractSQLConfig.TABLE_KEY_MAP.clear();
+		AbstractSQLConfig.tableColumnMap.clear();
+		if (object.get("[]") == null) {
+			return commonResponse;
+		}
 		AbstractSQLConfig.TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
 		AbstractSQLConfig.TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
 		AbstractSQLConfig.TABLE_KEY_MAP.put(PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
@@ -270,6 +275,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_aliasColumn", valueAlias);
 			}
 		}
+		return commonResponse;
 	}
 
 }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import apijson.entity.CommonResponse;
 import apijson.framework.APIJSONController;
 import apijson.framework.APIJSONParser;
 import apijson.orm.Parser;
@@ -27,9 +28,9 @@ public class RobotQuotoControl extends APIJSONController {
 	}
 	
 	@GetMapping(value="refreshConfig")
-	public void refush() {
+	public CommonResponse refush() {
 		APIJSONParser abstractParser=new APIJSONParser();
-		abstractParser.loadAliasConfig();
+		return abstractParser.loadAliasConfig();
 	}
 
 }
