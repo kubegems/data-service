@@ -6,4 +6,3 @@ spring:
   redis:
     host: bigdata-redis
     port: 6379
-    password: bigdata-redis
