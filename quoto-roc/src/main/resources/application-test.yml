@@ -3,3 +3,6 @@ spring:
     nacos:
       discovery:
         server-addr: 172.16.23.85:31215
+  redis:
+    host: 10.12.32.229
+    port: 6379

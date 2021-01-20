@@ -3,3 +3,7 @@ spring:
     nacos:
       discovery:
         server-addr: nacos.cloudminds.com
+  redis:
+    host: bigdata-redis
+    port: 6379
+    password: bigdata-redis
