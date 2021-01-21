@@ -37,14 +37,26 @@ public class RobotQuotoControl extends APIJSONController {
 			return get(request, session);
 		}
 		String item = DigestUtils.md5DigestAsHex(request.getBytes(StandardCharsets.UTF_8));
-		Object value = redisUtil.hget(serviceName, item);
+		Object value = null;
+		boolean redisExce = false;
+		try {
+			value = redisUtil.hget(serviceName, item);
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			redisExce = true;
+		}
 		if (value != null) {
 			String valueS = value.toString();
 			if (!valueS.equals("")) {
 				return valueS;
 			}
+			
 		}
 		String result = get(request, session);
+		if (redisExce) {
+			return result;
+		}
 		if (result.contains("\"code\":200,\"msg\":\"success\"")) {
 			if (!redisUtil.hset(serviceName, item, result, 60)) {
 				System.err.println(
