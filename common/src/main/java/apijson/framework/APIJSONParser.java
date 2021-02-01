@@ -238,7 +238,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 		for (int i = 0; i < tableInfos.size(); i++) {
 			TableInfo tableInfo = JSONObject.parseObject(tableInfos.get(i).getString("Table_info"), TableInfo.class);
 			// 根据表信息查询表别名信息
-			if (tableInfo.getTable_alias() != null & (!tableInfo.getTable_alias().equals(""))) {
+			if (tableInfo.getTable_alias() != null && (!tableInfo.getTable_alias().equals(""))) {
 				AbstractSQLConfig.TABLE_KEY_MAP.put(tableInfo.getTable_alias(), tableInfo.getTable_name());
 			}
 			// 根据表信息查询列别名信息

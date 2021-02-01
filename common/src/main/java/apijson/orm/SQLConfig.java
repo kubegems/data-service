@@ -24,6 +24,7 @@ public interface SQLConfig {
 	String DATABASE_ORACLE = "ORACLE";
 	String DATABASE_DB2 = "DB2";
 	String DATABASE_DATASERVICE="DATASERVICE";
+	String DATABASE_KYLIN="KYLIN";
 
 	String SCHEMA_INFORMATION = "information_schema";  //MySQL, PostgreSQL, SQL Server 都有的系统模式
 	String SCHEMA_SYS = "sys";  //SQL Server 系统模式
@@ -41,11 +42,7 @@ public interface SQLConfig {
 	boolean isDb2();
 	boolean isCLICKHOUSE();
 	boolean isDATASERVICE();
-	//暂时只兼容以上 5 种
-	//	boolean isSQL();
-	//	boolean isTSQL();
-	//	boolean isPLSQL();
-	//	boolean isAnsiSQL();
+	boolean isKYLIN();
 
 	boolean limitSQLCount(); //用来给 Table, Column 等系统属性表来绕过 MAX_SQL_COUNT 等限制 
 	

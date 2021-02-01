@@ -633,7 +633,11 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()), Statement.RETURN_GENERATED_KEYS);
 		}
 		else {
-			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()));
+			if (config.isKYLIN()) {
+				statement = getConnection(config).prepareStatement(config.getSQL(false));
+			} else {
+				statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()));
+			}
 		}
 		List<Object> valueList = config.isPrepared() ? config.getPreparedValueList() : null;
 

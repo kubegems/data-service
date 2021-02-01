@@ -302,7 +302,16 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	public boolean isDATASERVICE() {
 		return isDATASERVICE(getSQLDatabase());
 	}
-
+	
+	@Override
+	public boolean isKYLIN() {
+		return isKYLIN(getSQLDatabase());
+	}
+	
+	public static boolean isKYLIN(String db) {
+		return DATABASE_KYLIN.equals(db);
+	}
+	
 	public static boolean isDATASERVICE(String db) {
 		return DATABASE_DATASERVICE.equals(db);
 	}
@@ -2080,7 +2089,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			String condition = "";
 			if (cs != null) {
 				String c;
-				int index;
+//				int index;
 				for (int i = 0; i < cs.length; i++) {// 对函数条件length(key)<=5这种不再在开头加key
 					c = cs[i];
 					if ("=null".equals(c)) {
@@ -2093,10 +2102,19 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 //								+ "预编译模式下 key{}:\"condition\" 中 condition 必须 为 =null 或 !=null 或 符合正则表达式 ^[0-9%!=<>,]+$ ！不允许空格！");
 //					}
 
-					index = c == null ? -1 : c.indexOf("(");
-					condition += ((i <= 0 ? "" : (logic.isAnd() ? AND : OR))// 连接方式
-							+ (index >= 0 && index < c.indexOf(")") ? "" : getKey(k) + " ")// 函数和非函数条件
-							+ c);// 单个条件
+					if(c.contains(k)) {
+						condition += ((i <= 0 ? "" : (logic.isAnd() ? AND : OR))// 连接方式
+								 + " "// 函数和非函数条件
+								+ c);// 单个条件
+					}else {
+						condition += ((i <= 0 ? "" : (logic.isAnd() ? AND : OR))// 连接方式
+								 +getKey(k)+ " "// 函数和非函数条件
+								+ c);// 单个条件
+					}
+//					index = c == null ? -1 : c.indexOf("(");
+//					condition += ((i <= 0 ? "" : (logic.isAnd() ? AND : OR))// 连接方式
+//							+ (index >= 0 && index < c.indexOf(")") ? "" : getKey(k) + " ")// 函数和非函数条件
+//							+ c);// 单个条件
 				}
 			}
 			if (condition.isEmpty()) {
