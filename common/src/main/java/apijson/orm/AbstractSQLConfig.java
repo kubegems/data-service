@@ -758,15 +758,17 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			}
 
 			String origin = index < 0 ? item : item.substring(0, index);
-
-			if (isPrepared()) { // 不能通过 ? 来代替，SELECT 'id','name' 返回的就是 id:"id", name:"name"，而不是数据库里的值！
-				// 这里既不对origin trim，也不对 ASC/DESC ignoreCase，希望前端严格传没有任何空格的字符串过来，减少传输数据量，节约服务器性能
-				if (StringUtil.isName(origin) == false) {
-					throw new IllegalArgumentException("预编译模式下 @order:value 中 " + item + " 不合法! value 里面用 , 分割的"
-							+ "每一项必须是 随机函数 rand() 或 column+ / column- 且其中 column 必须是 1 个单词！并且不要有多余的空格！");
+			String keyValue=origin;
+			if(!origin.contains("(")) {
+				if (isPrepared()) { // 不能通过 ? 来代替，SELECT 'id','name' 返回的就是 id:"id", name:"name"，而不是数据库里的值！
+					// 这里既不对origin trim，也不对 ASC/DESC ignoreCase，希望前端严格传没有任何空格的字符串过来，减少传输数据量，节约服务器性能
+					if (StringUtil.isName(origin) == false) {
+						throw new IllegalArgumentException("预编译模式下 @order:value 中 " + item + " 不合法! value 里面用 , 分割的"
+								+ "每一项必须是 随机函数 rand() 或 column+ / column- 且其中 column 必须是 1 个单词！并且不要有多余的空格！");
+					}
 				}
+				keyValue = getKey(origin);
 			}
-			String keyValue = getKey(origin);
 			if (tableColumnMap.get(getSQLTable() + "_processColumn") != null
 					&& tableColumnMap.get(getSQLTable() + "_processColumn").containsKey(keyValue)) {
 				keyValue = tableColumnMap.get(getSQLTable() + "_processColumn").get(keyValue);
