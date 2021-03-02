@@ -62,5 +62,6 @@
 		<module>quoto-roc</module>
 		<module>common</module>
 		<module>quoto-config</module>
+		<module>quoto-chatbot</module>
 	</modules>
 </project>
