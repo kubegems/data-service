@@ -155,7 +155,7 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 		config.setPrepared(prepared);
 
 		if (StringUtil.isEmpty(sql, true)) {
-			Log.e(TAG, "select  StringUtil.isEmpty(sql, true) >> return null;");
+			Log.e(TAG, "execute  StringUtil.isEmpty(sql, true) >> return null;");
 			return null;
 		}
 
@@ -169,134 +169,149 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 		long startTime = System.currentTimeMillis();
 		Log.d(TAG, "\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
 				+ "\n已生成 " + generatedSQLCount + " 条 SQL"
-				+ "\nselect  startTime = " + startTime
+				+ "\nexecute  startTime = " + startTime
 				+ "\ndatabase = " + StringUtil.getString(config.getDatabase())
 				+ "; schema = " + StringUtil.getString(config.getSchema())
 				+ "; sql = \n" + sql
 				+ "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 
 		ResultSet rs = null;
+		List<JSONObject> resultList = null;
+		Map<String, JSONObject> childMap = null;
 
-		if (unknowType) {
-			Statement statement = getStatement(config);
-			rs = execute(statement, sql);
+		try {
+			if (unknowType) {
+				Statement statement = getStatement(config);
+				rs = execute(statement, sql);
 
-			result = new JSONObject(true);
-			int updateCount = statement.getUpdateCount();
-			result.put(JSONResponse.KEY_COUNT, updateCount);
-			result.put("update", updateCount >= 0);
-			//导致后面 rs.getMetaData() 报错 Operation not allowed after ResultSet closed		result.put("moreResults", statement.getMoreResults());
-		}
-		else {
-			switch (config.getMethod()) {
-			case HEAD:
-			case HEADS:
-				rs = executeQuery(config);
+				result = new JSONObject(true);
+				int updateCount = statement.getUpdateCount();
+				result.put(JSONResponse.KEY_COUNT, updateCount);
+				result.put("update", updateCount >= 0);
+				//导致后面 rs.getMetaData() 报错 Operation not allowed after ResultSet closed		result.put("moreResults", statement.getMoreResults());
+			}
+			else {
+				switch (config.getMethod()) {
+				case HEAD:
+				case HEADS:
+					rs = executeQuery(config);
 
-				executedSQLCount ++;
-
-				result = rs.next() ? AbstractParser.newSuccessResult()
-						: AbstractParser.newErrorResult(new SQLException("数据库错误, rs.next() 失败！"));
-				result.put(JSONResponse.KEY_COUNT, rs.getLong(1));
-
-				rs.close();
-				return result;
-
-			case POST:
-			case PUT:
-			case DELETE:
-				executedSQLCount ++;
-
-				int updateCount = executeUpdate(config);
-
-				result = AbstractParser.newResult(updateCount > 0 ? JSONResponse.CODE_SUCCESS : JSONResponse.CODE_NOT_FOUND
-						, updateCount > 0 ? JSONResponse.MSG_SUCCEED : "没权限访问或对象不存在！");
-
-				//id,id{}至少一个会有，一定会返回，不用抛异常来阻止关联写操作时前面错误导致后面无条件执行！
-				result.put(JSONResponse.KEY_COUNT, updateCount);//返回修改的记录数
-				if (config.getId() != null) {
-					result.put(config.getIdKey(), config.getId());
-				} else {
-					result.put(config.getIdKey() + "[]", config.getWhere(config.getIdKey() + "{}", true));
-				}
-				return result;
-
-			case GET:
-			case GETS:
-				result = getCacheItem(sql, position, config.getCache());
-				Log.i(TAG, ">>> select  result = getCache('" + sql + "', " + position + ") = " + result);
-				if (result != null) {
-					cachedSQLCount ++;
-
-					Log.d(TAG, "\n\n select  result != null >> return result;"  + "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
-					return result;
-				}
-
-				rs = executeQuery(config);  //FIXME SQL Server 是一次返回两个结果集，包括查询结果和执行计划，需要 moreResults 
-
-				if (config.isExplain() == false) { //只有 SELECT 才能 EXPLAIN
 					executedSQLCount ++;
-				}
-				break;
 
-			default://OPTIONS, TRACE等
-				Log.e(TAG, "select  sql = " + sql + " ; method = " + config.getMethod() + " >> return null;");
-				return null;
+					result = rs.next() ? AbstractParser.newSuccessResult()
+							: AbstractParser.newErrorResult(new SQLException("数据库错误, rs.next() 失败！"));
+					result.put(JSONResponse.KEY_COUNT, rs.getLong(1));
+					return result;
+
+				case POST:
+				case PUT:
+				case DELETE:
+					executedSQLCount ++;
+
+					int updateCount = executeUpdate(config);
+
+					result = AbstractParser.newResult(updateCount > 0 ? JSONResponse.CODE_SUCCESS : JSONResponse.CODE_NOT_FOUND
+							, updateCount > 0 ? JSONResponse.MSG_SUCCEED : "没权限访问或对象不存在！");
+
+					//id,id{}至少一个会有，一定会返回，不用抛异常来阻止关联写操作时前面错误导致后面无条件执行！
+					result.put(JSONResponse.KEY_COUNT, updateCount);//返回修改的记录数
+					if (config.getId() != null) {
+						result.put(config.getIdKey(), config.getId());
+					} else {
+						result.put(config.getIdKey() + "[]", config.getWhere(config.getIdKey() + "{}", true));
+					}
+					return result;
+
+				case GET:
+				case GETS:
+					result = getCacheItem(sql, position, config.getCache());
+					Log.i(TAG, ">>> execute  result = getCache('" + sql + "', " + position + ") = " + result);
+					if (result != null) {
+						cachedSQLCount ++;
+
+						Log.d(TAG, "\n\n execute  result != null >> return result;"  + "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
+						return result;
+					}
+
+					rs = executeQuery(config);  //FIXME SQL Server 是一次返回两个结果集，包括查询结果和执行计划，需要 moreResults 
+
+					if (config.isExplain() == false) { //只有 SELECT 才能 EXPLAIN
+						executedSQLCount ++;
+					}
+					break;
+
+				default://OPTIONS, TRACE等
+					Log.e(TAG, "execute  sql = " + sql + " ; method = " + config.getMethod() + " >> return null;");
+					return null;
+				}
+			}
+
+
+
+			//		final boolean cache = config.getCount() != 1;
+			resultList = new ArrayList<>();
+			//		Log.d(TAG, "select  cache = " + cache + "; resultList" + (resultList == null ? "=" : "!=") + "null");
+
+			int index = -1;
+
+			ResultSetMetaData rsmd = rs.getMetaData();
+			final int length = rsmd.getColumnCount();
+
+			//<SELECT * FROM Comment WHERE momentId = '470', { id: 1, content: "csdgs" }>
+			childMap = new HashMap<>(); //要存到cacheMap
+			// WHERE id = ? AND ... 或 WHERE ... AND id = ? 强制排序 remove 再 put，还是重新 getSQL吧
+
+
+			boolean hasJoin = config.hasJoin();
+			int viceColumnStart = length + 1; //第一个副表字段的index
+			while (rs.next()) {
+				index ++;
+				Log.d(TAG, "\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n execute while (rs.next()){  index = " + index + "\n\n");
+
+				JSONObject item = new JSONObject(true);
+
+				for (int i = 1; i <= length; i++) {
+
+					// if (hasJoin && viceColumnStart > length && config.getSQLTable().equalsIgnoreCase(rsmd.getTableName(i)) == false) {
+					// 	viceColumnStart = i;
+					// }
+
+					// bugfix-修复非常规数据库字段，获取表名失败导致输出异常
+					if (config.isExplain() == false && hasJoin && viceColumnStart > length) {
+						List<String> column = config.getColumn();
+
+						if (column != null && column.isEmpty() == false) {
+							viceColumnStart = column.size() + 1;
+						}
+						else if (config.getSQLTable().equalsIgnoreCase(rsmd.getTableName(i)) == false) {
+							viceColumnStart = i;
+						}
+					}
+
+					item = onPutColumn(config, rs, rsmd, index, item, i, config.isExplain() == false && hasJoin && i >= viceColumnStart ? childMap : null);
+				}
+
+				resultList = onPutTable(config, rs, rsmd, resultList, index, item);
+
+				Log.d(TAG, "\n execute  while (rs.next()) { resultList.put( " + index + ", result); "
+						+ "\n >>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n");
+			}
+
+		}
+		finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} 
+				catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
-
-
-		//		final boolean cache = config.getCount() != 1;
-		List<JSONObject> resultList = new ArrayList<>();
-		//		Log.d(TAG, "select  cache = " + cache + "; resultList" + (resultList == null ? "=" : "!=") + "null");
-
-		int index = -1;
-
-		ResultSetMetaData rsmd = rs.getMetaData();
-		final int length = rsmd.getColumnCount();
-
-		//<SELECT * FROM Comment WHERE momentId = '470', { id: 1, content: "csdgs" }>
-		Map<String, JSONObject> childMap = new HashMap<>(); //要存到cacheMap
-		// WHERE id = ? AND ... 或 WHERE ... AND id = ? 强制排序 remove 再 put，还是重新 getSQL吧
-
-
-		boolean hasJoin = config.hasJoin();
-		int viceColumnStart = length + 1; //第一个副表字段的index
-		while (rs.next()) {
-			index ++;
-			Log.d(TAG, "\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n select while (rs.next()){  index = " + index + "\n\n");
-
-			JSONObject item = new JSONObject(true);
-
-			for (int i = 1; i <= length; i++) {
-
-				// if (hasJoin && viceColumnStart > length && config.getSQLTable().equalsIgnoreCase(rsmd.getTableName(i)) == false) {
-				// 	viceColumnStart = i;
-				// }
-
-				// bugfix-修复非常规数据库字段，获取表名失败导致输出异常
-				if (config.isExplain() == false && hasJoin && viceColumnStart > length) {
-					List<String> column = config.getColumn();
-
-					if (column != null && column.isEmpty() == false) {
-						viceColumnStart = column.size() + 1;
-					}
-					else if (config.getSQLTable().equalsIgnoreCase(rsmd.getTableName(i)) == false) {
-						viceColumnStart = i;
-					}
-				}
-
-				item = onPutColumn(config, rs, rsmd, index, item, i, config.isExplain() == false && hasJoin && i >= viceColumnStart ? childMap : null);
-			}
-
-			resultList = onPutTable(config, rs, rsmd, resultList, index, item);
-
-			Log.d(TAG, "\n select  while (rs.next()) { resultList.put( " + index + ", result); "
-					+ "\n >>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n");
+		if (resultList == null) {
+			return null;
 		}
-
-		rs.close();
 
 		if (unknowType || config.isExplain()) {
 			if (config.isExplain()) {
@@ -330,12 +345,24 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 		}
 
 		putCache(sql, resultList, config.getCache());
-		Log.i(TAG, ">>> select  putCache('" + sql + "', resultList);  resultList.size() = " + resultList.size());
+		Log.i(TAG, ">>> execute  putCache('" + sql + "', resultList);  resultList.size() = " + resultList.size());
 
+		  // 数组主表对象额外一次返回全部，方便 Parser 缓存来提高性能
+		
+		result = position >= resultList.size() ? new JSONObject() : resultList.get(position);
+		if (position == 0 && resultList.size() > 1 && result != null && result.isEmpty() == false) { 
+			// 不是 main 不会直接执行，count=1 返回的不会超过 1   && config.isMain() && config.getCount() != 1
+			Log.i(TAG, ">>> execute  position == 0 && resultList.size() > 1 && result != null && result.isEmpty() == false"
+					+ " >> result = new JSONObject(result); result.put(KEY_RAW_LIST, resultList);");
+
+			result = new JSONObject(result);
+			result.put(KEY_RAW_LIST, resultList);
+		}
+		
 		long endTime = System.currentTimeMillis();
-		Log.d(TAG, "\n\n select  endTime = " + endTime + "; duration = " + (endTime - startTime)
+		Log.d(TAG, "\n\n execute  endTime = " + endTime + "; duration = " + (endTime - startTime)
 				+ "\n return resultList.get(" + position + ");"  + "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n");
-		return position >= resultList.size() ? new JSONObject() : resultList.get(position);
+		return result;
 	}
 
 
@@ -397,41 +424,51 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 						+ "\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 
 				//执行副表的批量查询 并 缓存到 childMap
-				ResultSet rs = executeQuery(jc);
+				ResultSet rs = null;
+				try {
+					rs = executeQuery(jc);
 
-				int index = -1;
+					int index = -1;
 
-				ResultSetMetaData rsmd = rs.getMetaData();
-				final int length = rsmd.getColumnCount();
+					ResultSetMetaData rsmd = rs.getMetaData();
+					final int length = rsmd.getColumnCount();
 
-				JSONObject result;
-				String cacheSql;
-				while (rs.next()) { //FIXME 同时有 @ APP JOIN 和 < 等 SQL JOIN 时，next = false 总是无法进入循环，导致缓存失效，可能是连接池或线程问题
-					index ++;
-					Log.d(TAG, "\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n executeAppJoin while (rs.next()){  index = " + index + "\n\n");
+					JSONObject result;
+					String cacheSql;
+					while (rs.next()) { //FIXME 同时有 @ APP JOIN 和 < 等 SQL JOIN 时，next = false 总是无法进入循环，导致缓存失效，可能是连接池或线程问题
+						index ++;
+						Log.d(TAG, "\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n executeAppJoin while (rs.next()){  index = " + index + "\n\n");
 
-					result = new JSONObject(true);
+						result = new JSONObject(true);
 
-					for (int i = 1; i <= length; i++) {
+						for (int i = 1; i <= length; i++) {
 
-						result = onPutColumn(jc, rs, rsmd, index, result, i, null);
+							result = onPutColumn(jc, rs, rsmd, index, result, i, null);
+						}
+
+						//每个 result 都要用新的 SQL 来存 childResultMap = onPutTable(config, rs, rsmd, childResultMap, index, result);
+
+						Log.d(TAG, "\n executeAppJoin  while (rs.next()) { resultList.put( " + index + ", result); "
+								+ "\n >>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n");
+
+						//缓存到 childMap
+						cc.putWhere(j.getKey(), result.get(j.getKey()), false);
+						cacheSql = cc.getSQL(false);
+						childMap.put(cacheSql, result);
+
+						Log.d(TAG, ">>> executeAppJoin childMap.put('" + cacheSql + "', result);  childMap.size() = " + childMap.size());
 					}
-
-					//每个 result 都要用新的 SQL 来存 childResultMap = onPutTable(config, rs, rsmd, childResultMap, index, result);
-
-					Log.d(TAG, "\n executeAppJoin  while (rs.next()) { resultList.put( " + index + ", result); "
-							+ "\n >>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n");
-
-					//缓存到 childMap
-					cc.putWhere(j.getKey(), result.get(j.getKey()), false);
-					cacheSql = cc.getSQL(false);
-					childMap.put(cacheSql, result);
-
-					Log.d(TAG, ">>> executeAppJoin childMap.put('" + cacheSql + "', result);  childMap.size() = " + childMap.size());
 				}
-
-				rs.close();
-
+				finally {
+					if (rs != null) {
+						try {
+							rs.close();
+						} 
+						catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
 
 				long endTime = System.currentTimeMillis();
 				Log.d(TAG, "\n\n executeAppJoin  endTime = " + endTime + "; duration = " + (endTime - startTime)
@@ -576,6 +613,13 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 				s = br.readLine(); 
 			}
 			value = sb.toString();
+
+			try {
+				br.close();
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		if (castToJson == false) {
@@ -633,9 +677,11 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()), Statement.RETURN_GENERATED_KEYS);
 		}
 		else {
-			if (config.isKYLIN()) {
-				statement = getConnection(config).prepareStatement(config.getSQL(false));
-			} else {
+			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()));
+			if(config.isKYLIN()) {
+				String sql=config.getSQL(false);
+				statement = getConnection(config).prepareStatement(sql);
+			}else {
 				statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()));
 			}
 		}

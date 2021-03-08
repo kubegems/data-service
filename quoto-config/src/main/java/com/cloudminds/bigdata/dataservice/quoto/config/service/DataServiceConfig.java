@@ -83,10 +83,23 @@ public class DataServiceConfig {
 		return commonResponse;
 	}
 
+	// datainfo
+	public CommonResponse getdbInfo() {
+		CommonResponse commonResponse = new CommonResponse();
+		commonResponse.setData(databaseInfoMapper.getdbInfo());
+		return commonResponse;
+	}
+
 	// database
 	public CommonResponse getDataBase() {
 		CommonResponse commonResponse = new CommonResponse();
 		commonResponse.setData(databaseInfoMapper.getDataBase());
+		return commonResponse;
+	}
+
+	public CommonResponse getDataBaseBydbId(int dbId) {
+		CommonResponse commonResponse = new CommonResponse();
+		commonResponse.setData(databaseInfoMapper.getDataBaseByDbid(dbId));
 		return commonResponse;
 	}
 

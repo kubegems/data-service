@@ -31,6 +31,7 @@ import apijson.NotNull;
 import apijson.RequestMethod;
 import apijson.entity.ColumnAlias;
 import apijson.entity.CommonResponse;
+import apijson.entity.DatabaseInfo;
 import apijson.entity.QuotoInfo;
 import apijson.entity.TableInfo;
 import apijson.orm.AbstractParser;
@@ -163,10 +164,10 @@ public class APIJSONParser extends AbstractParser<Long> {
 	}
 
 	@Override
-	public APIJSONObjectParser createObjectParser(JSONObject request, String parentPath, String name,
-			SQLConfig arrayConfig, boolean isSubquery) throws Exception {
+	public APIJSONObjectParser createObjectParser(JSONObject request, String parentPath, SQLConfig arrayConfig
+			, boolean isSubquery, boolean isTable, boolean isArrayMainTable) throws Exception {
 
-		return new APIJSONObjectParser(getSession(), request, parentPath, name, arrayConfig, isSubquery) {
+		return new APIJSONObjectParser(getSession(), request, parentPath, arrayConfig, isSubquery, isTable, isArrayMainTable) {
 
 			// @Override
 			// protected APIJSONSQLConfig newQueryConfig() {
@@ -203,78 +204,100 @@ public class APIJSONParser extends AbstractParser<Long> {
 	// public int getMaxQueryCount() {
 	// return 50;
 	// }
+	
 	public CommonResponse loadAliasConfig() {
 		CommonResponse commonResponse=new CommonResponse();
 		// 查询配置的数据库信息
 		SQLConfig sqlConfig = APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
-		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Database_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
-				+ sqlConfig.getDBUri() + "\",\"database\":\"" + sqlConfig.getDefaultSchema() + "\"}}";
+		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Db_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
+				+ sqlConfig.getDBUri() + "\"}}";
 		setNeedVerify(false);
 		JSONObject object = parseResponse(request);
-		if (object.get("Database_info") == null) {
+		if (object.get("Db_info") == null) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("数据源不存在，请稍后再试");
 			return commonResponse;
 		}
-
-		// 根据数据库id查询表信息
-		int dataBaseId = (int) JSONObject.parseObject(object.get("Database_info").toString()).get("id");
-		request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_info\": {\"is_delete\":0,\"state\":1,\"database_id\":"
-				+ dataBaseId + "},\"count\":0}}";
+		
+		//根据url id查询数据库信息
+		int dbId = (int) JSONObject.parseObject(object.get("Db_info").toString()).get("id");
+		request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Database_info\": {\"is_delete\":0,\"state\":1,\"db_id\":"
+				+ dbId + "},\"count\":0}}";
 		object = parseResponse(request);
+		Map<String, String> TABLE_KEY_MAP= new HashMap<String, String>();
+		Map<String, Map<String, String>> tableColumnMap = new HashMap<String, Map<String, String>>();
+		List<JSONObject> database_infos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
+		for(int n=0;n<database_infos.size();n++) {
+			DatabaseInfo databaseInfo = JSONObject.parseObject(database_infos.get(n).getString("Database_info"), DatabaseInfo.class);
+			// 根据数据库id查询表信息
+			int dataBaseId = databaseInfo.getId();
+			String databaseName=databaseInfo.getDatabase();
+			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_info\": {\"is_delete\":0,\"state\":1,\"database_id\":"
+					+ dataBaseId + "},\"count\":0}}";
+			object = parseResponse(request);		
+			if (object.get("[]") == null) {
+				continue;
+			}
+			TABLE_KEY_MAP.put(databaseName+"."+Table.class.getSimpleName(), Table.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+Column.class.getSimpleName(), Column.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+PgAttribute.class.getSimpleName(), PgAttribute.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
+			TABLE_KEY_MAP.put(databaseName+"."+ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
+			List<JSONObject> tableInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
+			for (int i = 0; i < tableInfos.size(); i++) {
+				TableInfo tableInfo = JSONObject.parseObject(tableInfos.get(i).getString("Table_info"), TableInfo.class);
+				if(tableInfo.getTable_name()==null) {
+					continue;
+				}
+				// 根据表信息查询表别名信息
+				if (tableInfo.getTable_alias() != null && (!tableInfo.getTable_alias().equals(""))) {
+					TABLE_KEY_MAP.put(databaseName+"."+tableInfo.getTable_alias(), tableInfo.getTable_name());
+				}
+				// 根据表信息查询列别名信息
+				Map<String, String> valueAlias = new HashMap<String, String>();
+				Map<String, String> valueReal = new HashMap<String, String>();
+				Map<String, String> value = new HashMap<String, String>();
+				request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Column_alias\": {\"is_delete\":0,\"state\":1,\"table_id\":"
+						+ tableInfo.getId() + "},\"count\":0}}";
+				object = parseResponse(request);
+				if (object.get("[]") != null) {
+					List<JSONObject> columnAliass = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
+					for (int j = 0; j < columnAliass.size(); j++) {
+						ColumnAlias columnAlias = JSONObject.parseObject(columnAliass.get(j).getString("Column_alias"),
+								ColumnAlias.class);
+						value.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
+						valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
+						valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn_name());
+					}
+					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_processColumn", value);
+					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_realColumn", valueReal);
+				}
+
+				// 根据表信息查询指标信息
+				request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Quoto_info\": {\"is_delete\":0,\"state\":1,\"table_id\":"
+						+ tableInfo.getId() + "},\"count\":0}}";
+				object = parseResponse(request);
+				if (object.get("[]") != null) {
+					List<JSONObject> quotoInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
+					for (int j = 0; j < quotoInfos.size(); j++) {
+						QuotoInfo quotoInfo = JSONObject.parseObject(quotoInfos.get(j).getString("Quoto_info"),
+								QuotoInfo.class);
+						valueAlias.put("\"" + quotoInfo.getQuoto_name() + "\"", quotoInfo.getQuoto_sql());
+					}
+					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_aliasColumn", valueAlias);
+				}else {
+					if(!valueAlias.isEmpty()) {
+						tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_aliasColumn", valueAlias);
+					}
+				}
+			}
+		}
 		AbstractSQLConfig.TABLE_KEY_MAP.clear();
 		AbstractSQLConfig.tableColumnMap.clear();
-		if (object.get("[]") == null) {
-			return commonResponse;
-		}
-		AbstractSQLConfig.TABLE_KEY_MAP.put(Table.class.getSimpleName(), Table.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(Column.class.getSimpleName(), Column.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(PgClass.class.getSimpleName(), PgClass.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(PgAttribute.class.getSimpleName(), PgAttribute.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(SysTable.class.getSimpleName(), SysTable.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(SysColumn.class.getSimpleName(), SysColumn.TABLE_NAME);
-		AbstractSQLConfig.TABLE_KEY_MAP.put(ExtendedProperty.class.getSimpleName(), ExtendedProperty.TABLE_NAME);
-		List<JSONObject> tableInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
-		for (int i = 0; i < tableInfos.size(); i++) {
-			TableInfo tableInfo = JSONObject.parseObject(tableInfos.get(i).getString("Table_info"), TableInfo.class);
-			// 根据表信息查询表别名信息
-			if (tableInfo.getTable_alias() != null && (!tableInfo.getTable_alias().equals(""))) {
-				AbstractSQLConfig.TABLE_KEY_MAP.put(tableInfo.getTable_alias(), tableInfo.getTable_name());
-			}
-			// 根据表信息查询列别名信息
-			Map<String, String> valueAlias = new HashMap<String, String>();
-			Map<String, String> valueReal = new HashMap<String, String>();
-			Map<String, String> value = new HashMap<String, String>();
-			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Column_alias\": {\"is_delete\":0,\"state\":1,\"table_id\":"
-					+ tableInfo.getId() + "},\"count\":0}}";
-			object = parseResponse(request);
-			if (object.get("[]") != null) {
-				List<JSONObject> columnAliass = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
-				for (int j = 0; j < columnAliass.size(); j++) {
-					ColumnAlias columnAlias = JSONObject.parseObject(columnAliass.get(j).getString("Column_alias"),
-							ColumnAlias.class);
-					value.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
-					valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
-					valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn_name());
-				}
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_processColumn", value);
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_realColumn", valueReal);
-			}
-
-			// 根据表信息查询指标信息
-			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Quoto_info\": {\"is_delete\":0,\"state\":1,\"table_id\":"
-					+ tableInfo.getId() + "},\"count\":0}}";
-			object = parseResponse(request);
-			if (object.get("[]") != null) {
-				List<JSONObject> quotoInfos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
-				for (int j = 0; j < quotoInfos.size(); j++) {
-					QuotoInfo quotoInfo = JSONObject.parseObject(quotoInfos.get(j).getString("Quoto_info"),
-							QuotoInfo.class);
-					valueAlias.put("\"" + quotoInfo.getQuoto_name() + "\"", quotoInfo.getQuoto_sql());
-				}
-				AbstractSQLConfig.tableColumnMap.put(tableInfo.getTable_name() + "_aliasColumn", valueAlias);
-			}
-		}
+		AbstractSQLConfig.TABLE_KEY_MAP=TABLE_KEY_MAP;
+		AbstractSQLConfig.tableColumnMap=tableColumnMap;	
 		return commonResponse;
 	}
 

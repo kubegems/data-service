@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.regex.Pattern;
 
 import javax.activation.UnsupportedDataTypeException;
@@ -56,7 +57,6 @@ import apijson.RequestRole;
 import apijson.StringUtil;
 import apijson.orm.AbstractSQLConfig.IdCallback;
 import apijson.orm.exception.ConflictException;
-import apijson.orm.exception.NotExistException;
 import apijson.orm.exception.NotLoggedInException;
 import apijson.orm.model.Access;
 import apijson.orm.model.Column;
@@ -82,13 +82,39 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 	private static final String TAG = "AbstractVerifier";
 
 
+	// 共享 STRUCTURE_MAP 则不能 remove 等做任何变更，否则在并发情况下可能会出错，加锁效率又低，所以这里改为忽略对应的 key
+	public static final List<String> OPERATION_KEY_LIST;
+
 	// <TableName, <METHOD, allowRoles>>
 	// <User, <GET, [OWNER, ADMIN]>>
+	@NotNull
 	public static final Map<String, Map<RequestMethod, RequestRole[]>> SYSTEM_ACCESS_MAP;
+	@NotNull
 	public static final Map<String, Map<RequestMethod, RequestRole[]>> ACCESS_MAP;
 
+	// <method tag, <version, Request>>
+	// <PUT Comment, <1, { "method":"PUT", "tag":"Comment", "structure":{ "MUST":"id"... }... }>>
+	@NotNull
+	public static final Map<String, SortedMap<Integer, JSONObject>> REQUEST_MAP;
+
+	@NotNull
 	public static final Map<String, Pattern> COMPILE_MAP;
 	static {
+		OPERATION_KEY_LIST = new ArrayList<>();
+		OPERATION_KEY_LIST.add(TYPE.name());
+		OPERATION_KEY_LIST.add(VERIFY.name());
+		OPERATION_KEY_LIST.add(INSERT.name());
+		OPERATION_KEY_LIST.add(UPDATE.name());
+		OPERATION_KEY_LIST.add(REPLACE.name());
+		OPERATION_KEY_LIST.add(EXIST.name());
+		OPERATION_KEY_LIST.add(UNIQUE.name());
+		OPERATION_KEY_LIST.add(REMOVE.name());
+		OPERATION_KEY_LIST.add(MUST.name());
+		OPERATION_KEY_LIST.add(REFUSE.name());
+		OPERATION_KEY_LIST.add(NECESSARY.name());
+		OPERATION_KEY_LIST.add(DISALLOW.name());
+		
+		
 		SYSTEM_ACCESS_MAP = new HashMap<String, Map<RequestMethod, RequestRole[]>>();
 
 		SYSTEM_ACCESS_MAP.put(Access.class.getSimpleName(), getAccessMap(Access.class.getAnnotation(MethodAccess.class)));
@@ -111,6 +137,8 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		}
 
 		ACCESS_MAP = new HashMap<>(SYSTEM_ACCESS_MAP);
+
+		REQUEST_MAP = new HashMap<>(ACCESS_MAP.size()*6);  // 单个与批量增删改
 
 		COMPILE_MAP = new HashMap<String, Pattern>();
 	}
@@ -234,7 +262,8 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 
 			//key!{}:[] 或 其它没有明确id的条件 等 可以和key{}:list组合。类型错误就报错
 			requestId = (Number) config.getWhere(visitorIdkey, true);//JSON里数值不能保证是Long，可能是Integer
-			JSONArray requestIdArray = (JSONArray) config.getWhere(visitorIdkey + "{}", true);//不能是 &{}， |{} 不要传，直接{}
+			@SuppressWarnings("unchecked") 
+			Collection<Object> requestIdArray = (Collection<Object>) config.getWhere(visitorIdkey + "{}", true);//不能是 &{}， |{} 不要传，直接{}
 			if (requestId != null) {
 				if (requestIdArray == null) {
 					requestIdArray = new JSONArray();
@@ -690,7 +719,7 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 				+ "\n response = \n" + JSON.toJSONString(response));
 
 		if (target == null || response == null) {// || target.isEmpty() {
-			Log.i(TAG, "verifyRequest  target == null || response == null >> return response;");
+			Log.i(TAG, "verifyResponse  target == null || response == null >> return response;");
 			return response;
 		}
 
@@ -732,7 +761,7 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 			return null;
 		}
 
-		//获取配置<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		// 获取配置<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		JSONObject type = target.getJSONObject(TYPE.name());
 		JSONObject verify = target.getJSONObject(VERIFY.name());
 		JSONObject insert = target.getJSONObject(INSERT.name());
@@ -747,36 +776,21 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		String necessary = StringUtil.getNoBlankString(target.getString(NECESSARY.name()));
 		String disallow = StringUtil.getNoBlankString(target.getString(DISALLOW.name()));
 
-		target.remove(TYPE.name());
-		target.remove(VERIFY.name());
-		target.remove(INSERT.name());
-		target.remove(UPDATE.name());
-		target.remove(REPLACE.name());
 
-		target.remove(EXIST.name());
-		target.remove(UNIQUE.name());
-		target.remove(REMOVE.name());
-		target.remove(MUST.name());
-		target.remove(REFUSE.name());
-		target.remove(NECESSARY.name());
-		target.remove(DISALLOW.name());
-
-
-
-		//移除字段<<<<<<<<<<<<<<<<<<<
+		// 移除字段<<<<<<<<<<<<<<<<<<<
 		String[] removes = StringUtil.split(remove);
 		if (removes != null && removes.length > 0) {
 			for (String r : removes) {
 				real.remove(r);
 			}
 		}
-		//移除字段>>>>>>>>>>>>>>>>>>>
+		// 移除字段>>>>>>>>>>>>>>>>>>>
 
-		//判断必要字段是否都有<<<<<<<<<<<<<<<<<<<
+		// 判断必要字段是否都有<<<<<<<<<<<<<<<<<<<
 		String[] musts = StringUtil.split(must);
 		List<String> mustList = musts == null ? new ArrayList<String>() : Arrays.asList(musts);
 		for (String s : mustList) {
-			if (real.get(s) == null) {//可能传null进来，这里还会通过 real.containsKey(s) == false) {
+			if (real.get(s) == null) {  // 可能传null进来，这里还会通过 real.containsKey(s) == false) {
 				throw new IllegalArgumentException(method + "请求，" + name
 						+ " 里面不能缺少 " + s + " 等[" + must + "]内的任何字段！");
 			}
@@ -805,7 +819,7 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 			Object rvalue;
 			for (Entry<String, Object> entry : set) {
 				key = entry == null ? null : entry.getKey();
-				if (key == null) {
+				if (key == null || OPERATION_KEY_LIST.contains(key)) {
 					continue;
 				}
 				tvalue = entry.getValue();
@@ -852,7 +866,7 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		if ("!".equals(refuse)) {//所有非 must，改成 !must 更好
 			for (String key : rkset) {//对@key放行，@role,@column,自定义@position等
 				if (key != null && key.startsWith("@") == false
-						&& necessaryList.contains(key) == false && objKeySet.contains(key) == false) {
+						&& mustList.contains(key) == false && objKeySet.contains(key) == false) {
 					refuseList.add(key);
 				}
 			}
@@ -961,22 +975,6 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		//校验重复>>>>>>>>>>>>>>>>>>>
 
 
-		//还原 <<<<<<<<<<
-		target.put(TYPE.name(), type);
-		target.put(VERIFY.name(), verify);
-		target.put(INSERT.name(), insert);
-		target.put(UPDATE.name(), update);
-		target.put(REPLACE.name(), replace);
-
-		target.put(EXIST.name(), exist);
-		target.put(UNIQUE.name(), unique);
-		target.put(REMOVE.name(), remove);
-		target.put(MUST.name(), must);
-		target.put(REFUSE.name(), refuse);
-		target.put(NECESSARY.name(), necessary);
-		target.put(DISALLOW.name(), disallow);
-		//还原 >>>>>>>>>>
-
 		Log.i(TAG, "parse  return real = " + JSON.toJSONString(real));
 		return real;
 	}
@@ -1006,9 +1004,10 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 
 		for (Entry<String, Object> e : set) {
 			tk = e == null ? null : e.getKey();
-			if (tk == null) {
+			if (tk == null || OPERATION_KEY_LIST.contains(tk)) {
 				continue;
 			}
+			
 			tv = e.getValue();
 
 			if (opt == TYPE) {
@@ -1182,10 +1181,10 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		String rk;
 		Object rv;
 		Logic logic;
-		if (tk.endsWith("$")) { //搜索
+		if (tk.endsWith("$")) {  // 模糊搜索
 			verifyCondition("$", real, tk, tv, creator);
 		}
-		else if (tk.endsWith("~") || tk.endsWith("?")) { //TODO 正则表达式, 以后可能取消支持 ? 作为 正则匹配 的功能符
+		else if (tk.endsWith("~")) {  // 正则匹配
 			logic = new Logic(tk.substring(0, tk.length() - 1));
 			rk = logic.getKey();
 			rv = real.get(rk);
@@ -1423,6 +1422,10 @@ public abstract class AbstractVerifier<T> implements Verifier<T>, IdCallback {
 		} finally {
 			executor.close();
 		}
+	}
+
+	public static String getCacheKeyForRequest(String method, String tag) {
+		return method + " " + tag;
 	}
 
 

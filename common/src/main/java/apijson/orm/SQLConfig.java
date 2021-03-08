@@ -114,7 +114,7 @@ public interface SQLConfig {
 	SQLConfig setId(Object id);
 
 	RequestRole getRole();
-	SQLConfig setRole(RequestRole role);
+	SQLConfig setRole(RequestRole role);  // TODO 提供 String 类型的，方便扩展
 
 	public boolean isDistinct();
 	public SQLConfig setDistinct(boolean distinct);
@@ -139,6 +139,9 @@ public interface SQLConfig {
 	String getSQLTable();
 
 	String getTablePath();
+	
+	List<String> getRaw();
+	SQLConfig setRaw(List<String> raw);
 
 	SQLConfig setTable(String table);
 
@@ -214,11 +217,12 @@ public interface SQLConfig {
 	SQLConfig setAlias(String alias);
 
 	String getWhereString(boolean hasPrefix) throws Exception;
+	
+	String getRawSQL(String key, Object value) throws Exception;
 
 	boolean isKeyPrefix();
 
 	SQLConfig setKeyPrefix(boolean keyPrefix);
-
 
 	List<Join> getJoinList();
 

@@ -2,11 +2,12 @@ package com.cloudminds.bigdata.dataservice.quoto.config.entity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 @EqualsAndHashCode(callSuper = false)
 @Data
-public class DatabaseInfo extends BaseEntity{
+public class DbInfo extends BaseEntity{
 	private int id;
-	private int db_id;
-	private String database;
+	private String db_url;
+	private String db_name;
 	private String service_path;
 }

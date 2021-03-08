@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.DbInfo;
 
 
 
@@ -14,6 +15,9 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
 public interface DatabaseInfoMapper {
 	@Select("SELECT * FROM Database_info WHERE is_delete=0 AND state=1")
 	public List<DatabaseInfo> getDataBase();
+	
+	@Select("SELECT * FROM Database_info WHERE is_delete=0 AND state=1 AND db_id=#{dbId}")
+	public List<DatabaseInfo> getDataBaseByDbid(int dbId);
 	
 	@Update("update Database_info set state=#{state} where id=#{id}")
 	public int updateDatabaseInfoStatus(int id, int state);
@@ -26,4 +30,8 @@ public interface DatabaseInfoMapper {
 	
 	@Update("insert into Database_info(db_url,database) VALUES(#{db_url},#{database})")
 	public int insertDatabaseInfo(DatabaseInfo databaseInfo);
+	
+	//db_info
+	@Select("SELECT * FROM Db_info WHERE is_delete=0 AND state=1")
+	public List<DbInfo> getdbInfo();
 }

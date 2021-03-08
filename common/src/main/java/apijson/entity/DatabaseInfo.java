@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public class DatabaseInfo extends BaseEntity{
 	private int id;
-	private String db_url;
+	private int db_id;
 	private String database;
+	private String service_path;
 }

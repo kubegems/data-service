@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cloudminds.bigdata.dataservice.quoto.chatbot.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.chatbot.redis.RedisUtil;
 
 import apijson.entity.CommonResponse;
@@ -22,19 +21,16 @@ import apijson.orm.Parser;
 
 @RestController
 @RequestMapping("/chatbot/quoto")
-public class RobotQuotoControl extends APIJSONController {
+public class ChatbotQuotoControl extends APIJSONController {
 	@Autowired
 	private RedisUtil redisUtil;
-	@Autowired
-	private ColumnAliasMapper b;
 
 	@Override
 	public Parser<Long> newParser(HttpSession session, apijson.RequestMethod method) {
 		return super.newParser(session, method).setNeedVerify(false); // TODO 这里关闭校验，方便新手快速测试，实际线上项目建议开启
 	}
 
-	@PostMapping(value = "get")
-	public String getData(@RequestBody String request, HttpSession session) {
+	public String getData(String request, HttpSession session) {
 		String serviceName = "chatbot";
 		if (request == null || request.equals("")) {
 			return get(request, session);
@@ -69,6 +65,17 @@ public class RobotQuotoControl extends APIJSONController {
 
 		return result;
 	}
+	
+	@PostMapping(value = "default")
+	public String getDefaultData(@RequestBody String request, HttpSession session) {
+		request="{'@schema':'DEFAULT',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "sv")
+	public String getSvData(@RequestBody String request, HttpSession session) {
+		return getData(request, session);
+	}
 
 	@GetMapping(value = "refreshConfig")
 	public CommonResponse refush() {
@@ -76,11 +83,5 @@ public class RobotQuotoControl extends APIJSONController {
 		return abstractParser.loadAliasConfig();
 	}
 	
-	@GetMapping(value = "tt")
-	public CommonResponse tt() {
-		CommonResponse commonResponse=new CommonResponse();
-		commonResponse.setData(b.aaa());
-		return commonResponse;
-	}
 
 }

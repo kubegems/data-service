@@ -46,11 +46,21 @@ public class DataServiceControl {
 	public CommonResponse updateColumnAlias(@RequestBody ColumnAlias columnAlias) {
 		return dataServiceConfig.updateColumnAlias(columnAlias);
 	}
-
+	//dbInfo
+	@RequestMapping(value = "getDbInfo", method = RequestMethod.GET)
+	public CommonResponse getDbInfo() {
+		return dataServiceConfig.getdbInfo();
+	}
+	
 	// database
 	@RequestMapping(value = "getDataBase", method = RequestMethod.GET)
 	public CommonResponse getDataBase() {
 		return dataServiceConfig.getDataBase();
+	}
+	
+	@RequestMapping(value = "getDataBaseBydbId", method = RequestMethod.GET)
+	public CommonResponse getDataBase(int dbId) {
+		return dataServiceConfig.getDataBaseBydbId(dbId);
 	}
 
 	@RequestMapping(value = "updateDatabaseInfoStatus", method = RequestMethod.POST)

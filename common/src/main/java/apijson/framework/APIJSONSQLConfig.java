@@ -107,7 +107,7 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		}
 		return null;
 	}
-
+	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBUri() {
 		if (isMySQL()) {
@@ -131,7 +131,7 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		return null;
 	}
 
-	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息
+	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBAccount() {
 		if (isMySQL()) {
@@ -203,18 +203,28 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 	//	public boolean isOracle() {
 	//		return false;
 	//	}
-
+	/**获取 APIJSON 配置表所在数据库模式 database，默认与业务表一块
+	 * @return
+	 */
+	public String getConfigDatabase() {
+		return getDatabase();
+	}
 	/**获取 APIJSON 配置表所在数据库模式 schema，默认与业务表一块
 	 * @return
 	 */
 	public String getConfigSchema() {
 		return getSchema();
 	}
-	/**是否为 APIJSON 配置表
+	/**是否为 APIJSON 配置表，如果和业务表一块，可以重写这个方法，固定 return false 来提高性能
 	 * @return
 	 */
 	public boolean isConfigTable() {
 		return CONFIG_TABLE_LIST.contains(getTable());
+	}
+	@Override
+	public String getSQLDatabase() {
+		String db = isConfigTable() ? getConfigDatabase() : super.getSQLDatabase();
+		return db == null ? DEFAULT_DATABASE : db;
 	}
 	@Override
 	public String getSQLSchema() {
