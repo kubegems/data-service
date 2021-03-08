@@ -30,7 +30,7 @@ public class RobotQuotoControl extends APIJSONController {
 		return super.newParser(session, method).setNeedVerify(false); // TODO 这里关闭校验，方便新手快速测试，实际线上项目建议开启
 	}
 
-	@PostMapping(value = "harix")
+	@PostMapping(value = "get")
 	public String getHarixData(@RequestBody String request, HttpSession session) {
 		return get(request, session);
 	}
