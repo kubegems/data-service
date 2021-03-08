@@ -10,6 +10,10 @@ run_service() {
     "quoto-config")
         java -jar /dataservice/quoto-config/bigdata-dataservice-quoto-config.jar --spring.profiles.active=${2}
         ;;
+        
+    "quoto-chatbot")
+        java -jar /dataservice/quoto-chatbot/bigdata-dataservice-quoto-chatbot.jar --spring.profiles.active=${2}
+        ;;
 
     "quoto-roc")
         java -jar /dataservice/quoto-roc/bigdata-dataservice-quoto-roc.jar --spring.profiles.active=${2}
