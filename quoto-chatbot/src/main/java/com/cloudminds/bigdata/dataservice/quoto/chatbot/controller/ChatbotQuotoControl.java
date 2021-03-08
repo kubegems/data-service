@@ -72,6 +72,12 @@ public class ChatbotQuotoControl extends APIJSONController {
 		return getData(request, session);
 	}
 	
+	@PostMapping(value = "cms")
+	public String getCmsData(@RequestBody String request, HttpSession session) {
+		request="{'@schema':'CMS',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
 	@PostMapping(value = "sv")
 	public String getSvData(@RequestBody String request, HttpSession session) {
 		return getData(request, session);
