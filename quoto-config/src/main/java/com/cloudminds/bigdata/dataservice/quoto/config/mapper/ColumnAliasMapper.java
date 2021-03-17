@@ -20,12 +20,15 @@ public interface ColumnAliasMapper {
 	@Update("update Column_alias set is_delete=#{delete} where id=#{id}")
 	public int updateColumnAliasDelete(int id,int delete);
 	
-	@Update("update Column_alias set column_alias=#{column_alias},des=#{des},column_name=#{column_name},is_delete=0,state=1 where id=#{id}")
+	@Update("update Column_alias set column_alias=#{column_alias},des=#{des},column_name=#{column_name},data_type=#{data_type},is_delete=0,state=1 where id=#{id}")
 	public int updateColumnAlias(ColumnAlias columnAlias);
 
 	@Select("SELECT * FROM Column_alias WHERE column_name=#{column_name} AND table_id=#{table_id}")
 	public ColumnAlias getColumnAlias(ColumnAlias columnAlias);
 	
-	@Update("insert into Column_alias(table_id,column_name,column_alias,des) VALUES(#{table_id},#{column_name},#{column_alias},#{des})")
+	@Select("SELECT * FROM Column_alias WHERE id=#{id}")
+	public ColumnAlias getColumnAliasById(int id);
+	
+	@Update("insert into Column_alias(table_id,column_name,column_alias,data_type,des) VALUES(#{table_id},#{column_name},#{column_alias},#{data_type},#{des})")
 	public int insertColumnAlias(ColumnAlias columnAlias);
 }

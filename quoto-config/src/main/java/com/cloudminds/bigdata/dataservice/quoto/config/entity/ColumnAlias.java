@@ -10,4 +10,5 @@ public class ColumnAlias extends BaseEntity {
 	private int table_id;
 	private String column_name;
 	private String column_alias;
+	private String data_type;
 }

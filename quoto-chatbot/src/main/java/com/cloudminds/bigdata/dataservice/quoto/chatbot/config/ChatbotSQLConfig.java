@@ -12,7 +12,7 @@ public class ChatbotSQLConfig extends APIJSONSQLConfig {
 	@Override
 	public String getDBUri() {
 		if (isKYLIN()) {
-			return  "jdbc:kylin://172.16.23.134:7070/SV";
+			return  "jdbc:kylin://172.16.31.108:7070/SV";
 		}
 		if (isDATASERVICE()) {
 			return "jdbc:mysql://bigdata-mysql:3306"; // TODO 改成你自己的

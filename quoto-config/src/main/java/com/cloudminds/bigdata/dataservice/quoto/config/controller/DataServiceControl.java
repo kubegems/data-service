@@ -13,8 +13,6 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.service.DataServiceConfig;
 
-
-
 @RestController
 @RequestMapping("/dataservice/config")
 public class DataServiceControl {
@@ -41,23 +39,24 @@ public class DataServiceControl {
 	public CommonResponse insertColumnAlias(@RequestBody ColumnAlias columnAlias) {
 		return dataServiceConfig.insertColumnAlias(columnAlias);
 	}
-	
+
 	@RequestMapping(value = "updateColumnAlias", method = RequestMethod.POST)
 	public CommonResponse updateColumnAlias(@RequestBody ColumnAlias columnAlias) {
 		return dataServiceConfig.updateColumnAlias(columnAlias);
 	}
-	//dbInfo
+
+	// dbInfo
 	@RequestMapping(value = "getDbInfo", method = RequestMethod.GET)
 	public CommonResponse getDbInfo() {
 		return dataServiceConfig.getdbInfo();
 	}
-	
+
 	// database
 	@RequestMapping(value = "getDataBase", method = RequestMethod.GET)
 	public CommonResponse getDataBase() {
 		return dataServiceConfig.getDataBase();
 	}
-	
+
 	@RequestMapping(value = "getDataBaseBydbId", method = RequestMethod.GET)
 	public CommonResponse getDataBase(int dbId) {
 		return dataServiceConfig.getDataBaseBydbId(dbId);
@@ -98,7 +97,7 @@ public class DataServiceControl {
 	public CommonResponse insertQuotoInfo(@RequestBody QuotoInfo quotoInfo) {
 		return dataServiceConfig.insertQuotoInfo(quotoInfo);
 	}
-	
+
 	@RequestMapping(value = "updateQuotoInfo", method = RequestMethod.POST)
 	public CommonResponse updateQuotoInfo(@RequestBody QuotoInfo quotoInfo) {
 		return dataServiceConfig.updateQuotoInfo(quotoInfo);
@@ -124,9 +123,16 @@ public class DataServiceControl {
 	public CommonResponse insertTableInfo(@RequestBody TableInfo tableInfo) {
 		return dataServiceConfig.insertTableInfo(tableInfo);
 	}
-	
+
 	@RequestMapping(value = "updateTableInfo", method = RequestMethod.POST)
 	public CommonResponse updateTableInfo(@RequestBody TableInfo tableInfo) {
 		return dataServiceConfig.updateTableInfo(tableInfo);
 	}
+
+	// tableInfo
+	@RequestMapping(value = "tt", method = RequestMethod.GET)
+	public String getTableInfosss(int tableId,String columnName) {
+		return dataServiceConfig.getColunmType(tableId, columnName);
+	}
+	
 }

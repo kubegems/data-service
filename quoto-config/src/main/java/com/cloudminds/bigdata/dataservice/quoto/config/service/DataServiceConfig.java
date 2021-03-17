@@ -1,5 +1,11 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -7,10 +13,10 @@ import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableInfoMapper;
-
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.DbConnInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
@@ -60,12 +66,19 @@ public class DataServiceConfig {
 			} else {
 				columnAliasOld.setDes(columnAlias.getDes());
 				columnAliasOld.setColumn_alias(columnAlias.getColumn_alias());
-				if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
+				if (columnAliasMapper.updateColumnAlias(columnAliasOld) != 1) {
 					commonResponse.setMessage("新增数据失败,请稍后再试！");
 					commonResponse.setSuccess(false);
 				}
 			}
 		} else {
+			String dataType=getColunmType(columnAlias.getTable_id(),columnAlias.getColumn_name());
+			if(dataType==null) {
+				commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
+			columnAlias.setData_type(dataType);
 			if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
 				commonResponse.setMessage("新增数据失败,请稍后再试！");
 				commonResponse.setSuccess(false);
@@ -76,6 +89,13 @@ public class DataServiceConfig {
 
 	public CommonResponse updateColumnAlias(ColumnAlias columnAlias) {
 		CommonResponse commonResponse = new CommonResponse();
+		String dataType=getColunmType(columnAliasMapper.getColumnAliasById(columnAlias.getId()).getTable_id(),columnAlias.getColumn_name());
+		if(dataType==null) {
+			commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		columnAlias.setData_type(dataType);
 		if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -257,4 +277,46 @@ public class DataServiceConfig {
 		}
 		return commonResponse;
 	}
+
+	public String getColunmType(int tableId, String columnName) {
+		DbConnInfo dbConnInfo = databaseInfoMapper.getdbConnInfoByTableId(tableId);
+		Connection conn = null;
+		// 与数据库的连接
+		PreparedStatement pStemt = null;
+		try {
+			conn = DriverManager.getConnection(dbConnInfo.getDb_url(), dbConnInfo.getUserName(), dbConnInfo.getPassword());
+			pStemt = conn.prepareStatement("SELECT \""+columnName+"\" FROM \""+dbConnInfo.getDatabase()+"\".\""+dbConnInfo.getTable_name()+"\" limit 1");
+			ResultSet set=pStemt.executeQuery();
+			// 结果集元数据
+			ResultSetMetaData rsmd=set.getMetaData();	
+//			String dataType=rsmd.getColumnTypeName(1).toLowerCase();
+//			StringUtils.trim(dataType);
+//			if(dataType.contains("int")) {
+//				return "int";
+//			}else if(dataType.equals("float32")) {
+//				return "float";
+//			}else if(dataType.equals("float64")) {
+//				return "double";
+//			}else if(dataType.equals("date")) {
+//				return "date";
+//			}else if(dataType.equals("datetime")||dataType.equals("timestamp")) {
+//				return "dateTime";
+//			}else if(dataType.equals("varchar")) {
+//				return "string";
+//			}
+			return rsmd.getColumnTypeName(1);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (pStemt != null) {
+				try {
+					pStemt.close();
+					conn.close();
+				} catch (SQLException e) {
+				}
+			}
+		}
+		return null;
+	}
+
 }

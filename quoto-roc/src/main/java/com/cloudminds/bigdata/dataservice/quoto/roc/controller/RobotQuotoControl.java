@@ -32,7 +32,7 @@ public class RobotQuotoControl extends APIJSONController {
 
 	@PostMapping(value = "get")
 	public String getHarixData(@RequestBody String request, HttpSession session) {
-		return get(request, session);
+		return getData(request, session);
 	}
 	
 	@PostMapping(value = "cephMeta")

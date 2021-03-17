@@ -994,7 +994,12 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 				int start = expression.indexOf("(");
 				int end = 0;
+				boolean complexFunc=false;
 				if (start >= 0) {
+					if(expression.substring(start+1).indexOf("(")>=0) {
+						start = expression.lastIndexOf("(");
+						complexFunc=true;
+					}
 					end = expression.indexOf(")");
 					if (start >= end) {
 						throw new IllegalArgumentException("字符 " + expression + " 不合法！"
@@ -1004,13 +1009,14 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 					method = expression.substring(0, start);
 					boolean distinct = i <= 0 && method.startsWith(PREFFIX_DISTINCT);
 					String fun = distinct ? method.substring(PREFFIX_DISTINCT.length()) : method;
-
+                    if(!complexFunc) {
 					if (fun.isEmpty() == false && StringUtil.isName(fun) == false) {
 						throw new IllegalArgumentException("字符 " + method + " 不合法！"
 								+ "预编译模式下 @column:\"column0,column1:alias;function0(arg0,arg1,...);function1(...):alias...\""
 								+ " 中SQL函数名 function 必须符合正则表达式 ^[0-9a-zA-Z_]+$ ！");
 					}
 
+				}
 				}
 
 				boolean isColumn = start < 0;
@@ -1103,16 +1109,20 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 					String alias = index < 0 ? "" : suffix.substring(index + 1); //contactCount
 					suffix = index < 0 ? suffix : suffix.substring(0, index);
 
+					if(!complexFunc) {
 					if (alias.isEmpty() == false && StringUtil.isName(alias) == false) {
 						throw new IllegalArgumentException("字符串 " + alias + " 不合法！"
 								+ "预编译模式下 @column:value 中 value里面用 ; 分割的每一项"
 								+ " function(arg0,arg1,...):alias 中 alias 必须是1个单词！并且不要有多余的空格！");
 					}
+					}
 
+					if(!complexFunc) {
 					if (suffix.isEmpty() == false && (((String) suffix).contains("--") || ((String) suffix).contains("/*") || PATTERN_RANGE.matcher((String) suffix).matches() == false)) {
 						throw new UnsupportedOperationException("字符串 " + suffix + " 不合法！"
 								+ "预编译模式下 @column:\"column?value;function(arg0,arg1,...)?value...\""
 								+ " 中 ?value 必须符合正则表达式 " + PATTERN_RANGE + " 且不包含连续减号 -- 或注释符 /* ！不允许多余的空格！");
+					}
 					}
 
 					String origin = method + "(" + StringUtil.getString(ckeys) + ")" + suffix;
@@ -1741,7 +1751,15 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		}
 
 		key = getRealKey(method, key, false, true, verifyName);
-
+		if(key.contains("(")) {
+			String orig=key.substring(key.lastIndexOf("(")+1,key.indexOf(")"));
+			if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
+					&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(orig)) {
+				orig = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(orig);
+				orig=key.substring(0,key.lastIndexOf("(")+1)+orig+key.substring(key.indexOf(")"));
+				key=orig;
+			}
+		}
 		switch (keyType) {
 		case 1:
 			return getSearchString(key, value, rawSQL);
@@ -1783,9 +1801,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		if (StringUtil.isName(key) == false) {
 			throw new IllegalArgumentException(key + ":value 中key不合法！不支持 ! 以外的逻辑符 ！");
 		}
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 
 		return getKey(key) + (not ? " != " : " = ") + (value instanceof Subquery ? getSubqueryString((Subquery) value) : (rawSQL != null ? rawSQL : getValue(value)));
@@ -1796,8 +1816,14 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		if (JSON.isBooleanOrNumberOrString(value) == false && value instanceof Subquery == false) {
 			throw new IllegalArgumentException(key + type + ":value 中value不合法！比较运算 [>, <, >=, <=] 只支持 [Boolean, Number, String] 内的类型 ！");
 		}
+		if(!key.contains("(")) {
 		if (StringUtil.isName(key) == false) {
 			throw new IllegalArgumentException(key + type + ":value 中key不合法！比较运算 [>, <, >=, <=] 不支持 [&, !, |] 中任何逻辑运算符 ！");
+		}
+		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
+				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
+			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 
 		return getKey(key) + " " + type + " " + (value instanceof Subquery ? getSubqueryString((Subquery) value) : (rawSQL != null ? rawSQL : getValue(value)));
@@ -1815,6 +1841,9 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	}
 	public String getSQLKey(String key) {
 		String q = getQuote();
+		if(key.contains("(")) {
+			q="";
+		}
 		return (isKeyPrefix() ? getAliasWithQuote() + "." : "") + q + key + q;
 	}
 
@@ -1861,9 +1890,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		key = logic.getKey();
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 		Log.i(TAG, "getSearchString key = " + key);
 
@@ -1928,9 +1959,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		key = logic.getKey();
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 		Log.i(TAG, "getRegExpString key = " + key);
 
@@ -2004,9 +2037,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		key = logic.getKey();
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 		Log.i(TAG, "getBetweenString key = " + key);
 
@@ -2085,9 +2120,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		String k = logic.getKey();
+		if(!k.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(k)) {
 			k = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(k);
+		}
 		}
 		Log.i(TAG, "getRangeString k = " + k);
 
@@ -2228,9 +2265,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		key = logic.getKey();
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 		Log.i(TAG, "getExistsString key = " + key);
 
@@ -2256,9 +2295,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 		Logic logic = new Logic(key);
 		key = logic.getKey();
+		if(!key.contains("(")) {
 		if (tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn") != null
 				&& tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").containsKey(key)) {
 			key = tableColumnMap.get(getSchema()+"."+getSQLTable() + "_realColumn").get(key);
+		}
 		}
 		Log.i(TAG, "getContainString key = " + key);
 
@@ -3239,9 +3280,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			key = Pair.parseEntry(key).getValue();//column以右边为准
 		}
 
+		if(key.indexOf("(")==-1) {
 		if (verifyName && StringUtil.isName(key.startsWith("@") ? key.substring(1) : key) == false) {
 			throw new IllegalArgumentException(method + "请求，字符 " + originKey + " 不合法！"
 					+ " key:value 中的key只能关键词 '@key' 或 'key[逻辑符][条件符]' 或 PUT请求下的 'key+' / 'key-' ！");
+		}
 		}
 
 		if (saveLogic && last != null) {
