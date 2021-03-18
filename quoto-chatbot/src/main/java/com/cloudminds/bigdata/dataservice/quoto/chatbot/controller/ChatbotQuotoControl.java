@@ -1,7 +1,6 @@
 package com.cloudminds.bigdata.dataservice.quoto.chatbot.controller;
 
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +87,5 @@ public class ChatbotQuotoControl extends APIJSONController {
 		APIJSONParser abstractParser = new APIJSONParser();
 		return abstractParser.loadAliasConfig();
 	}
-	
 
 }

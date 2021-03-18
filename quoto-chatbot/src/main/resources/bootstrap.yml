@@ -1,5 +1,5 @@
 server:
-  port: 8001
+  port: 8072
 # 默认的profile为dev，其他环境通过指定启动参数使用不同的profile，比如：
 #   测试环境：java -jar my-spring-boot.jar --spring.profiles.active=test
 #   生产环境：java -jar my-spring-boot.jar --spring.profiles.active=prod
@@ -7,8 +7,8 @@ spring:
   cloud:
     nacos:
       config:
-        group: bigdata-service-gw.bj-fit-86
-        prefix: gateway
+        group: bigdata-quoto-chatbot.bj-fit-86
+        prefix: chatbot
         file-extension: yaml
         namespace: dataservice
       discovery:
@@ -16,7 +16,7 @@ spring:
   profiles:
     active: test
   application:
-    name: dataServer-gateway
+    name: dataServer-quotoChatbot
 
 
 ---

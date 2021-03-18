@@ -36,7 +36,12 @@ import apijson.orm.SQLConfig;
  */
 public class APIJSONSQLConfig extends AbstractSQLConfig {
 	public static final String TAG = "APIJSONSQLConfig";
-
+	public String dbUrl = "";
+	public String dbAccount = "";
+	public String dbPassword = "";
+	public String configDbUrl = "";
+	public String configDbAccount = "";
+	public String configDbPassword = "";
 	public static Callback SIMPLE_CALLBACK;
 	public static APIJSONCreator APIJSON_CREATOR;
 	static {
@@ -105,104 +110,38 @@ public class APIJSONSQLConfig extends AbstractSQLConfig {
 		if (isDATASERVICE()) {
 			return "5.7.24"; //TODO 改成你自己的
 		}
+		if (isKYLIN()) {
+			return "5.7.24"; //TODO 改成你自己的
+		}
 		return null;
 	}
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBUri() {
-		if (isMySQL()) {
-			return "jdbc:mysql://localhost:3306"; //TODO 改成你自己的，TiDB 可以当成 MySQL 使用，默认端口为 4000
-		}
-		if (isPostgreSQL()) {
-			return "jdbc:postgresql://localhost:5432/postgres"; //TODO 改成你自己的
-		}
-		if (isSQLServer()) {
-			return "jdbc:jtds:sqlserver://localhost:1433/pubs;instance=SQLEXPRESS"; //TODO 改成你自己的
-		}
-		if (isOracle()) {
-			return "jdbc:oracle:thin:@localhost:1521:orcl"; //TODO 改成你自己的
-		}
-		if (isCLICKHOUSE()) {
-			return "jdbc:clickhouse://localhost:8123"; //TODO 改成你自己的
-		}
 		if (isDATASERVICE()) {
-			return "jdbc:mysql://localhost:3306"; //TODO 改成你自己的
+			return configDbUrl; //TODO 改成你自己的
 		}
-		return null;
+		return dbUrl;
 	}
 
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息，用了 UnitAuto 则一定要加
 	@Override
 	public String getDBAccount() {
-		if (isMySQL()) {
-			return "root";  //TODO 改成你自己的
-		}
-		if (isPostgreSQL()) {
-			return "postgres";  //TODO 改成你自己的
-		}
-		if (isSQLServer()) {
-			return "sa";  //TODO 改成你自己的
-		}
-		if (isOracle()) {
-			return "scott";  //TODO 改成你自己的
-		}
-		if (isCLICKHOUSE()) {
-			return "readonly";  //TODO 改成你自己的
-		}
 		if (isDATASERVICE()) {
-			return "root"; //TODO 改成你自己的
+			return configDbAccount; //TODO 改成你自己的
 		}
-		return null;
+		return dbAccount;
 	}
 
 	@JSONField(serialize = false)  // 不在日志打印 账号/密码 等敏感信息
 	@Override
 	public String getDBPassword() {
-		if (isMySQL()) {
-			return "root";  //TODO 改成你自己的，TiDB 可以当成 MySQL 使用， 默认密码为空字符串 ""
-		}
-		if (isPostgreSQL()) {
-			return null;  //TODO 改成你自己的
-		}
-		if (isSQLServer()) {
-			return "apijson@123";  //TODO 改成你自己的
-		}
-		if (isOracle()) {
-			return "tiger";  //TODO 改成你自己的
-		}
-		if (isCLICKHOUSE()) {
-			return "123456";  //TODO 改成你自己的
-		}
 		if (isDATASERVICE()) {
-			return "root"; //TODO 改成你自己的
+			return configDbPassword; //TODO 改成你自己的
 		}
-		return null;
+		return dbPassword;
 	}
 
-	//取消注释后，默认的数据库类型会由 MySQL 改为 PostgreSQL
-	//	@Override
-	//	public String getDatabase() {
-	//		String db = super.getDatabase();
-	//		return db == null ? DATABASE_POSTGRESQL : db;
-	//	}
-
-	//如果确定只用一种数据库，可以重写方法，这种数据库直接 return true，其它数据库直接 return false，来减少判断，提高性能
-	//	@Override
-	//	public boolean isMySQL() {
-	//		return true;
-	//	}
-	//	@Override
-	//	public boolean isPostgreSQL() {
-	//		return false;
-	//	}
-	//	@Override
-	//	public boolean isSQLServer() {
-	//		return false;
-	//	}
-	//	@Override
-	//	public boolean isOracle() {
-	//		return false;
-	//	}
 	/**获取 APIJSON 配置表所在数据库模式 database，默认与业务表一块
 	 * @return
 	 */
