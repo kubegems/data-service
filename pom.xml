@@ -63,5 +63,6 @@
 		<module>common</module>
 		<module>quoto-config</module>
 		<module>quoto-chatbot</module>
+		<module>standard-manage</module>
 	</modules>
 </project>

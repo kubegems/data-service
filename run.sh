@@ -18,6 +18,10 @@ run_service() {
     "quoto-roc")
         java -jar /dataservice/quoto-roc/bigdata-dataservice-quoto-roc.jar --spring.profiles.active=${2}
         ;;
+		
+	"standard-manage")
+        java -jar /dataservice/standard-manage/bigdata-dataservice-standard-manage.jar --spring.profiles.active=${2}
+        ;;
 
     *)
         echo "command not found; exit now!"

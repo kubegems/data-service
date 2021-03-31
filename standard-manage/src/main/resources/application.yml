@@ -1,0 +1,12 @@
+server:
+  port: 8073
+spring:
+  profiles:
+    active: test
+  application:
+    name: dataServer-standardManage
+  cloud:
+    nacos:
+      discovery:
+        group: bigdata
+    
