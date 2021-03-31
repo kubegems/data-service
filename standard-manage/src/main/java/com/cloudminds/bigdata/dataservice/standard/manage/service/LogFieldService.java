@@ -47,10 +47,10 @@ public class LogFieldService {
 		}
 		if(StringUtils.isEmpty(version)) {
 			//获取最新的字段
-			modelField=modelFieldMapper.findModelFieldByVersion(type, version, model_name);
+			modelField=modelFieldMapper.findLastModelField(type, model_name);
 		}else {
 			//获取指定版本的字段
-			modelField=modelFieldMapper.findLastModelField(type, model_name);
+			modelField=modelFieldMapper.findModelFieldByVersion(type, version, model_name);			
 		}
 		if(modelField==null) {
 			commonResponse.setSuccess(false);
