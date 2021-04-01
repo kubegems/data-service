@@ -32,7 +32,7 @@ public interface TermMapper {
 	@Update({"<script> update term set deleted=1 where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>"})
 	public int batchDeleteTerm(int[] id);
 	
-	@Select("select * from term where deleted=0 ${condition} limit #{startLine},#{size} order by update_time desc")
+	@Select("select * from term where deleted=0 ${condition} order by update_time desc limit #{startLine},#{size}")
 	public List<Term> queryTerm(String condition, int startLine, int size);
 	
 	@Select("select count(*) from term where deleted=0 ${condition}")
