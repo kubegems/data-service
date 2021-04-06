@@ -380,7 +380,7 @@ public class EventService {
 		}
 
 		// 审核通过后修改了字段，状态变为开发中
-		if (eventOldInfo.getState() == StateEnum.pass_state.getCode() && eventInfo.getState() == 1) {
+		if (eventOldInfo.getState() == StateEnum.pass_state.getCode() && eventInfo.isChangeFields()) {
 			eventOldInfo.setDescr(eventInfo.getDescr());
 			eventOldInfo.setFields(eventInfo.getFields());
 			eventOldInfo.setState(StateEnum.develop_state.getCode());
