@@ -2,7 +2,7 @@ server:
   port: 8071
 spring:
   profiles:
-    active: test
+    active: dev
   application:
     name: dataServer-quotoConfig
   cloud:

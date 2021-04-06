@@ -14,11 +14,20 @@ spring:
       discovery:
         group: bigdata
   profiles:
-    active: test
+    active: dev
   application:
     name: dataServer-gateway
 
-
+---
+#测试环境配置
+spring:    
+  profiles: dev
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848
+      discovery:
+        server-addr: localhost:8848
 ---
 #测试环境配置
 spring:    
