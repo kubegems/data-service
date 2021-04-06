@@ -2,11 +2,10 @@ server:
   port: 8073
 spring:
   profiles:
-    active: test
+    active: dev
   application:
     name: dataServer-standardManage
   cloud:
     nacos:
       discovery:
         group: bigdata
-    

@@ -368,7 +368,7 @@ public class EventService {
 				|| ((eventOldInfo.getState() == StateEnum.pass_state.getCode()
 						|| eventOldInfo.getState() == StateEnum.publish_state.getCode()
 						|| eventOldInfo.getState() == StateEnum.offline_state.getCode())
-						&& eventInfo.getState() == 0)) {
+						&& (!eventInfo.isChangeFields()))) {
 			eventOldInfo.setDescr(eventInfo.getDescr());
 			if (eventMapper.updateEvent(eventOldInfo) != 1) {
 				commonResponse.setSuccess(false);
@@ -395,7 +395,7 @@ public class EventService {
 
 		// 开发中变更 state为0 表示没有历史版本 state为1有历史版本
 		if (eventOldInfo.getState() == StateEnum.develop_state.getCode()) {
-			if (eventInfo.getState() == 0) {
+			if (eventInfo.isUniqueVersion()) {
 				if (!eventOldInfo.getEvent_name().equals(eventInfo.getEvent_name())) {
 					if (eventMapper.findEventByEventName(eventInfo.getEvent_name()) != null) {
 						commonResponse.setSuccess(false);
@@ -419,6 +419,7 @@ public class EventService {
 			} else {
 				eventOldInfo.setDescr(eventInfo.getDescr());
 				eventOldInfo.setFields(eventInfo.getFields());
+				eventOldInfo.setJira_num(eventInfo.getJira_num());
 				if (eventMapper.updateEvent(eventOldInfo) != 1) {
 					commonResponse.setSuccess(false);
 					commonResponse.setMessage("事件更新失败,请稍后再试");

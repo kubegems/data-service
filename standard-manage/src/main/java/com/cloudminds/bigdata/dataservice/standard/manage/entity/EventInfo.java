@@ -19,5 +19,7 @@ public class EventInfo extends BaseEntity {
 	private String jira_num;
 	private String message;
 	private int state;
+	private boolean uniqueVersion=true;
+	private boolean changeFields=true;
 	private List<Field> fields;
 }
