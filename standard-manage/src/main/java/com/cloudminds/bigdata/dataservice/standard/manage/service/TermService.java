@@ -56,6 +56,7 @@ public class TermService {
 		}
 		if (term != null) {
 			commonResponse.setSuccess(false);
+			commonResponse.setData(term);
 			commonResponse.setMessage("已存在,请重新命名");
 		}
 		return commonResponse;
@@ -75,7 +76,7 @@ public class TermService {
 	public CommonResponse bachDeleteTerm(BatchDeleteReq batchDeleteReq) {
 		CommonResponse commonResponse = new CommonResponse();
 		if(batchDeleteReq.getIds()==null||batchDeleteReq.getIds().length==0) {
-			commonResponse.setMessage("删除的术语id不能为空");
+			commonResponse.setMessage("请先选择要删除的行");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
