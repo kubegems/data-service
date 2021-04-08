@@ -26,7 +26,7 @@ public class LogFieldService {
 			commonField=commonFieldMapper.findLastCommonField(type);
 		}else {
 			//获取指定版本的字段
-			commonField=commonFieldMapper.findLastCommonField(type);
+			commonField=commonFieldMapper.findCommonFieldByVersion(type,version);
 		}
 		if(commonField==null) {
 			commonResponse.setSuccess(false);
