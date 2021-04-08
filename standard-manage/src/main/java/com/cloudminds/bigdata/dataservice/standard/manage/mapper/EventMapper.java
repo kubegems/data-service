@@ -22,7 +22,7 @@ public interface EventMapper {
 	@Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
 	public int insertEvent(EventInfo eventInfo) throws Exception;
 
-	@Select("select * from eventment where event_name=#{name} and deleted=0")
+	@Select("select * from eventment where event_name=#{name} and deleted=0 limit 1")
 	public EventInfo findEventByEventName(String name);
 
 	@Select("select * from eventment where id!=#{id} and deleted=0 and event_code=#{event_code} and (state=3 or state=5)")
