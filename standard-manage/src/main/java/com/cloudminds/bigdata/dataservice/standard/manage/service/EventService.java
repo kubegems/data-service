@@ -448,6 +448,7 @@ public class EventService {
 			eventOldInfo.setJira_num(eventInfo.getJira_num());
 			eventOldInfo.setCreator(eventInfo.getCreator());
 			eventOldInfo.setFields(eventInfo.getFields());
+			eventOldInfo.setState(StateEnum.develop_state.getCode());
 			// 插入数据库
 			try {
 				eventMapper.insertEvent(eventOldInfo);
