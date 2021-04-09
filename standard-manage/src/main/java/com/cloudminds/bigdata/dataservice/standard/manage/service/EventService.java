@@ -420,6 +420,7 @@ public class EventService {
 		// 事件发布和下线和审核通过状态需更改字段 新增一条记录
 		if (eventOldInfo.getState() == StateEnum.publish_state.getCode()
 				|| eventOldInfo.getState() == StateEnum.offline_state.getCode()|| eventOldInfo.getState() == StateEnum.pass_state.getCode()) {
+			int state = eventOldInfo.getState();
 			// 新增记录
 			// 生成版本号
 			String version = new SimpleDateFormat("yyyy.MM.dd").format(new Date());
@@ -445,11 +446,12 @@ public class EventService {
 				return commonResponse;
 			}
 			// 更新历史事件状态
-			int state = StateEnum.oldoffline_state.getCode();
-			if (eventOldInfo.getState() == StateEnum.publish_state.getCode()) {
+			if (state == StateEnum.publish_state.getCode()) {
 				state = StateEnum.oldpublish_state.getCode();
-			}else if(eventOldInfo.getState() == StateEnum.pass_state.getCode()) {
+			}else if(state == StateEnum.pass_state.getCode()) {
 				state = StateEnum.oldpass_state.getCode();
+			}else {
+				state = StateEnum.oldoffline_state.getCode();
 			}
 			eventMapper.updateEventState(eventInfo.getId(), state);
 			commonResponse.setData(eventOldInfo.getId());
