@@ -13,6 +13,7 @@ public enum StateEnum implements BaseCodeEnum{
 	offline_state(4, "下线"), 
 	oldpublish_state(5,"历史版本_已发布"),
 	oldoffline_state(6,"历史版本_下线"),
+	oldpass_state(7, "历史版本_审核通过"),
 	;
 
 	private int code;

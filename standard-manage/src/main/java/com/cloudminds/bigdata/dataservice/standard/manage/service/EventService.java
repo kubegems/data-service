@@ -215,7 +215,7 @@ public class EventService {
 			commonResponse.setMessage("事件不存在");
 			return commonResponse;
 		}
-		if (eventInfo.getState() == StateEnum.publish_state.getCode()) {
+		if (eventInfo.getState() == StateEnum.publish_state.getCode()||eventInfo.getState() == StateEnum.oldpublish_state.getCode()) {
 			commonResponse.setMessage("事件已是发布状态");
 			return commonResponse;
 		}
@@ -364,7 +364,7 @@ public class EventService {
 		}
 		// 老版本的事件只能更新描述 or 审核通过,已上线,已下线,改描述 (state为0 没有改变字段 state为1 改变了字段)
 		if (eventOldInfo.getState() == StateEnum.oldoffline_state.getCode()
-				|| eventOldInfo.getState() == StateEnum.oldpublish_state.getCode()
+				|| eventOldInfo.getState() == StateEnum.oldpublish_state.getCode()|| eventOldInfo.getState() == StateEnum.oldpass_state.getCode()
 				|| ((eventOldInfo.getState() == StateEnum.pass_state.getCode()
 						|| eventOldInfo.getState() == StateEnum.publish_state.getCode()
 						|| eventOldInfo.getState() == StateEnum.offline_state.getCode())
@@ -377,21 +377,6 @@ public class EventService {
 				return commonResponse;
 			}
 			commonResponse.setMessage("描述更新成功");
-			return commonResponse;
-		}
-
-		// 审核通过后修改了字段，状态变为开发中
-		if (eventOldInfo.getState() == StateEnum.pass_state.getCode() && eventInfo.isChangeFields()) {
-			eventOldInfo.setDescr(eventInfo.getDescr());
-			eventOldInfo.setJira_num(eventInfo.getJira_num());
-			eventOldInfo.setFields(eventInfo.getFields());
-			eventOldInfo.setState(StateEnum.develop_state.getCode());
-			if (eventMapper.updateEvent(eventOldInfo) != 1) {
-				commonResponse.setSuccess(false);
-				commonResponse.setMessage("事件更新失败,请稍后再试");
-				return commonResponse;
-			}
-			commonResponse.setMessage("事件更新成功,状态变为:" + StateEnum.develop_state.getDesc());
 			return commonResponse;
 		}
 
@@ -432,9 +417,9 @@ public class EventService {
 			}
 		}
 
-		// 事件发布和下线状态需更改字段 新增一条记录
+		// 事件发布和下线和审核通过状态需更改字段 新增一条记录
 		if (eventOldInfo.getState() == StateEnum.publish_state.getCode()
-				|| eventOldInfo.getState() == StateEnum.offline_state.getCode()) {
+				|| eventOldInfo.getState() == StateEnum.offline_state.getCode()|| eventOldInfo.getState() == StateEnum.pass_state.getCode()) {
 			// 新增记录
 			// 生成版本号
 			String version = new SimpleDateFormat("yyyy.MM.dd").format(new Date());
@@ -463,6 +448,8 @@ public class EventService {
 			int state = StateEnum.oldoffline_state.getCode();
 			if (eventOldInfo.getState() == StateEnum.publish_state.getCode()) {
 				state = StateEnum.oldpublish_state.getCode();
+			}else if(eventOldInfo.getState() == StateEnum.pass_state.getCode()) {
+				state = StateEnum.oldpass_state.getCode();
 			}
 			eventMapper.updateEventState(eventInfo.getId(), state);
 			commonResponse.setData(eventOldInfo.getId());
