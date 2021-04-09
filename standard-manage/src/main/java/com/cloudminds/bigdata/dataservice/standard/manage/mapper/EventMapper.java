@@ -55,7 +55,7 @@ public interface EventMapper {
 	public int updateEventState(int id, int state);
 
 	@Update("update eventment set state=#{state} ,message=#{message} where id=#{id}")
-	public int updateEventReviewResult(int id, int state, String message);
+	public int updateEventStateAndMessage(int id, int state, String message);
 
 	@Select("select count(*) as num,type as title from eventment where state<5 and deleted=0 group by type")
 	public List<Report> queryEventNumInfo();

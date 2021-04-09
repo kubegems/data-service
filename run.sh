@@ -20,7 +20,7 @@ run_service() {
         ;;
 		
 	"standard-manage")
-        java -jar /dataservice/standard-manage/bigdata-dataservice-standard-manage.jar --spring.profiles.active=${2}
+        java -jar -Duser.timezone=Asia/Shanghai /dataservice/standard-manage/bigdata-dataservice-standard-manage.jar --spring.profiles.active=${2}
         ;;
 
     *)

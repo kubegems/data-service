@@ -288,7 +288,7 @@ public class EventService {
 			return commonResponse;
 		}
 		if (eventInfo.getState() == StateEnum.develop_state.getCode()) {
-			if (eventMapper.updateEventState(applyReq.getId(), StateEnum.wait_state.getCode()) != 1) {
+			if (eventMapper.updateEventStateAndMessage(applyReq.getId(), StateEnum.wait_state.getCode(),"") != 1) {
 				commonResponse.setSuccess(false);
 				commonResponse.setMessage("申请失败,请稍后再试");
 			}
@@ -327,7 +327,7 @@ public class EventService {
 			return commonResponse;
 		}
 		if (reviewReq.isPass()) {
-			if (eventMapper.updateEventReviewResult(reviewReq.getId(), StateEnum.pass_state.getCode(), "") != 1) {
+			if (eventMapper.updateEventStateAndMessage(reviewReq.getId(), StateEnum.pass_state.getCode(), "") != 1) {
 				commonResponse.setSuccess(false);
 				commonResponse.setMessage("审核失败,请稍后再试");
 			}
@@ -336,7 +336,7 @@ public class EventService {
 				commonResponse.setSuccess(false);
 				commonResponse.setMessage("不通过时,意见不能为空");
 			} else {
-				if (eventMapper.updateEventReviewResult(reviewReq.getId(), StateEnum.develop_state.getCode(),
+				if (eventMapper.updateEventStateAndMessage(reviewReq.getId(), StateEnum.develop_state.getCode(),
 						reviewReq.getMessage()) != 1) {
 					commonResponse.setSuccess(false);
 					commonResponse.setMessage("审核失败,请稍后再试");
