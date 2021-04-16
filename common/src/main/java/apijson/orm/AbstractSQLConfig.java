@@ -280,6 +280,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	 * @return db == null ? DEFAULT_DATABASE : db
 	 */
 	@NotNull
+	@Override
 	public String getSQLDatabase() {
 		String db = getDatabase();
 		return db == null ? DEFAULT_DATABASE : db;  // "" 表示已设置，不需要用全局默认的 StringUtil.isEmpty(db, false)) {

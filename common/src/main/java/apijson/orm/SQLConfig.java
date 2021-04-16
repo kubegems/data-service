@@ -120,6 +120,7 @@ public interface SQLConfig {
 	public SQLConfig setDistinct(boolean distinct);
 
 	String getDatabase();
+	String getSQLDatabase();
 	SQLConfig setDatabase(String database);
 
 	String getQuote();
