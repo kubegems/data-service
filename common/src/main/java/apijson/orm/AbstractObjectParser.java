@@ -287,6 +287,9 @@ public abstract class AbstractObjectParser implements ObjectParser {
 					if (parser.getGlobleSchema() != null && sqlRequest.get(JSONRequest.KEY_SCHEMA) == null) {
 						sqlRequest.put(JSONRequest.KEY_SCHEMA, parser.getGlobleSchema());
 					}
+					if (parser.getGlobleForce() != null && sqlRequest.get(JSONRequest.KEY_FORCE) == null) {
+						sqlRequest.put(JSONRequest.KEY_FORCE, parser.getGlobleForce());
+					}
 					if (isSubquery == false) {  //解决 SQL 语法报错，子查询不能 EXPLAIN
 						if (parser.getGlobleExplain() != null && sqlRequest.get(JSONRequest.KEY_EXPLAIN) == null) {
 							sqlRequest.put(JSONRequest.KEY_EXPLAIN, parser.getGlobleExplain());

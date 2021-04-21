@@ -35,9 +35,21 @@ public class RobotQuotoControl extends APIJSONController {
 		return getData(request, session);
 	}
 	
+	@PostMapping(value = "unForce/get")
+	public String getHarixDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
 	@PostMapping(value = "cephMeta")
 	public String getCephMetaData(@RequestBody String request, HttpSession session) {
 		request="{'@schema':'ceph_meta',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "unForce/cephMeta")
+	public String getCephMetaDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'ceph_meta',"+request.substring(request.indexOf("{")+1);
 		return getData(request, session);
 	}
 	

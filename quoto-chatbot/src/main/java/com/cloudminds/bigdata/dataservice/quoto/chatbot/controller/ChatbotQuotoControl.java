@@ -71,9 +71,21 @@ public class ChatbotQuotoControl extends APIJSONController {
 		return getData(request, session);
 	}
 	
+	@PostMapping(value = "unForce/default")
+	public String getDefaultDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'DEFAULT',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
 	@PostMapping(value = "cms")
 	public String getCmsData(@RequestBody String request, HttpSession session) {
 		request="{'@schema':'CMS',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "unForce/cms")
+	public String getCmsDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'CMS',"+request.substring(request.indexOf("{")+1);
 		return getData(request, session);
 	}
 	
@@ -81,6 +93,13 @@ public class ChatbotQuotoControl extends APIJSONController {
 	public String getSvData(@RequestBody String request, HttpSession session) {
 		return getData(request, session);
 	}
+	
+	@PostMapping(value = "unForce/sv")
+	public String getSvDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
 
 	@GetMapping(value = "refreshConfig")
 	public CommonResponse refush() {

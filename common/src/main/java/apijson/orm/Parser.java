@@ -123,6 +123,7 @@ public interface Parser<T> {
 	RequestRole getGlobleRole();
 	String getGlobleDatabase();
 	String getGlobleSchema();
+	Boolean getGlobleForce();
 	Boolean getGlobleExplain();
 	String getGlobleCache();
 

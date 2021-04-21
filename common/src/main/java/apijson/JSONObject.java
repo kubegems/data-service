@@ -141,6 +141,7 @@ public class JSONObject extends com.alibaba.fastjson.JSONObject {
 	public static final String KEY_SCHEMA = "@schema"; //数据库，Table在非默认schema内时需要声明
 	public static final String KEY_COLUMN = "@column"; //查询的Table字段或SQL函数
 	public static final String KEY_FROM = "@from"; //FROM语句
+	public static final String KEY_FORCE="@force"; //是否强制使用定义得函数，未定义的不允许通过
 	public static final String KEY_COMBINE = "@combine"; //条件组合，每个条件key前面可以放&,|,!逻辑关系  "id!{},&sex,!name&$"
 	public static final String KEY_GROUP = "@group"; //分组方式
 	public static final String KEY_HAVING = "@having"; //聚合函数条件，一般和@group一起用
@@ -164,6 +165,7 @@ public class JSONObject extends com.alibaba.fastjson.JSONObject {
 		TABLE_KEY_LIST.add(KEY_ORDER);
 		TABLE_KEY_LIST.add(KEY_RAW);
 		TABLE_KEY_LIST.add(KEY_JSON);
+		TABLE_KEY_LIST.add(KEY_FORCE);
 	}
 
 	//@key关键字都放这个类 >>>>>>>>>>>>>>>>>>>>>>
@@ -248,6 +250,14 @@ public class JSONObject extends com.alibaba.fastjson.JSONObject {
 	 */
 	public JSONObject setSchema(String schema) {
 		return puts(KEY_SCHEMA, schema);
+	}
+	
+	/**set schema where table was puts
+	 * @param schema
+	 * @return this
+	 */
+	public JSONObject setForce(boolean force) {
+		return puts(KEY_FORCE, force);
 	}
 
 	/**set keys need to be returned

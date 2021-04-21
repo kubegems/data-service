@@ -127,6 +127,10 @@ public interface SQLConfig {
 
 	String getSchema();
 	SQLConfig setSchema(String schema);
+	
+	//函数统一化，不认识得函数是否允许通过
+	Boolean getForce();
+	SQLConfig setForce(Boolean force);
 
 	/**请求传进来的Table名
 	 * @return

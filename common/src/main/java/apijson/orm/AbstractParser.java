@@ -172,11 +172,24 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 	public String getGlobleDatabase() {
 		return globleDatabase;
 	}
+	
+	protected Boolean globleForce;
+	public AbstractParser<T> setGlobleForce(Boolean globleForce) {
+		this.globleForce = globleForce;
+		return this;
+	}
+	
+	@Override
+	public Boolean getGlobleForce() {
+		return globleForce;
+	}
+	
 	protected String globleSchema;
 	public AbstractParser<T> setGlobleSchema(String globleSchema) {
 		this.globleSchema = globleSchema;
 		return this;
 	}
+	
 	@Override
 	public String getGlobleSchema() {
 		return globleSchema;
@@ -343,6 +356,7 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 			setGlobleFormat(requestObject.getBoolean(JSONRequest.KEY_FORMAT));
 			setGlobleDatabase(requestObject.getString(JSONRequest.KEY_DATABASE));
 			setGlobleSchema(requestObject.getString(JSONRequest.KEY_SCHEMA));
+			setGlobleForce(requestObject.getBoolean(JSONRequest.KEY_FORCE));
 			setGlobleExplain(requestObject.getBoolean(JSONRequest.KEY_EXPLAIN));
 			setGlobleCache(requestObject.getString(JSONRequest.KEY_CACHE));
 
@@ -351,6 +365,7 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 			requestObject.remove(JSONRequest.KEY_SCHEMA);
 			requestObject.remove(JSONRequest.KEY_EXPLAIN);
 			requestObject.remove(JSONRequest.KEY_CACHE);
+			requestObject.remove(JSONRequest.KEY_FORCE);
 		} catch (Exception e) {
 			return extendErrorResult(requestObject, e);
 		}
