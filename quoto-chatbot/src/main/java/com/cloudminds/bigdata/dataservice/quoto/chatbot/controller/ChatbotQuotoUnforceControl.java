@@ -1,4 +1,4 @@
-package com.cloudminds.bigdata.dataservice.quoto.roc.controller;
+package com.cloudminds.bigdata.dataservice.quoto.chatbot.controller;
 
 import java.nio.charset.StandardCharsets;
 
@@ -6,22 +6,18 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cloudminds.bigdata.dataservice.quoto.roc.redis.RedisUtil;
+import com.cloudminds.bigdata.dataservice.quoto.chatbot.redis.RedisUtil;
 
-import apijson.entity.CommonResponse;
 import apijson.framework.APIJSONController;
-import apijson.framework.APIJSONParser;
 import apijson.orm.Parser;
-
 @RestController
-@RequestMapping("/roc/quoto")
-public class RobotQuotoControl extends APIJSONController {
+@RequestMapping("/chatbot/unForce/quoto")
+public class ChatbotQuotoUnforceControl extends APIJSONController{
 	@Autowired
 	private RedisUtil redisUtil;
 
@@ -30,26 +26,8 @@ public class RobotQuotoControl extends APIJSONController {
 		return super.newParser(session, method).setNeedVerify(false); // TODO 这里关闭校验，方便新手快速测试，实际线上项目建议开启
 	}
 
-	@PostMapping(value = "get")
-	public String getHarixData(@RequestBody String request, HttpSession session) {
-		return getData(request, session);
-	}
-	
-	@PostMapping(value = "cephMeta")
-	public String getCephMetaData(@RequestBody String request, HttpSession session) {
-		request="{'@schema':'ceph_meta',"+request.substring(request.indexOf("{")+1);
-		return getData(request, session);
-	}
-	
-	
-	@PostMapping(value = "cdmCo")
-	public String getCdmCoData(@RequestBody String request, HttpSession session) {
-		request="{'@schema':'cdm_co',"+request.substring(request.indexOf("{")+1);
-		return getData(request, session);
-	}	
-	
 	public String getData(String request, HttpSession session) {
-		String serviceName = "roc";
+		String serviceName = "chatbot";
 		if (request == null || request.equals("")) {
 			return get(request, session);
 		}
@@ -83,11 +61,22 @@ public class RobotQuotoControl extends APIJSONController {
 
 		return result;
 	}
-
-	@GetMapping(value = "refreshConfig")
-	public CommonResponse refush() {
-		APIJSONParser abstractParser = new APIJSONParser();
-		return abstractParser.loadAliasConfig();
+	
+	@PostMapping(value = "default")
+	public String getDefaultDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'DEFAULT',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
 	}
-
+	
+	@PostMapping(value = "cms")
+	public String getCmsDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'CMS',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "sv")
+	public String getSvDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
 }

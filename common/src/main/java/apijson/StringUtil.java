@@ -446,7 +446,7 @@ public class StringUtil {
 
 		// 函数支持且函数需要特殊处理
 		if (methodName.equals("date")) {
-			if (database.equals("CLICKHOUSE")) {
+			if (database.equals("KYLIN")) {
 				sql = new StringBuilder(sql).replace(methodStart, endLocation+1, "cast("
 						+ columnReplace("\"" + sql.substring(startLocation + 1, endLocation) + "\"", schema, table)
 						+ " as date)").toString();

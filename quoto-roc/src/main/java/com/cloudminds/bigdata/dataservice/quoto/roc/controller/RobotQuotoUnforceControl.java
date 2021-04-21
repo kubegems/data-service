@@ -6,7 +6,6 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,14 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.cloudminds.bigdata.dataservice.quoto.roc.redis.RedisUtil;
 
-import apijson.entity.CommonResponse;
 import apijson.framework.APIJSONController;
-import apijson.framework.APIJSONParser;
 import apijson.orm.Parser;
-
 @RestController
-@RequestMapping("/roc/quoto")
-public class RobotQuotoControl extends APIJSONController {
+@RequestMapping("/roc/unForce/quoto")
+public class RobotQuotoUnforceControl extends APIJSONController{
 	@Autowired
 	private RedisUtil redisUtil;
 
@@ -29,24 +25,25 @@ public class RobotQuotoControl extends APIJSONController {
 	public Parser<Long> newParser(HttpSession session, apijson.RequestMethod method) {
 		return super.newParser(session, method).setNeedVerify(false); // TODO 这里关闭校验，方便新手快速测试，实际线上项目建议开启
 	}
-
+	
 	@PostMapping(value = "get")
-	public String getHarixData(@RequestBody String request, HttpSession session) {
+	public String getHarixDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,"+request.substring(request.indexOf("{")+1);
 		return getData(request, session);
 	}
 	
 	@PostMapping(value = "cephMeta")
-	public String getCephMetaData(@RequestBody String request, HttpSession session) {
-		request="{'@schema':'ceph_meta',"+request.substring(request.indexOf("{")+1);
+	public String getCephMetaDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'ceph_meta',"+request.substring(request.indexOf("{")+1);
+		return getData(request, session);
+	}
+		
+	@PostMapping(value = "cdmCo")
+	public String getCdmCoDataNoForce(@RequestBody String request, HttpSession session) {
+		request="{'@force':false,'@schema':'cdm_co',"+request.substring(request.indexOf("{")+1);
 		return getData(request, session);
 	}
 	
-	
-	@PostMapping(value = "cdmCo")
-	public String getCdmCoData(@RequestBody String request, HttpSession session) {
-		request="{'@schema':'cdm_co',"+request.substring(request.indexOf("{")+1);
-		return getData(request, session);
-	}	
 	
 	public String getData(String request, HttpSession session) {
 		String serviceName = "roc";
@@ -83,11 +80,4 @@ public class RobotQuotoControl extends APIJSONController {
 
 		return result;
 	}
-
-	@GetMapping(value = "refreshConfig")
-	public CommonResponse refush() {
-		APIJSONParser abstractParser = new APIJSONParser();
-		return abstractParser.loadAliasConfig();
-	}
-
 }
