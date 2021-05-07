@@ -1,0 +1,8 @@
+server:
+  port: 8098
+spring:
+  profiles:
+    active: dev
+  application:
+    name: dataServer-clickhouse
+    

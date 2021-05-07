@@ -1,0 +1,14 @@
+server:
+  port: 8074
+spring:
+  profiles:
+    active: dev
+  application:
+    name: dataServer-quotoManage
+  cloud:
+    nacos:
+      discovery:
+        group: bigdata
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8

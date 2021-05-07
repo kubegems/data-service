@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    driver-class-name: ru.yandex.clickhouse.ClickHouseDriver
+    url: jdbc:clickhouse://172.16.31.116:8123
+    username: readonly
+    password: 123456
+    
