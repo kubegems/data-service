@@ -42,7 +42,7 @@ public class AdjectiveService {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
 		if (batchDeleteReq.getIds() == null || batchDeleteReq.getIds().length == 0) {
-			commonResponse.setMessage("删除的术语id不能为空");
+			commonResponse.setMessage("删除的修饰词id不能为空");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
