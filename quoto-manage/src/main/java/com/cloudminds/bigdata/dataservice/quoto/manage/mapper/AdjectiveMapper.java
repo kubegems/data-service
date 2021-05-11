@@ -27,8 +27,13 @@ public interface AdjectiveMapper {
 
 	@Select("select * from adjective where code_name=#{checkValue} and deleted=0")
 	public Adjective findAdjectiveByCodeName(String checkValue);
+	
+	@Select("select * from adjective where id=#{id} and deleted=0")
+	public Adjective findAdjectiveById(int id);
 
-	@Select("select * from adjective where ${condition} limit #{startLine},#{size}")
+	@Select("select * from adjective LEFT JOIN (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as idddd,count(*) as quotoNum " + 
+			"from  quoto a " + 
+			"join   mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.deleted=0 and a.adjective!='' group by idddd) as tt on id=tt.idddd where ${condition} limit #{startLine},#{size}")
 	public List<Adjective> queryAdjective(String condition, int startLine, int size);
 
 	@Select("select count(*) from adjective where ${condition}")
@@ -40,5 +45,10 @@ public interface AdjectiveMapper {
 
 	@Update("update adjective set name=#{name}, code=#{code},code_name=#{code_name},type=#{type},descr=#{descr} where id=#{id}")
 	public int updateAdjective(Adjective adjective);
+
+	@Select("select tt.name from (select a.name, substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id " + 
+			"from  quoto a " + 
+			"join   mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.deleted=0 and a.adjective!='') as tt where tt.id=#{id}")
+	public List<String> findQuotoNameByAdjectiveId(int id);
 
 }

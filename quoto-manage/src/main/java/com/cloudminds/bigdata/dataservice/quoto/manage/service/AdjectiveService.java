@@ -1,5 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +33,22 @@ public class AdjectiveService {
 	public CommonResponse deleteAdjective(DeleteReq deleteReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
+		//查询修饰词
+		Adjective adjective=adjectiveMapper.findAdjectiveById(deleteReq.getId());
+		if(adjective==null) {
+			commonResponse.setMessage("id为"+deleteReq.getId()+"的修饰词不存在");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		//判断修饰词有没有在用，在用不能删除
+		List<String> quotoNames=adjectiveMapper.findQuotoNameByAdjectiveId(deleteReq.getId());
+		if(quotoNames!=null&&quotoNames.size()>0) {
+			commonResponse.setMessage("指标"+quotoNames.toString()+"在使用("+adjective.getName()+")修饰词,不能删除");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
 		if (adjectiveMapper.deleteAdjectiveById(deleteReq.getId()) <= 0) {
-			commonResponse.setMessage("修饰词不存在或删除失败,请稍后再试");
+			commonResponse.setMessage(adjective.getName()+"不存在或删除失败,请稍后再试");
 			commonResponse.setSuccess(false);
 		}
 		return commonResponse;
@@ -46,9 +62,13 @@ public class AdjectiveService {
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		if (adjectiveMapper.batchDeleteAdjective(batchDeleteReq.getIds()) <= 0) {
-			commonResponse.setMessage("修饰词不存在或删除失败,请稍后再试");
-			commonResponse.setSuccess(false);
+		for(int i=0;i<batchDeleteReq.getIds().length;i++) {
+			DeleteReq deleteReq=new DeleteReq();
+			deleteReq.setId(batchDeleteReq.getIds()[i]);
+			CommonResponse commonResponseDelete=deleteAdjective(deleteReq);
+			if(!commonResponseDelete.isSuccess()) {
+				return commonResponseDelete;
+			}
 		}
 		return commonResponse;
 	}

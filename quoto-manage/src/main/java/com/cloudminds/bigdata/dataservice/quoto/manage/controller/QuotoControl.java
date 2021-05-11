@@ -56,7 +56,7 @@ public class QuotoControl {
 	public CommonResponse queryAllCycle() {
 		return quotoService.queryAllCycle();
 	}
-	
+
 	// 根据id查询指标信息
 	@RequestMapping(value = "queryQuotoById", method = RequestMethod.GET)
 	public CommonResponse queryQuotoById(int id) {
@@ -97,5 +97,17 @@ public class QuotoControl {
 	@RequestMapping(value = "update", method = RequestMethod.POST)
 	public CommonResponse updateQuoto(@RequestBody Quoto quoto) {
 		return quotoService.updateQuoto(quoto);
+	}
+
+	// 激活原子指标
+	@RequestMapping(value = "active", method = RequestMethod.POST)
+	public CommonResponse activeQuoto(@RequestBody DeleteReq deleteReq) {
+		return quotoService.activeQuoto(deleteReq.getId());
+	}
+
+	// 模糊匹配指标
+	@RequestMapping(value = "queryFuzzy", method = RequestMethod.POST)
+	public CommonResponse queryFuzzy(@RequestBody QuotoQuery quotoQuery) {
+		return quotoService.queryFuzzy(quotoQuery);
 	}
 }

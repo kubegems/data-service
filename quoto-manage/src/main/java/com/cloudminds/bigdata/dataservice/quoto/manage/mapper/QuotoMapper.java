@@ -12,6 +12,7 @@ import org.apache.ibatis.type.JdbcType;
 
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Business;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler;
 
@@ -23,6 +24,12 @@ public interface QuotoMapper {
 
 	@Select("select * from quoto where field=#{checkValue} and deleted=0")
 	public Quoto findQuotoByField(String checkValue);
+	
+	@Select("select * from quoto where id=#{id} and deleted=0")
+	public Quoto findQuotoById(int id);
+	
+	@Select("select name from quoto where origin_quoto=#{originQuotoId} and deleted=0")
+	public List<String> findQuotoNameByOriginQuoto(int originQuotoId);
 
 	@Select("select * from business where deleted=0")
 	public List<Business> queryAllBusiness();
@@ -41,6 +48,9 @@ public interface QuotoMapper {
 
 	@Update("update quoto set deleted=null where id=#{id}")
 	public int deleteQuotoById(int id);
+	
+	@Update("update quoto set state=#{state} where id=#{id}")
+	public int updateQuotoState(int state,int id);
 
 	@Update({
 			"<script> update quoto set deleted=null where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>" })
@@ -53,13 +63,16 @@ public interface QuotoMapper {
 
 	@Select("select count(*) from quoto where ${condition}")
 	public int queryQuotoCount(String condition);
+	
+	@Select("select * from quoto where ${condition}")
+	public List<Quoto> queryQuotoFuzzy(String condition);
 
 	@Insert("insert into quoto(name, field,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,state,type,origin_quoto,cycle,create_time,update_time, creator,descr) "
 			+ "values(#{name}, #{field}, #{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr})")
 	public int insertQuoto(Quoto quoto);
 
 	@Update("update quoto set name=#{name}, field=#{field},business_process_id=#{business_process_id},quoto_level=#{quoto_level},data_type=#{data_type},data_unit=#{data_unit},table_id=#{table_id},accumulation=#{accumulation},origin_quoto=#{origin_quoto},cycle=#{cycle},"
-			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},state=#{state},type=#{type},descr=#{descr} where id=#{id}")
+			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},type=#{type},descr=#{descr} where id=#{id}")
 	public int updateQuoto(Quoto quoto);
 
 	@Select("select * from cycle")
@@ -69,5 +82,10 @@ public interface QuotoMapper {
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoById(int id);
+	
+	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
+	public QuotoInfo queryQuotoInfo(String QuotoName);
+	
+	
 
 }
