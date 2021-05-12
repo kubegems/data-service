@@ -9,6 +9,8 @@ import java.util.Arrays;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
+import com.alibaba.nacos.api.utils.StringUtils;
+
 public class ArrayTypeHandler extends BaseTypeHandler<int[]> {
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, int[] parameter, JdbcType jdbcType) throws SQLException {
@@ -26,7 +28,7 @@ public class ArrayTypeHandler extends BaseTypeHandler<int[]> {
     @Override
     public int[] getNullableResult(ResultSet rs, String columnName) throws SQLException {
         String str = rs.getString(columnName);
-        if (rs.wasNull())
+        if (StringUtils.isEmpty(str))
             return null;
 
         return Arrays.asList(str.split(",")).stream().mapToInt(Integer::parseInt).toArray();
@@ -35,7 +37,7 @@ public class ArrayTypeHandler extends BaseTypeHandler<int[]> {
     @Override
     public int[] getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         String str = rs.getString(columnIndex);
-        if (rs.wasNull())
+        if (StringUtils.isEmpty(str))
             return null;
 
         return Arrays.asList(str.split(",")).stream().mapToInt(Integer::parseInt).toArray();
@@ -44,7 +46,7 @@ public class ArrayTypeHandler extends BaseTypeHandler<int[]> {
     @Override
     public int[] getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         String str = cs.getString(columnIndex);
-        if (cs.wasNull())
+        if (StringUtils.isEmpty(str))
             return null;
 
         return Arrays.asList(str.split(",")).stream().mapToInt(Integer::parseInt).toArray();

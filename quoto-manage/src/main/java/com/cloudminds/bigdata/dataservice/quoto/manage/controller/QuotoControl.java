@@ -110,4 +110,10 @@ public class QuotoControl {
 	public CommonResponse queryFuzzy(@RequestBody QuotoQuery quotoQuery) {
 		return quotoService.queryFuzzy(quotoQuery);
 	}
+
+	// 获取指标数据
+	@RequestMapping(value = "queryQuotoData", method = RequestMethod.GET)
+	public CommonResponse queryQuotoData(int id, String quotoName) {
+		return quotoService.queryQuotoData(id, quotoName);
+	}
 }

@@ -310,4 +310,10 @@ public class QuotoService {
 		return commonResponse;
 	}
 
+	public CommonResponse queryQuotoData(int id, String quotoName) {
+		// TODO Auto-generated method stub
+		
+		return null;
+	}
+
 }
