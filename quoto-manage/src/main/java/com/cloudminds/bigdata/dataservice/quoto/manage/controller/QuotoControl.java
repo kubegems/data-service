@@ -93,6 +93,12 @@ public class QuotoControl {
 		return quotoService.queryQuoto(quotoQuery);
 	}
 
+	// 查询指标
+	@RequestMapping(value = "queryAll", method = RequestMethod.POST)
+	public CommonResponse queryAllQuoto(@RequestBody QuotoQuery quotoQuery) {
+		return quotoService.queryAllQuoto(quotoQuery);
+	}
+
 	// 编辑指标
 	@RequestMapping(value = "update", method = RequestMethod.POST)
 	public CommonResponse updateQuoto(@RequestBody Quoto quoto) {

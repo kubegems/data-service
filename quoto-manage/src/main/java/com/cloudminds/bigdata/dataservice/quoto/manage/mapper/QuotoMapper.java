@@ -61,6 +61,11 @@ public interface QuotoMapper {
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public List<Quoto> queryQuoto(String condition, int startLine, int size);
+	
+	@Select("SELECT * from quoto where ${condition}")
+	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	public List<Quoto> queryAllQuoto(String condition);
 
 	@Select("select count(*) from quoto where ${condition}")
 	public int queryQuotoCount(String condition);

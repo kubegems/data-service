@@ -1,14 +1,12 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.service;
 
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -249,6 +247,20 @@ public class QuotoService {
 		commonQueryResponse.setCurrentPage(quotoQuery.getPage());
 		commonQueryResponse.setTotal(quotoMapper.queryQuotoCount(condition));
 		return commonQueryResponse;
+	}
+	
+	public CommonResponse queryAllQuoto(QuotoQuery quotoQuery) {
+		// TODO Auto-generated method stub
+		CommonResponse commonResponse = new CommonResponse();
+		String condition = "deleted=0";
+		if (quotoQuery.getType() != -1) {
+			condition = condition + " and type=" + quotoQuery.getType();
+		}
+
+		condition = condition + " order by name asc";
+
+		commonResponse.setData(quotoMapper.queryAllQuoto(condition));
+		return commonResponse;
 	}
 
 	public CommonResponse queryAllCycle() {
