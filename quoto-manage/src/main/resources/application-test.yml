@@ -8,3 +8,4 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
+dataServiceUrl: http://172.16.31.146:8001
