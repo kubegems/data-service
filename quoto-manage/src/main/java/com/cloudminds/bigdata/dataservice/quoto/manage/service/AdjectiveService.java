@@ -174,6 +174,18 @@ public class AdjectiveService {
 		commonQueryResponse.setTotal(adjectiveMapper.queryAdjectiveCount(condition));
 		return commonQueryResponse;
 	}
+	
+	public CommonResponse queryAllAdjective(AdjectiveQuery adjectiveQuery) {
+		// TODO Auto-generated method stub
+		CommonResponse commonResponse = new CommonResponse();
+		String condition = "deleted=0";
+		if (adjectiveQuery.getType() != -1) {
+			condition = condition + " and type=" + adjectiveQuery.getType();
+		}
+		condition = condition + " order by name asc";
+		commonResponse.setData(adjectiveMapper.queryAllAdjective(condition));
+		return commonResponse;
+	}
 
 	public CommonResponse updateAdjective(Adjective adjective) {
 		// TODO Auto-generated method stub

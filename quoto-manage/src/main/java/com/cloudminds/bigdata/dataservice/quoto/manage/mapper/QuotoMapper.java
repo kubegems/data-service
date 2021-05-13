@@ -13,6 +13,7 @@ import org.apache.ibatis.type.JdbcType;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Business;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ServicePathInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler;
 
@@ -83,9 +84,18 @@ public interface QuotoMapper {
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoById(int id);
 	
+	@Select("SELECT * from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where q.deleted=0 and q.name=#{name}")
+	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	public Quoto queryQuotoByName(String name);
+	
 	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName);
 	
+	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")
+	public ServicePathInfo queryServicePathInfo(int tableId);
 	
+	@Select("select name from dimension where id in(select substring_index(substring_index(a.dimension,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.dimension) - length(replace(a.dimension,',',''))+1) where a.id=#{quotoId})")
+	public List<String> queryDimensionName(int quotoId);
 
 }

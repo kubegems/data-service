@@ -13,6 +13,7 @@ import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableInfoMapper;
+import com.alibaba.nacos.api.utils.StringUtils;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
@@ -172,6 +173,20 @@ public class DataServiceConfig {
 
 	public CommonResponse updateQuotoInfoStatus(int id, int status) {
 		CommonResponse commonResponse = new CommonResponse();
+		QuotoInfo quotoInfo=quotoInfoMapper.getQuotoInfoById(id);
+		if(quotoInfo==null) {
+			commonResponse.setMessage("指标信息不存在！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		if(status==0&&quotoInfo.getState()==1) {
+			String name=quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+			if(!StringUtils.isEmpty(name)) {
+				commonResponse.setMessage("有激活的指标("+name+")运行,不能禁用！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
+		}
 		if (quotoInfoMapper.updateQuotoInfoStatus(id, status) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -181,6 +196,21 @@ public class DataServiceConfig {
 
 	public CommonResponse deleteQuotoInfo(int id) {
 		CommonResponse commonResponse = new CommonResponse();
+		//查询指标信息
+		QuotoInfo quotoInfo=quotoInfoMapper.getQuotoInfoById(id);
+		if(quotoInfo==null) {
+			commonResponse.setMessage("指标信息不存在！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		if(quotoInfo.getState()==1) {
+			String name=quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+			if(!StringUtils.isEmpty(name)) {
+				commonResponse.setMessage("有激活的指标("+name+")运行,不能删除！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
+		}
 		if (quotoInfoMapper.updateQuotoInfoDelete(id, 1) != 1) {
 			commonResponse.setMessage("删除失败,请稍后再试！");
 			commonResponse.setSuccess(false);

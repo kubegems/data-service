@@ -35,6 +35,9 @@ public interface AdjectiveMapper {
 			"from  quoto a " + 
 			"join   mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.deleted=0 and a.adjective!='' group by idddd) as tt on id=tt.idddd where ${condition} limit #{startLine},#{size}")
 	public List<Adjective> queryAdjective(String condition, int startLine, int size);
+	
+	@Select("select * from adjective where ${condition}")
+	public List<Adjective> queryAllAdjective(String condition);
 
 	@Select("select count(*) from adjective where ${condition}")
 	public int queryAdjectiveCount(String condition);

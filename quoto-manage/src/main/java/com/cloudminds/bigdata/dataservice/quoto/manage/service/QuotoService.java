@@ -1,13 +1,25 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.service;
 
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.DataServiceResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ServicePathInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.enums.StateEnum;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.enums.TypeEnum;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.BatchDeleteReq;
@@ -22,6 +34,10 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.mapper.QuotoMapper;
 public class QuotoService {
 	@Autowired
 	private QuotoMapper quotoMapper;
+	@Value("${dataServiceUrl}")
+	private String dataServiceUrl;
+	@Autowired
+	RestTemplate restTemplate;
 
 	public CommonResponse checkUnique(CheckReq checkReq) {
 		// TODO Auto-generated method stub
@@ -312,8 +328,110 @@ public class QuotoService {
 
 	public CommonResponse queryQuotoData(int id, String quotoName) {
 		// TODO Auto-generated method stub
-		
-		return null;
+		CommonResponse commonResponse = new CommonResponse();
+		// 查询指标
+		Quoto quoto = null;
+		if (id > 0) {
+			quoto = quotoMapper.queryQuotoById(id);
+		}
+		if (quoto == null && (!StringUtils.isEmpty(quotoName))) {
+			quoto = quotoMapper.queryQuotoByName(quotoName);
+		}
+		if (quoto == null) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("指标不存在");
+			return commonResponse;
+		}
+		if (quoto.getState() != StateEnum.active_state.getCode()) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("非激活状态的指标不可以查询数据");
+			return commonResponse;
+		}
+		return queryDataFromDataService(quoto);
 	}
 
+	public CommonResponse queryDataFromDataService(Quoto quoto) {
+		CommonResponse commonResponse = new CommonResponse();
+
+		// 复合指标处理逻辑
+		if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
+			return commonResponse;
+		}
+		// 非复合指标处理逻辑
+		Quoto atomicQuoto = quoto;
+		if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
+			atomicQuoto = quotoMapper.findQuotoById(quoto.getOrigin_quoto());
+		}
+		// 查询数据服务对应的信息
+		ServicePathInfo servicePathInfo = quotoMapper.queryServicePathInfo(atomicQuoto.getTable_id());
+		if (servicePathInfo == null) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("指标对应的服务不可用,请联系管理员排查");
+			return commonResponse;
+		}
+		String url = dataServiceUrl + servicePathInfo.getPath();
+		String bodyRequest = "{'[]':{'" + servicePathInfo.getTableName() + "':{'@column':'" + atomicQuoto.getField();
+		if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
+			// 添加维度的请求参数
+			if (quoto.getDimension() != null && quoto.getDimension().length > 0) {
+				String group = "'@group':'";
+				bodyRequest = bodyRequest + ";";
+				// 查询维度的名称
+				List<String> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
+				for (int i = 0; i < dimensionName.size(); i++) {
+					if (i == dimensionName.size() - 1) {
+						group = group + dimensionName.get(i) + ",";
+						bodyRequest = bodyRequest + dimensionName.get(i) + ";";
+					} else {
+						group = group + dimensionName.get(i) + "'";
+						bodyRequest = bodyRequest + dimensionName.get(i) + "'";
+					}
+				}
+				bodyRequest = bodyRequest + "," + group;
+			} else {
+				bodyRequest = bodyRequest + "'";
+			}
+			// 添加修饰词的请求参数
+			// 待补充代码
+			//
+		} else {
+			bodyRequest = bodyRequest + "'";
+		}
+		String bodyEnd = "}}}";
+		if (quoto.getType() == TypeEnum.atomic_quoto.getCode()) {
+			bodyRequest = bodyRequest + bodyEnd;
+		}
+		// 请求数据服务
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		// 将请求头部和参数合成一个请求
+		HttpEntity<String> requestEntity = new HttpEntity<>(bodyRequest, headers);
+		ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
+		if (!responseEntity.getStatusCode().is2xxSuccessful()) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("指标对应的服务不可用,请联系管理员排查");
+			return commonResponse;
+		} else {
+			JSONObject result = JSONObject.parseObject(responseEntity.getBody().toString());
+			DataServiceResponse dataServiceResponse = JSONObject.toJavaObject(
+					JSONObject.parseObject(responseEntity.getBody().toString()), DataServiceResponse.class);
+			commonResponse.setSuccess(dataServiceResponse.isOk());
+			commonResponse.setMessage(dataServiceResponse.getMsg());
+			if (dataServiceResponse.isOk()) {
+				List<JSONObject> list = JSONObject.parseArray(result.get("[]").toString(), JSONObject.class);
+				if (list != null) {
+					if (list.size() == 1) {
+						commonResponse.setData(list.get(0).get(servicePathInfo.getTableName()));
+					} else {
+						List<Object> data = new ArrayList<Object>();
+						for (int i = 0; i < list.size(); i++) {
+							data.add(list.get(i).get(servicePathInfo.getTableName()));
+						}
+						commonResponse.setData(data);
+					}
+				}
+			}
+		}
+		return commonResponse;
+	}
 }

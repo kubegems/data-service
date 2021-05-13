@@ -57,6 +57,12 @@ public class AdjectiveControl {
 		return adjectiveService.queryAdjective(adjectiveQuery);
 	}
 
+	// 查询所有的修饰词
+	@RequestMapping(value = "queryAll", method = RequestMethod.POST)
+	public CommonResponse queryAllAdjective(@RequestBody AdjectiveQuery adjectiveQuery) {
+		return adjectiveService.queryAllAdjective(adjectiveQuery);
+	}
+
 	// 编辑修饰词
 	@RequestMapping(value = "update", method = RequestMethod.POST)
 	public CommonResponse updateAdjective(@RequestBody Adjective adjective) {

@@ -8,3 +8,4 @@ spring:
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
+dataServiceUrl: http://172.16.23.83:30515
