@@ -241,9 +241,9 @@ public class QuotoService {
 		if (quotoQuery.getField() != null && (!quotoQuery.getField().equals(""))) {
 			condition = condition + " and field like '" + quotoQuery.getField() + "%'";
 		}
-		
-		if(quotoQuery.getBusinessId()!=-1) {
-			condition=condition+" and business_id="+quotoQuery.getBusinessId();
+
+		if (quotoQuery.getBusinessId() != -1) {
+			condition = condition + " and business_id=" + quotoQuery.getBusinessId();
 		}
 
 		condition = condition + " order by update_time desc";
@@ -421,10 +421,8 @@ public class QuotoService {
 		} else {
 			bodyRequest = bodyRequest + "'";
 		}
-		String bodyEnd = "}}}";
-		if (quoto.getType() == TypeEnum.atomic_quoto.getCode()) {
-			bodyRequest = bodyRequest + bodyEnd;
-		}
+		bodyRequest = bodyRequest + "}}}";
+		System.out.println(bodyRequest);
 		// 请求数据服务
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -442,6 +440,9 @@ public class QuotoService {
 			commonResponse.setSuccess(dataServiceResponse.isOk());
 			commonResponse.setMessage(dataServiceResponse.getMsg());
 			if (dataServiceResponse.isOk()) {
+				if(result.get("[]")==null) {
+					return commonResponse;
+				}
 				List<JSONObject> list = JSONObject.parseArray(result.get("[]").toString(), JSONObject.class);
 				if (list != null) {
 					if (list.size() == 1) {
@@ -513,13 +514,13 @@ public class QuotoService {
 				Calendar cal = Calendar.getInstance();
 				cal.add(Calendar.WEEK_OF_MONTH, 0);
 				cal.set(Calendar.DAY_OF_WEEK, 2);
-				result = result + ">=':'" + format.format(cal.getTime()) + "'";
+				result = result + ">=':'" + format.format(cal.getTime()) + " 00:00:00'";
 			} else if (adjective.getCode_name().equals("ftDate(m)")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 				Calendar cal = Calendar.getInstance();
 				cal.add(Calendar.MONTH, 0);
 				cal.set(Calendar.DAY_OF_MONTH, 1);
-				result = result + ">=':'" + format.format(cal.getTime()) + "'";
+				result = result + ">=':'" + format.format(cal.getTime()) + " 00:00:00'";
 			} else if (adjective.getCode_name().equals("ftDate(q)")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 				Calendar cal = Calendar.getInstance();
@@ -534,60 +535,59 @@ public class QuotoService {
 					cal.set(Calendar.MONTH, 9);
 				}
 				cal.set(Calendar.DATE, 1);
-				result = result + ">=':'" + format.format(cal.getTime()) + "'";
+				result = result + ">=':'" + format.format(cal.getTime()) + " 00:00:00'";
 			} else if (adjective.getCode_name().equals("ftDate(y)")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy");
 				Calendar cal = Calendar.getInstance();
-				result = result + ">=':'" + format.format(cal.getTime())+"-01-01" + "'";
-			}else if (adjective.getCode_name().equals("ftDateALL")) {
-				result = result + ">=':'1900-01-01'";
-			}else if (adjective.getCode_name().equals("pre1MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-1) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre2MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-2) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre3MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-3) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre4MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-4) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre5MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-5) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre6MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-6) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre12MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-12) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre24MONTH")) {
-				result = result + "&{}':'>='" + getPreDateByMonth(-24) + "',<'"+getPreDateByMonth(0)+"'";
-			}else if (adjective.getCode_name().equals("pre1DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-1) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre2DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-2) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre3DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-3) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre7DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-7) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre14DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-14) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre15DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-15) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre30DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-30) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre60DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-60) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre90DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-90) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre180DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-180) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre360DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-360) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre365DAT")) {
-				result = result + "&{}':'>='" + getLastDateByDay(-365) + "',<'"+getLastDateByDay(0)+"'";
-			}else if (adjective.getCode_name().equals("pre1YEAR")) {
+				result = result + ">=':'" + format.format(cal.getTime()) + "-01-01" + " 00:00:00'";
+			} else if (adjective.getCode_name().equals("pre1MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-1) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre2MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-2) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre3MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-3) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre4MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-4) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre5MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-5) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre6MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-6) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre12MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-12) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre24MONTH")) {
+				result = result + "&{}':'>=\\'" + getPreDateByMonth(-24) + "\\',<\\'" + getPreDateByMonth(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre1DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-1) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre2DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-2) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre3DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-3) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre7DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-7) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre14DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-14) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre15DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-15) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre30DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-30) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre60DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-60) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre90DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-90) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre180DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-180) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre360DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-360) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre365DAY")) {
+				result = result + "&{}':'>=\\'" + getLastDateByDay(-365) + "\\',<\\'" + getLastDateByDay(0) + "\\''";
+			} else if (adjective.getCode_name().equals("pre1YEAR")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy");
 				Calendar cal = Calendar.getInstance();
 				cal.add(cal.YEAR, -1);
 				Calendar calEnd = Calendar.getInstance();
-				result = result + "&{}':'>='" + format.format(cal.getTime())+"-01-01" + "',<'"+format.format(calEnd.getTime())+"-01-01"+"'";
-			}else if (adjective.getCode_name().equals("pre1QUARTER")) {
+				result = result + "&{}':'>=\\'" + format.format(cal.getTime()) + "-01-01 00:00:00\\',<\\'"
+						+ format.format(calEnd.getTime()) + "-01-01 00:00:00\\''";
+			} else if (adjective.getCode_name().equals("pre1QUARTER")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 				Calendar cal = Calendar.getInstance();
 				int currentMonth = cal.get(Calendar.MONTH) + 1;
@@ -601,23 +601,23 @@ public class QuotoService {
 					cal.set(Calendar.MONTH, 9);
 				}
 				cal.set(Calendar.DATE, 1);
-				String end=format.format(cal.getTime());
+				String end = format.format(cal.getTime())+" 00:00:00";
 				cal.add(Calendar.MONTH, -3);
-				String start=format.format(cal.getTime());
-				result = result + "&{}':'>='" + start + "',<'"+end+"'";
+				String start = format.format(cal.getTime())+" 00:00:00";
+				result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
 			}
 			return result;
 		}
-		
-		//其它修饰词
-		return "'"+adjective.getName()+adjective.getCode().substring(0);
+
+		// 其它修饰词
+		return "'" + adjective.getName() + adjective.getCode().substring(1);
 	}
 
 	public String getLastDateByDay(int day) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
 		cal.add(cal.DATE, day);
-		return format.format(cal.getTime());
+		return format.format(cal.getTime())+" 00:00:00";
 	}
 
 	public String getlastDateByMonth(int month) {
@@ -625,7 +625,7 @@ public class QuotoService {
 		Calendar cal = Calendar.getInstance();
 		cal.add(cal.MONTH, month);
 		cal.add(cal.DATE, 1);
-		return format.format(cal.getTime());
+		return format.format(cal.getTime())+" 00:00:00";
 	}
 
 	public String getlastDateByYear(int year) {
@@ -633,14 +633,14 @@ public class QuotoService {
 		Calendar cal = Calendar.getInstance();
 		cal.add(cal.YEAR, year);
 		cal.add(cal.DATE, 1);
-		return format.format(cal.getTime());
+		return format.format(cal.getTime())+" 00:00:00";
 	}
-	
+
 	public String getPreDateByMonth(int month) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM");
 		Calendar cal = Calendar.getInstance();
 		cal.add(cal.MONTH, month);
-		return format.format(cal.getTime())+"-01";
+		return format.format(cal.getTime()) + "-01 00:00:00";
 	}
 
 }
