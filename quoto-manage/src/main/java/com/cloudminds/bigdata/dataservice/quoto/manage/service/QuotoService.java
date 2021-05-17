@@ -321,6 +321,19 @@ public class QuotoService {
 			commonResponse.setMessage("数据服务此指标不可用,请前往数据服务-服务管理页启用此指标");
 			return commonResponse;
 		}
+
+//		List<QuotoInfo> quotoInfo = quotoMapper.queryQuotoInfo(quoto.getField());
+//		if (quotoInfo == null||quotoInfo.size()==0) {
+//			commonResponse.setSuccess(false);
+//			commonResponse.setMessage("数据服务没有此指标的配置,请前往数据服务-服务管理页配置此指标");
+//			return commonResponse;
+//		}
+//		if (quotoInfo.get(0).getState() == 0) {
+//			commonResponse.setSuccess(false);
+//			commonResponse.setMessage("数据服务此指标不可用,请前往数据服务-服务管理页启用此指标");
+//			return commonResponse;
+//		}
+
 		// 激活指标
 		if (quotoMapper.updateQuotoState(StateEnum.active_state.getCode(), id) != 1) {
 			commonResponse.setSuccess(false);
@@ -345,16 +358,19 @@ public class QuotoService {
 		return commonResponse;
 	}
 
-	public CommonResponse queryQuotoData(int id, String quotoName) {
+	public CommonResponse queryQuotoData(Integer id, String quotoName, Integer page, Integer count) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
 		// 查询指标
 		Quoto quoto = null;
-		if (id > 0) {
+		if (id != null && id > 0) {
 			quoto = quotoMapper.queryQuotoById(id);
 		}
 		if (quoto == null && (!StringUtils.isEmpty(quotoName))) {
 			quoto = quotoMapper.queryQuotoByName(quotoName);
+		}
+		if (page == null) {
+			page = 0;
 		}
 		if (quoto == null) {
 			commonResponse.setSuccess(false);
@@ -366,10 +382,19 @@ public class QuotoService {
 			commonResponse.setMessage("非激活状态的指标不可以查询数据");
 			return commonResponse;
 		}
-		return queryDataFromDataService(quoto);
+		if (count == null || count <= 0) {
+			count = 1000;
+		}
+
+		if (count > 10000) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("count最大值为10000");
+			return commonResponse;
+		}
+		return queryDataFromDataService(quoto, page, count);
 	}
 
-	public CommonResponse queryDataFromDataService(Quoto quoto) {
+	public CommonResponse queryDataFromDataService(Quoto quoto, int page, int count) {
 		CommonResponse commonResponse = new CommonResponse();
 
 		// 复合指标处理逻辑
@@ -421,7 +446,7 @@ public class QuotoService {
 		} else {
 			bodyRequest = bodyRequest + "'";
 		}
-		bodyRequest = bodyRequest + "}}}";
+		bodyRequest = bodyRequest + "},'page':" + page + ",'count':" + count + "}}";
 		System.out.println(bodyRequest);
 		// 请求数据服务
 		HttpHeaders headers = new HttpHeaders();
@@ -440,7 +465,7 @@ public class QuotoService {
 			commonResponse.setSuccess(dataServiceResponse.isOk());
 			commonResponse.setMessage(dataServiceResponse.getMsg());
 			if (dataServiceResponse.isOk()) {
-				if(result.get("[]")==null) {
+				if (result.get("[]") == null) {
 					return commonResponse;
 				}
 				List<JSONObject> list = JSONObject.parseArray(result.get("[]").toString(), JSONObject.class);
@@ -583,7 +608,7 @@ public class QuotoService {
 			} else if (adjective.getCode_name().equals("pre1YEAR")) {
 				SimpleDateFormat format = new SimpleDateFormat("yyyy");
 				Calendar cal = Calendar.getInstance();
-				cal.add(cal.YEAR, -1);
+				cal.add(Calendar.YEAR, -1);
 				Calendar calEnd = Calendar.getInstance();
 				result = result + "&{}':'>=\\'" + format.format(cal.getTime()) + "-01-01 00:00:00\\',<\\'"
 						+ format.format(calEnd.getTime()) + "-01-01 00:00:00\\''";
@@ -601,9 +626,9 @@ public class QuotoService {
 					cal.set(Calendar.MONTH, 9);
 				}
 				cal.set(Calendar.DATE, 1);
-				String end = format.format(cal.getTime())+" 00:00:00";
+				String end = format.format(cal.getTime()) + " 00:00:00";
 				cal.add(Calendar.MONTH, -3);
-				String start = format.format(cal.getTime())+" 00:00:00";
+				String start = format.format(cal.getTime()) + " 00:00:00";
 				result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
 			}
 			return result;
@@ -616,30 +641,30 @@ public class QuotoService {
 	public String getLastDateByDay(int day) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
-		cal.add(cal.DATE, day);
-		return format.format(cal.getTime())+" 00:00:00";
+		cal.add(Calendar.DATE, day);
+		return format.format(cal.getTime()) + " 00:00:00";
 	}
 
 	public String getlastDateByMonth(int month) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
-		cal.add(cal.MONTH, month);
-		cal.add(cal.DATE, 1);
-		return format.format(cal.getTime())+" 00:00:00";
+		cal.add(Calendar.MONTH, month);
+		cal.add(Calendar.DATE, 1);
+		return format.format(cal.getTime()) + " 00:00:00";
 	}
 
 	public String getlastDateByYear(int year) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
-		cal.add(cal.YEAR, year);
-		cal.add(cal.DATE, 1);
-		return format.format(cal.getTime())+" 00:00:00";
+		cal.add(Calendar.YEAR, year);
+		cal.add(Calendar.DATE, 1);
+		return format.format(cal.getTime()) + " 00:00:00";
 	}
 
 	public String getPreDateByMonth(int month) {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM");
 		Calendar cal = Calendar.getInstance();
-		cal.add(cal.MONTH, month);
+		cal.add(Calendar.MONTH, month);
 		return format.format(cal.getTime()) + "-01 00:00:00";
 	}
 

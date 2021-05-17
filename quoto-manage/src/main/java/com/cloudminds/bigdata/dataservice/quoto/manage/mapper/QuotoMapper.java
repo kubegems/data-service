@@ -99,6 +99,9 @@ public interface QuotoMapper {
 	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName);
 	
+//	@Select("(SELECT id,quoto_name,state from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}) UNION (SELECT id,column_alias as quoto_name,state from Column_alias where is_delete=0 and column_alias=#{QuotoName})")
+//	public List<QuotoInfo> queryQuotoInfo(String QuotoName);
+	
 	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")
 	public ServicePathInfo queryServicePathInfo(int tableId);
 	

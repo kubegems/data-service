@@ -119,7 +119,7 @@ public class QuotoControl {
 
 	// 获取指标数据
 	@RequestMapping(value = "queryQuotoData", method = RequestMethod.GET)
-	public CommonResponse queryQuotoData(int id, String quotoName) {
-		return quotoService.queryQuotoData(id, quotoName);
+	public CommonResponse queryQuotoData(Integer id, String quotoName,Integer page,Integer count) {
+		return quotoService.queryQuotoData(id, quotoName,page,count);
 	}
 }
