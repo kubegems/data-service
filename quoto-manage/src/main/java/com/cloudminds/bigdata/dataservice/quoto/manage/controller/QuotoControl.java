@@ -6,10 +6,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alibaba.nacos.api.utils.StringUtils;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.BatchDeleteReq;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.CheckReq;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.DeleteReq;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.ExpressInfoReq;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.QuotoQuery;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonQueryResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonResponse;
@@ -120,12 +122,26 @@ public class QuotoControl {
 
 	// 获取指标数据
 	@RequestMapping(value = "queryQuotoData", method = RequestMethod.GET)
-	public CommonResponse queryQuotoData(Integer id, String quotoName,Integer page,Integer count) {
-		CommonResponse commonResponse=new CommonResponse();
-		DataCommonResponse dataCommonResponse=quotoService.queryQuotoData(id, quotoName,page,count);
+	public CommonResponse queryQuotoData(Integer id, String quotoName, Integer page, Integer count) {
+		CommonResponse commonResponse = new CommonResponse();
+		DataCommonResponse dataCommonResponse = quotoService.queryQuotoData(id, quotoName, page, count);
 		commonResponse.setData(dataCommonResponse.getData());
 		commonResponse.setMessage(dataCommonResponse.getMessage());
 		commonResponse.setSuccess(dataCommonResponse.isSuccess());
 		return commonResponse;
 	}
+
+	// 获取express信息
+	@RequestMapping(value = "queryExpressInfo", method = RequestMethod.POST)
+	public DataCommonResponse queryExpressInfo(@RequestBody ExpressInfoReq express) {
+		if(StringUtils.isEmpty(express.getExpress())) {
+			DataCommonResponse dataCommonResponse=new DataCommonResponse();
+			dataCommonResponse.setSuccess(false);
+			dataCommonResponse.setMessage("参数值不能为空");
+			return dataCommonResponse;
+		}
+		DataCommonResponse dataCommonResponse = quotoService.caculate(express.getExpress()+"#", 0, 2);
+		return dataCommonResponse;
+	}
+
 }

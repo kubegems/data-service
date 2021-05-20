@@ -11,5 +11,7 @@ public class DataCommonResponse {
 	private Object data;
 	private int type=-1; //0代表无数据 1代表list size为1 2代表list size为多个  3代表从外面传的数进来
 	private List<String> dimensions;
+	private int[] dimensionIds;
+	private int cycle;
 	private String field;
 }

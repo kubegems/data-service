@@ -137,7 +137,7 @@ public class QuotoService {
 				return commonResponse;
 			}
 		}
-		//指标有没有被复合指标使用
+		// 指标有没有被复合指标使用
 		List<String> quotoNames = quotoMapper.findQuotoNameByContainQuotoId(quoto.getId());
 		if (quotoNames != null && quotoNames.size() > 0) {
 			commonResponse.setMessage("衍生指标" + quotoNames.toString() + "在使用(" + quoto.getName() + ")指标,不能删除");
@@ -376,6 +376,10 @@ public class QuotoService {
 			condition = condition + " and business_id=" + quotoQuery.getBusinessId();
 		}
 
+		if (quotoQuery.getState() != -1) {
+			condition = condition + " and state=" + quotoQuery.getState();
+		}
+
 		condition = condition + " order by update_time desc";
 		int page = quotoQuery.getPage();
 		int size = quotoQuery.getSize();
@@ -393,7 +397,7 @@ public class QuotoService {
 		if (quotoQuery.getType() != -1) {
 			condition = condition + " and type=" + quotoQuery.getType();
 		}
-		
+
 		if (quotoQuery.getBusiness_process_id() != -1) {
 			condition = condition + " and business_process_id=" + quotoQuery.getBusiness_process_id();
 		}
@@ -538,7 +542,7 @@ public class QuotoService {
 		quotoAccessHistory.setMessage(commonResponse.getMessage());
 		quotoAccessHistoryMapper.insertAccessHistory(quotoAccessHistory);
 		if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
-			Quoto atomicQuoto = quotoMapper.queryQuotoById(id);
+			Quoto atomicQuoto = quotoMapper.queryQuotoById(quoto.getOrigin_quoto());
 			quotoAccessHistory.setQuoto_id(atomicQuoto.getId());
 			quotoAccessHistory.setQuoto_name(atomicQuoto.getName());
 			quotoAccessHistory.setBusiness(atomicQuoto.getBusiness_name());
@@ -559,7 +563,13 @@ public class QuotoService {
 		// 复合指标处理逻辑
 		if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
 			try {
-				return caculate(quoto.getExpression() + "#", page, count);
+				DataCommonResponse dataCommonResponse = caculate(quoto.getExpression() + "#", page, count);
+				if (dataCommonResponse.isSuccess()) {
+					quoto.setCycle(dataCommonResponse.getCycle());
+					quoto.setDimension(dataCommonResponse.getDimensionIds());
+					quotoMapper.updateQuoto(quoto);
+				}
+				return dataCommonResponse;
 			} catch (Exception e) {
 				// TODO: handle exception
 				commonResponse.setSuccess(false);
@@ -573,6 +583,7 @@ public class QuotoService {
 			atomicQuoto = quotoMapper.findQuotoById(quoto.getOrigin_quoto());
 		}
 		commonResponse.setField(atomicQuoto.getField());
+		commonResponse.setCycle(atomicQuoto.getCycle());
 		// 查询数据服务对应的信息
 		ServicePathInfo servicePathInfo = quotoMapper.queryServicePathInfo(atomicQuoto.getTable_id());
 		if (servicePathInfo == null) {
@@ -590,6 +601,7 @@ public class QuotoService {
 				// 查询维度的名称
 				List<String> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
 				commonResponse.setDimensions(dimensionName);
+				commonResponse.setDimensionIds(quoto.getDimension());
 				for (int i = 0; i < dimensionName.size(); i++) {
 					if (i == dimensionName.size() - 1) {
 						group = group + dimensionName.get(i) + "'";
@@ -674,6 +686,9 @@ public class QuotoService {
 	}
 
 	private DataCommonResponse CalculateValue(DataCommonResponse a, DataCommonResponse b, String op) {
+		int cycle = Math.max(a.getCycle(), b.getCycle());
+		a.setCycle(cycle);
+		b.setCycle(cycle);
 		// a为0 代表a查出来没有数据
 		if (a.getType() == 0) {
 			if (op.equals("+")) {
