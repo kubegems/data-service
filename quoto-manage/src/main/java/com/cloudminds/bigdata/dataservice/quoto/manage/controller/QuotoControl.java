@@ -13,6 +13,7 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.DeleteReq;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.QuotoQuery;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonQueryResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonResponse;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DataCommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.service.QuotoService;
 
 @RestController
@@ -120,6 +121,11 @@ public class QuotoControl {
 	// 获取指标数据
 	@RequestMapping(value = "queryQuotoData", method = RequestMethod.GET)
 	public CommonResponse queryQuotoData(Integer id, String quotoName,Integer page,Integer count) {
-		return quotoService.queryQuotoData(id, quotoName,page,count);
+		CommonResponse commonResponse=new CommonResponse();
+		DataCommonResponse dataCommonResponse=quotoService.queryQuotoData(id, quotoName,page,count);
+		commonResponse.setData(dataCommonResponse.getData());
+		commonResponse.setMessage(dataCommonResponse.getMessage());
+		commonResponse.setSuccess(dataCommonResponse.isSuccess());
+		return commonResponse;
 	}
 }

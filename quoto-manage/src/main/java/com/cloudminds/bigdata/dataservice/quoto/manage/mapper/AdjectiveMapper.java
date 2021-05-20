@@ -44,7 +44,7 @@ public interface AdjectiveMapper {
 
 	@Insert("insert into adjective(name, code,code_name,type,create_time,update_time, creator,descr) "
 			+ "values(#{name}, #{code}, #{code_name}, #{type},now(),now(), #{creator}, #{descr})")
-	public void insertAdjective(Adjective adjective);
+	public int insertAdjective(Adjective adjective);
 
 	@Update("update adjective set name=#{name}, code=#{code},code_name=#{code_name},type=#{type},descr=#{descr} where id=#{id}")
 	public int updateAdjective(Adjective adjective);

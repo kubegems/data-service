@@ -18,9 +18,11 @@ public class Quoto extends BaseEntity {
 	private int[] dimension;
 	private int origin_quoto;
 	private int[] adjective;
+	private int[] quotos;
 	private int cycle;
 	private int type;
 	private int state;
+	private String expression;
 	
 	//查询的信息
 	private String business_process_name;

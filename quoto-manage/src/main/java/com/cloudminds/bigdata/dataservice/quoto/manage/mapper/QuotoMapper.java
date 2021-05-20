@@ -18,6 +18,7 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ServicePathInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.StatisticResponse;
 
 @Mapper
 public interface QuotoMapper {
@@ -29,6 +30,7 @@ public interface QuotoMapper {
 	public Quoto findQuotoByField(String checkValue);
 	
 	@Select("select * from quoto where id=#{id} and deleted=0")
+	@Result(column = "quotos", property = "quotos", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto findQuotoById(int id);
 	
 	@Select("select name from quoto where origin_quoto=#{originQuotoId} and deleted=0")
@@ -75,12 +77,12 @@ public interface QuotoMapper {
 	@Select("select * from quoto where ${condition}")
 	public List<Quoto> queryQuotoFuzzy(String condition);
 
-	@Insert("insert into quoto(name, field,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,state,type,origin_quoto,cycle,create_time,update_time, creator,descr) "
-			+ "values(#{name}, #{field}, #{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr})")
+	@Insert("insert into quoto(name, field,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr) "
+			+ "values(#{name}, #{field}, #{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr})")
 	public int insertQuoto(Quoto quoto);
 
 	@Update("update quoto set name=#{name}, field=#{field},business_process_id=#{business_process_id},quoto_level=#{quoto_level},data_type=#{data_type},data_unit=#{data_unit},table_id=#{table_id},accumulation=#{accumulation},origin_quoto=#{origin_quoto},cycle=#{cycle},"
-			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},type=#{type},descr=#{descr} where id=#{id}")
+			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},,quotos=#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},type=#{type},descr=#{descr} where id=#{id}")
 	public int updateQuoto(Quoto quoto);
 
 	@Select("select * from cycle")
@@ -110,5 +112,11 @@ public interface QuotoMapper {
 	
 	@Select("select adjective.code_name,dimension.code as name,adjective.type,adjective.req_parm as code from adjective LEFT JOIN adjective_type ON adjective.type=adjective_type.id LEFT JOIN dimension on adjective_type.dimension_id=dimension.id where adjective.id in (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.id=#{quotoId})")
 	public List<Adjective> queryAdjective(int quotoId);
+	
+	@Select("select type,count(*) as count from quoto where deleted=0 GROUP BY type")
+	public List<StatisticResponse> queryQuotoTypeNum();
+	
+	@Select("select tt.name from (select a.name, substring_index(substring_index(a.quotos,',',b.help_topic_id+1),',',-1) as id  from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.quotos) - length(replace(a.quotos,',',''))+1) where a.deleted=0 and a.quotos!='') as tt where tt.id=#{id}")
+	public List<String> findQuotoNameByContainQuotoId(int id);
 
 }
