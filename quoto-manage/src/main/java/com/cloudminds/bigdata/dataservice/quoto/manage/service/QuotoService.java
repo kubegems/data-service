@@ -7,6 +7,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -738,58 +739,20 @@ public class QuotoService {
 					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
-				if (op.equals("+")) {
-					b.setData(aValue.add(new BigDecimal(b.getData().toString())));
-				} else if (op.equals("-")) {
-					b.setData(aValue.subtract(new BigDecimal(b.getData().toString())));
-				} else if (op.equals("-")) {
-					b.setData(aValue.multiply(new BigDecimal(b.getData().toString())));
-				} else {
-					if (new BigDecimal(b.getData().toString()).floatValue() == 0) {
-						// 抛异常，除数的分母为0
-						throw new UnsupportedOperationException("除法里分母为0,请检查加工方式");
-					}
-					b.setData(aValue.divide(new BigDecimal(b.getData().toString())));
-				}
+				b.setData(caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
 				return b;
 			} else if (b.getType() == 2) {
 				List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 				for (int i = 0; i < list.size(); i++) {
-					BigDecimal value = list.get(i).getBigDecimal(b.getField());
-					if (op.equals("+")) {
-						list.get(i).put(b.getField(), aValue.add(value));
-					} else if (op.equals("-")) {
-						list.get(i).put(b.getField(), aValue.subtract(value));
-					} else if (op.equals("*")) {
-						list.get(i).put(b.getField(), aValue.multiply(value));
-					} else {
-						if (value.floatValue() == 0) {
-							// 抛异常，除数的分母为0
-							throw new UnsupportedOperationException(
-									"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")");
-						}
-						list.get(i).put(b.getField(), aValue.divide(value));
-					}
+					list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
+							"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
 				}
 				b.setData(list);
 				return b;
 			} else {
 				JSONObject object = JSONObject.parseObject(b.getData().toString());
-				BigDecimal value = object.getBigDecimal(b.getField());
-				if (op.equals("+")) {
-					object.put(b.getField(), aValue.add(value));
-				} else if (op.equals("-")) {
-					object.put(b.getField(), aValue.subtract(value));
-				} else if (op.equals("*")) {
-					object.put(b.getField(), aValue.multiply(value));
-				} else {
-					if (value.floatValue() == 0) {
-						// 抛异常，除数的分母为0
-						throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + object + ")");
-					}
-					object.put(b.getField(), aValue.divide(value));
-				}
-
+				object.put(b.getField(), caluclate(aValue, object.getBigDecimal(b.getField()), op,
+						"除法里分母为0,具体分母数据：" + b.getField() + "(" + object + ")"));
 				b.setData(object);
 				return b;
 			}
@@ -808,27 +771,55 @@ public class QuotoService {
 					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
-				BigDecimal bvalue = new BigDecimal(b.getData().toString());
-				if (op.equals("+")) {
-					object.put(a.getField(), aValue.add(bvalue));
-				} else if (op.equals("-")) {
-					object.put(a.getField(), aValue.subtract(bvalue));
-				} else if (op.equals("*")) {
-					object.put(a.getField(), aValue.multiply(bvalue));
-				} else {
-					if (bvalue.floatValue() == 0) {
-						// 抛异常，除数的分母为0
-						throw new UnsupportedOperationException("除法里分母为0,请检查加工方式");
-					}
-					object.put(a.getField(), aValue.divide(bvalue));
-				}
-
+				object.put(a.getField(),
+						caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
 				a.setData(object);
 				return a;
 			} else if (b.getType() == 1) {
+				// 都有维度
+				if (b.getDimensions() != null && a.getDimensions() != null) {
+					// 如果维度不同，报错
+					if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+						throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
+					} else {
+						// 维度相同的运算 1对1
 
-			} else {
+					}
 
+				} else {
+					// 一个有维度，一个没有维度，或者都没维度 进行四则运算
+					JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+					BigDecimal bValue = bObject.getBigDecimal(b.getField());
+					object.put(a.getField(),
+							caluclate(aValue, bValue, op, "除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
+					a.setData(object);
+					if (b.getDimensions() != null && b.getDimensions().size() > 0) {
+						a.setDimensions(b.getDimensions());
+						a.setDimensionIds(b.getDimensionIds());
+					}
+					return a;
+				}
+			} else { // b为多维的
+				if (a.getDimensions() == null || a.getDimensions().size() == 0) {
+					List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
+					for (int i = 0; i < list.size(); i++) {
+						list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
+								"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
+					}
+					b.setData(list);
+					return b;
+				} else {
+					if (b.getDimensions() == null || b.getDimensions().size() == 0) {
+						throw new UnsupportedOperationException("有维度的数据与多条没有维度的数据不能做四则运算");
+					} else {
+						if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+							throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
+						} else {
+							// 维度相同的运算 1对多
+
+						}
+					}
+				}
 			}
 		}
 
@@ -844,33 +835,49 @@ public class QuotoService {
 					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
-				BigDecimal bvalue = new BigDecimal(b.getData().toString());
-				if (op.equals("/")) {
-					if (bvalue.floatValue() == 0) {
-						// 抛异常，除数的分母为0
-						throw new UnsupportedOperationException("除法里分母为0,请检查加工方式");
-					}
-				}
 				for (int i = 0; i < list.size(); i++) {
 					BigDecimal aValue = list.get(i).getBigDecimal(a.getField());
-					if (op.equals("+")) {
-						list.get(i).put(a.getField(), aValue.add(bvalue));
-					} else if (op.equals("-")) {
-						list.get(i).put(a.getField(), aValue.subtract(bvalue));
-					} else if (op.equals("*")) {
-						list.get(i).put(a.getField(), aValue.multiply(bvalue));
-					} else {
-						list.get(i).put(a.getField(), aValue.divide(bvalue));
-					}
+					list.get(i).put(a.getField(),
+							caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
 				}
 				a.setData(list);
 				return a;
 			} else if (b.getType() == 1) {
-
+				// b为1个
+				JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+				BigDecimal bValue = bObject.getBigDecimal(b.getField());
+				if (b.getDimensions() == null || b.getDimensions().size() == 0) {
+					for (int i = 0; i < list.size(); i++) {
+						list.get(i).put(a.getField(), caluclate(list.get(i).getBigDecimal(a.getField()), bValue, op,
+								"除法里分母为0,具体分母数据：" + bObject));
+					}
+					a.setData(list);
+					return a;
+				} else {
+					if (a.getDimensions() == null || a.getDimensions().size() == 0) {
+						throw new UnsupportedOperationException("有维度的数据与多条没有维度的数据不能做四则运算");
+					} else {
+						if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+							throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
+						} else {
+							// 维度相同的运算 n对1
+							if(op.equals("*")||op.equals("/")) {
+								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做四则*/运算");
+							}
+							//做+-操作
+							
+							
+						}
+					}
+				}
 			} else {
+				//b为多维数据
 				if (a.getDimensions() == null || a.getDimensions().size() == 0 || b.getDimensions() == null
-						|| b.getDimensions().size() == 0 || a.getDimensions().size() != b.getDimensions().size()) {
-
+						|| b.getDimensions().size() == 0||!ListUtils.isEqualList(a.getDimensions(), b.getDimensions())) {
+					throw new UnsupportedOperationException("两个多条的指标数据是不能做四则运算的");
+				}
+				if(op.equals("*")||op.equals("/")) {
+					
 				}
 			}
 		}
@@ -879,11 +886,20 @@ public class QuotoService {
 		return calculateValue;
 	}
 
-	public boolean sameDimension(List<String> a, List<String> b) {
-		if (a == null || a.size() == 0 || b == null || b.size() == 0 || a.size() != b.size()) {
-			return false;
+	public BigDecimal caluclate(BigDecimal aValue, BigDecimal bvalue, String op, String exceptionMessage) {
+		if (op.equals("+")) {
+			return aValue.add(bvalue);
+		} else if (op.equals("-")) {
+			return aValue.subtract(bvalue);
+		} else if (op.equals("*")) {
+			return aValue.multiply(bvalue);
+		} else {
+			if (bvalue.floatValue() == 0) {
+				// 抛异常，除数的分母为0
+				throw new UnsupportedOperationException(exceptionMessage);
+			}
+			return aValue.divide(bvalue);
 		}
-		return false;
 	}
 
 	public String getAdjectiveReq(Adjective adjective) {

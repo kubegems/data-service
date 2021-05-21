@@ -18,7 +18,6 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ServicePathInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.StatisticResponse;
 
 @Mapper
 public interface QuotoMapper {
@@ -28,11 +27,11 @@ public interface QuotoMapper {
 
 	@Select("select * from quoto where field=#{checkValue} and deleted=0")
 	public Quoto findQuotoByField(String checkValue);
-	
+
 	@Select("select * from quoto where id=#{id} and deleted=0")
 	@Result(column = "quotos", property = "quotos", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto findQuotoById(int id);
-	
+
 	@Select("select name from quoto where origin_quoto=#{originQuotoId} and deleted=0")
 	public List<String> findQuotoNameByOriginQuoto(int originQuotoId);
 
@@ -53,9 +52,9 @@ public interface QuotoMapper {
 
 	@Update("update quoto set deleted=null where id=#{id}")
 	public int deleteQuotoById(int id);
-	
+
 	@Update("update quoto set state=#{state} where id=#{id}")
-	public int updateQuotoState(int state,int id);
+	public int updateQuotoState(int state, int id);
 
 	@Update({
 			"<script> update quoto set deleted=null where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>" })
@@ -65,15 +64,15 @@ public interface QuotoMapper {
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public List<Quoto> queryQuoto(String condition, int startLine, int size);
-	
+
 	@Select("select count(*) from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name, bb.id as business_id from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where ${condition}")
 	public int queryQuotoCount(String condition);
-	
+
 	@Select("SELECT * from quoto where ${condition}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public List<Quoto> queryAllQuoto(String condition);
-	
+
 	@Select("select * from quoto where ${condition}")
 	public List<Quoto> queryQuotoFuzzy(String condition);
 
@@ -87,35 +86,32 @@ public interface QuotoMapper {
 
 	@Select("select * from cycle")
 	public List<Business> queryAllCycle();
-	
+
 	@Select("SELECT * from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where q.deleted=0 and q.id=#{id}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoById(int id);
-	
+
 	@Select("SELECT * from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where q.deleted=0 and q.name=#{name}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoByName(String name);
-	
+
 	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName);
-	
+
 //	@Select("(SELECT id,quoto_name,state from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}) UNION (SELECT id,column_alias as quoto_name,state from Column_alias where is_delete=0 and column_alias=#{QuotoName})")
 //	public List<QuotoInfo> queryQuotoInfo(String QuotoName);
-	
+
 	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")
 	public ServicePathInfo queryServicePathInfo(int tableId);
-	
+
 	@Select("select code from dimension where id in(select substring_index(substring_index(a.dimension,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.dimension) - length(replace(a.dimension,',',''))+1) where a.id=#{quotoId})")
 	public List<String> queryDimensionName(int quotoId);
-	
+
 	@Select("select adjective.code_name,dimension.code as name,adjective.type,adjective.req_parm as code from adjective LEFT JOIN adjective_type ON adjective.type=adjective_type.id LEFT JOIN dimension on adjective_type.dimension_id=dimension.id where adjective.id in (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.id=#{quotoId})")
 	public List<Adjective> queryAdjective(int quotoId);
-	
-	@Select("select type,count(*) as count from quoto where deleted=0 GROUP BY type")
-	public List<StatisticResponse> queryQuotoTypeNum();
-	
+
 	@Select("select tt.name from (select a.name, substring_index(substring_index(a.quotos,',',b.help_topic_id+1),',',-1) as id  from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.quotos) - length(replace(a.quotos,',',''))+1) where a.deleted=0 and a.quotos!='') as tt where tt.id=#{id}")
 	public List<String> findQuotoNameByContainQuotoId(int id);
 
