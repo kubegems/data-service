@@ -5,9 +5,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections.SetUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitterReturnValueHandler;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
@@ -49,6 +51,7 @@ public class QuotoService {
 	@Autowired
 	RestTemplate restTemplate;
 
+	@SuppressWarnings("deprecation")
 	public CommonResponse checkUnique(CheckReq checkReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -600,17 +603,19 @@ public class QuotoService {
 				String group = "'@group':'";
 				bodyRequest = bodyRequest + ";";
 				// 查询维度的名称
-				List<String> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
+				Set<String> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
 				commonResponse.setDimensions(dimensionName);
 				commonResponse.setDimensionIds(quoto.getDimension());
-				for (int i = 0; i < dimensionName.size(); i++) {
+				int i = 0;
+				for (String dimension : dimensionName) {
 					if (i == dimensionName.size() - 1) {
-						group = group + dimensionName.get(i) + "'";
-						bodyRequest = bodyRequest + dimensionName.get(i) + "'";
+						group = group + dimension + "'";
+						bodyRequest = bodyRequest + dimension + "'";
 					} else {
-						group = group + dimensionName.get(i) + ",";
-						bodyRequest = bodyRequest + dimensionName.get(i) + ";";
+						group = group + dimension + ",";
+						bodyRequest = bodyRequest + dimension + ";";
 					}
+					i++;
 				}
 				bodyRequest = bodyRequest + "," + group;
 			} else {
@@ -669,6 +674,7 @@ public class QuotoService {
 		return commonResponse;
 	}
 
+	@SuppressWarnings("deprecation")
 	private DataCommonResponse getCalculateValue(String fieldName, int page, int count) {
 		if (NumberUtils.isNumber(fieldName)) {
 			DataCommonResponse calculateValue = new DataCommonResponse();
@@ -760,8 +766,8 @@ public class QuotoService {
 		}
 		// 代表a查出来的数据是只有一个
 		if (a.getType() == 1) {
-			JSONObject object = JSONObject.parseObject(a.getData().toString());
-			BigDecimal aValue = object.getBigDecimal(a.getField());
+			JSONObject aObject = JSONObject.parseObject(a.getData().toString());
+			BigDecimal aValue = aObject.getBigDecimal(a.getField());
 			if (b.getType() == 0) {
 				if (op.equals("+") || op.equals("-")) {
 					return a;
@@ -771,28 +777,58 @@ public class QuotoService {
 					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
-				object.put(a.getField(),
+				aObject.put(a.getField(),
 						caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
-				a.setData(object);
+				a.setData(aObject);
 				return a;
 			} else if (b.getType() == 1) {
 				// 都有维度
 				if (b.getDimensions() != null && a.getDimensions() != null) {
 					// 如果维度不同，报错
-					if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+					if (!SetUtils.isEqualSet(b.getDimensions(), a.getDimensions())) {
 						throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
 					} else {
 						// 维度相同的运算 1对1
-
+						JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+						BigDecimal bValue = bObject.getBigDecimal(b.getField());
+						//判断维度的值是否相同
+						boolean sameDimensionValue=true;
+						for (String dimension : b.getDimensions()) {
+							if(!aObject.getString(dimension).equals(bObject.getString(dimension))) {
+								sameDimensionValue=false;
+								break;
+							}
+						}
+						if(sameDimensionValue) {
+							aObject.put(a.getField(),caluclate(aValue,bValue,op,"除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
+							a.setData(aObject);
+							return a;
+						}else {
+							if(op.equals("*")||op.equals("/")) {
+								throw new UnsupportedOperationException("维度的值不同的指标,不能做*/运算");
+							}else {
+								if(op.equals("-")) {
+									//将b的数变成相反数
+									bValue=bValue.negate();
+									bObject.put(b.getField(), bValue);
+								}
+								//合并成list返回
+								List<JSONObject> list=new ArrayList<JSONObject>();
+								list.add(aObject);
+								list.add(bObject);
+								a.setData(list);
+								return a;
+							}
+						}
 					}
 
 				} else {
 					// 一个有维度，一个没有维度，或者都没维度 进行四则运算
 					JSONObject bObject = JSONObject.parseObject(b.getData().toString());
 					BigDecimal bValue = bObject.getBigDecimal(b.getField());
-					object.put(a.getField(),
+					aObject.put(a.getField(),
 							caluclate(aValue, bValue, op, "除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
-					a.setData(object);
+					a.setData(aObject);
 					if (b.getDimensions() != null && b.getDimensions().size() > 0) {
 						a.setDimensions(b.getDimensions());
 						a.setDimensionIds(b.getDimensionIds());
@@ -800,8 +836,8 @@ public class QuotoService {
 					return a;
 				}
 			} else { // b为多维的
-				if (a.getDimensions() == null || a.getDimensions().size() == 0) {
-					List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
+				List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
+				if (a.getDimensions() == null || a.getDimensions().size() == 0) {					
 					for (int i = 0; i < list.size(); i++) {
 						list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
 								"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
@@ -812,11 +848,16 @@ public class QuotoService {
 					if (b.getDimensions() == null || b.getDimensions().size() == 0) {
 						throw new UnsupportedOperationException("有维度的数据与多条没有维度的数据不能做四则运算");
 					} else {
-						if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+						if (!SetUtils.isEqualSet(b.getDimensions(), a.getDimensions())) {
 							throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
 						} else {
 							// 维度相同的运算 1对多
-
+							if (op.equals("*") || op.equals("/")) {
+								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做*/运算");
+							}
+							for(int i=0;i<list.size();i++) {
+								
+							}
 						}
 					}
 				}
@@ -857,27 +898,27 @@ public class QuotoService {
 					if (a.getDimensions() == null || a.getDimensions().size() == 0) {
 						throw new UnsupportedOperationException("有维度的数据与多条没有维度的数据不能做四则运算");
 					} else {
-						if (!ListUtils.isEqualList(b.getDimensions(), a.getDimensions())) {
+						if (!SetUtils.isEqualSet(b.getDimensions(), a.getDimensions())) {
 							throw new UnsupportedOperationException("维度不同的指标,不能做四则运算");
 						} else {
 							// 维度相同的运算 n对1
-							if(op.equals("*")||op.equals("/")) {
-								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做四则*/运算");
+							if (op.equals("*") || op.equals("/")) {
+								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做*/运算");
 							}
-							//做+-操作
-							
-							
+							// 做+-操作
+
 						}
 					}
 				}
 			} else {
-				//b为多维数据
+				// b为多维数据
 				if (a.getDimensions() == null || a.getDimensions().size() == 0 || b.getDimensions() == null
-						|| b.getDimensions().size() == 0||!ListUtils.isEqualList(a.getDimensions(), b.getDimensions())) {
+						|| b.getDimensions().size() == 0
+						|| !SetUtils.isEqualSet(a.getDimensions(), b.getDimensions())) {
 					throw new UnsupportedOperationException("两个多条的指标数据是不能做四则运算的");
 				}
-				if(op.equals("*")||op.equals("/")) {
-					
+				if (op.equals("*") || op.equals("/")) {
+
 				}
 			}
 		}
@@ -885,6 +926,8 @@ public class QuotoService {
 		DataCommonResponse calculateValue = new DataCommonResponse();
 		return calculateValue;
 	}
+	
+//	public boolean dimension
 
 	public BigDecimal caluclate(BigDecimal aValue, BigDecimal bvalue, String op, String exceptionMessage) {
 		if (op.equals("+")) {

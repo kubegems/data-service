@@ -4,7 +4,7 @@ spring:
       discovery:
         server-addr: 172.16.23.85:31215
   datasource:
-    url: jdbc:mysql://10.12.32.229:3306/bigdata_rule?characterEncoding=utf8&useSSL=true
+    url: jdbc:mysql://172.16.31.145:3306/bigdata_rule?characterEncoding=utf8&useSSL=true
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver

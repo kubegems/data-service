@@ -2,6 +2,7 @@ package com.cloudminds.bigdata.dataservice.quoto.manage.mapper;
 
 import java.sql.Array;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -107,7 +108,7 @@ public interface QuotoMapper {
 	public ServicePathInfo queryServicePathInfo(int tableId);
 
 	@Select("select code from dimension where id in(select substring_index(substring_index(a.dimension,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.dimension) - length(replace(a.dimension,',',''))+1) where a.id=#{quotoId})")
-	public List<String> queryDimensionName(int quotoId);
+	public Set<String> queryDimensionName(int quotoId);
 
 	@Select("select adjective.code_name,dimension.code as name,adjective.type,adjective.req_parm as code from adjective LEFT JOIN adjective_type ON adjective.type=adjective_type.id LEFT JOIN dimension on adjective_type.dimension_id=dimension.id where adjective.id in (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.id=#{quotoId})")
 	public List<Adjective> queryAdjective(int quotoId);
