@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.apache.commons.collections.SetUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
