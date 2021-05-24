@@ -462,18 +462,6 @@ public class QuotoService {
 			return commonResponse;
 		}
 
-//		List<QuotoInfo> quotoInfo = quotoMapper.queryQuotoInfo(quoto.getField());
-//		if (quotoInfo == null||quotoInfo.size()==0) {
-//			commonResponse.setSuccess(false);
-//			commonResponse.setMessage("数据服务没有此指标的配置,请前往数据服务-服务管理页配置此指标");
-//			return commonResponse;
-//		}
-//		if (quotoInfo.get(0).getState() == 0) {
-//			commonResponse.setSuccess(false);
-//			commonResponse.setMessage("数据服务此指标不可用,请前往数据服务-服务管理页启用此指标");
-//			return commonResponse;
-//		}
-
 		// 激活指标
 		if (quotoMapper.updateQuotoState(StateEnum.active_state.getCode(), id) != 1) {
 			commonResponse.setSuccess(false);
@@ -789,29 +777,22 @@ public class QuotoService {
 						// 维度相同的运算 1对1
 						JSONObject bObject = JSONObject.parseObject(b.getData().toString());
 						BigDecimal bValue = bObject.getBigDecimal(b.getField());
-						//判断维度的值是否相同
-						boolean sameDimensionValue=true;
-						for (String dimension : b.getDimensions()) {
-							if(!aObject.getString(dimension).equals(bObject.getString(dimension))) {
-								sameDimensionValue=false;
-								break;
-							}
-						}
-						if(sameDimensionValue) {
-							aObject.put(a.getField(),caluclate(aValue,bValue,op,"除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
+						if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
+							aObject.put(a.getField(), caluclate(aValue, bValue, op,
+									"除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
 							a.setData(aObject);
 							return a;
-						}else {
-							if(op.equals("*")||op.equals("/")) {
+						} else {
+							if (op.equals("*") || op.equals("/")) {
 								throw new UnsupportedOperationException("维度的值不同的指标,不能做*/运算");
-							}else {
-								if(op.equals("-")) {
-									//将b的数变成相反数
-									bValue=bValue.negate();
+							} else {
+								if (op.equals("-")) {
+									// 将b的数变成相反数
+									bValue = bValue.negate();
 									bObject.put(b.getField(), bValue);
 								}
-								//合并成list返回
-								List<JSONObject> list=new ArrayList<JSONObject>();
+								// 合并成list返回
+								List<JSONObject> list = new ArrayList<JSONObject>();
 								list.add(aObject);
 								list.add(bObject);
 								a.setData(list);
@@ -835,7 +816,7 @@ public class QuotoService {
 				}
 			} else { // b为多维的
 				List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
-				if (a.getDimensions() == null || a.getDimensions().size() == 0) {					
+				if (a.getDimensions() == null || a.getDimensions().size() == 0) {
 					for (int i = 0; i < list.size(); i++) {
 						list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
 								"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
@@ -853,9 +834,13 @@ public class QuotoService {
 							if (op.equals("*") || op.equals("/")) {
 								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做*/运算");
 							}
-							for(int i=0;i<list.size();i++) {
-								
+							// 相减，将b变成负数
+							if (op.equals("-")) {
+								for (int i = 0; i < list.size(); i++) {
+									list.get(i).put(b.getField(), list.get(i).getBigDecimal(b.getField()).negate());
+								}
 							}
+							return addN1(b, a);
 						}
 					}
 				}
@@ -903,8 +888,11 @@ public class QuotoService {
 							if (op.equals("*") || op.equals("/")) {
 								throw new UnsupportedOperationException("维度相同，数目不相同的指标不能做*/运算");
 							}
-							// 做+-操作
-
+							// 做+-操作 如果是-，将b变为相反数
+							if (op.equals("-")) {
+								bObject.put(b.getField(), bValue.negate());
+							}
+							return addN1(a, b);
 						}
 					}
 				}
@@ -915,17 +903,80 @@ public class QuotoService {
 						|| !SetUtils.isEqualSet(a.getDimensions(), b.getDimensions())) {
 					throw new UnsupportedOperationException("两个多条的指标数据是不能做四则运算的");
 				}
+				List<JSONObject> bList = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 				if (op.equals("*") || op.equals("/")) {
-
+					if (list.size() != bList.size()) {
+						throw new UnsupportedOperationException("都包含多个数据的指标,数据量不相等是不能做*/运算");
+					}
 				}
+				for (int i = 0; i < list.size(); i++) {
+					JSONObject aObject = list.get(i);
+					for (int j = 0; j < bList.size(); j++) {
+						JSONObject bObject = bList.get(j);
+						if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
+							aObject.put(a.getField(), caluclate(aObject.getBigDecimal(a.getField()),
+									bObject.getBigDecimal(b.getField()), op, "除法里分母为0,具体分母数据：" + bObject));
+							list.set(i, aObject);
+							bList.remove(j);
+							break;
+						}
+						if (j == bList.size() - 1) {
+							if (op.equals("*") || op.equals("/")) {
+								throw new UnsupportedOperationException("指标维度值不能一一对应时,是不能做*/运算");
+							}
+						}
+					}
+				}
+				if (op.equals("*") || op.equals("/")) {
+					a.setData(list);
+					return a;
+				} else {
+					//如果是符号-,减数变相反数
+					if (op.equals("-")) {
+						for (int i = 0; i < bList.size(); i++) {
+							JSONObject bObject = bList.get(i);
+							bObject.put(b.getField(), bObject.getBigDecimal(b.getField()).negate());
+							bList.set(i, bObject);
+						}
+					}
+					list.addAll(bList);
+					a.setData(list);
+					return a;
+				}
+
 			}
 		}
 
 		DataCommonResponse calculateValue = new DataCommonResponse();
 		return calculateValue;
 	}
-	
-//	public boolean dimension
+
+	public boolean dimensionValueEqual(JSONObject a, JSONObject b, Set<String> dimensions) {
+		for (String dimension : dimensions) {
+			if (!a.getString(dimension).equals(b.getString(dimension))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// n+1 都有维度的数据相加
+	public DataCommonResponse addN1(DataCommonResponse a, DataCommonResponse b) {
+		List<JSONObject> list = JSONObject.parseArray(a.getData().toString(), JSONObject.class);
+		JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+		for (int i = 0; i < list.size(); i++) {
+			JSONObject aObject = list.get(i);
+			if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
+				aObject.put(a.getField(), aObject.getBigDecimal(a.getField()).add(bObject.getBigDecimal(b.getField())));
+				list.set(i, aObject);
+				a.setData(list);
+				return a;
+			}
+		}
+		list.add(bObject);
+		a.setData(list);
+		return a;
+	}
 
 	public BigDecimal caluclate(BigDecimal aValue, BigDecimal bvalue, String op, String exceptionMessage) {
 		if (op.equals("+")) {
