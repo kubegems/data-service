@@ -226,15 +226,8 @@ public class QuotoService {
 				commonResponse.setMessage("加工方式必须有值");
 				return commonResponse;
 			}
-			String expression = quoto.getExpression();
-			expression.replaceAll(" ", "");
-			quoto.setExpression(expression);
-			expression.replaceAll("(", "");
-			expression.replaceAll(")", "");
-			expression.replaceAll("+", " ");
-			expression.replaceAll("-", " ");
-			expression.replaceAll("*", " ");
-			expression.replaceAll("/", " ");
+			String expression = quoto.getExpression().replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
+					.replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
 			String[] expressions = expression.split(" ");
 			int[] quotos = new int[expressions.length];
 			for (int i = 0; i < expressions.length; i++) {
@@ -322,15 +315,8 @@ public class QuotoService {
 					commonResponse.setMessage("加工方式必须有值");
 					return commonResponse;
 				}
-				String expression = quoto.getExpression();
-				expression.replaceAll(" ", "");
-				quoto.setExpression(expression);
-				expression.replaceAll("(", "");
-				expression.replaceAll(")", "");
-				expression.replaceAll("+", " ");
-				expression.replaceAll("-", " ");
-				expression.replaceAll("*", " ");
-				expression.replaceAll("/", " ");
+				String expression =  quoto.getExpression().replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
+						.replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
 				String[] expressions = expression.split(" ");
 				int[] quotos = new int[expressions.length];
 				for (int i = 0; i < expressions.length; i++) {
@@ -554,7 +540,8 @@ public class QuotoService {
 		// 复合指标处理逻辑
 		if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
 			try {
-				DataCommonResponse dataCommonResponse = caculate(quoto.getExpression() + "#", page, count);
+				DataCommonResponse dataCommonResponse = caculate(quoto.getExpression().replace(" ", "") + "#", page,
+						count);
 				if (dataCommonResponse.isSuccess()) {
 					quoto.setCycle(dataCommonResponse.getCycle());
 					quoto.setDimension(dataCommonResponse.getDimensionIds());
@@ -932,7 +919,7 @@ public class QuotoService {
 					a.setData(list);
 					return a;
 				} else {
-					//如果是符号-,减数变相反数
+					// 如果是符号-,减数变相反数
 					if (op.equals("-")) {
 						for (int i = 0; i < bList.size(); i++) {
 							JSONObject bObject = bList.get(i);
@@ -1042,53 +1029,73 @@ public class QuotoService {
 			} else if (adjective.getCode_name().equals("last2YEAR")) {
 				result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-2) + "'";
 			} else if (adjective.getCode_name().equals("ftDate(w)")) {
-				result = result + ">=':'" + DateTimeUtils.ftDateWeek()+ "'";
+				result = result + ">=':'" + DateTimeUtils.ftDateWeek() + "'";
 			} else if (adjective.getCode_name().equals("ftDate(m)")) {
-				result = result + ">=':'" +DateTimeUtils.ftDateMonth()+ "'";
+				result = result + ">=':'" + DateTimeUtils.ftDateMonth() + "'";
 			} else if (adjective.getCode_name().equals("ftDate(q)")) {
-				result = result + ">=':'" + DateTimeUtils.ftDateQuarter()+ "'";
+				result = result + ">=':'" + DateTimeUtils.ftDateQuarter() + "'";
 			} else if (adjective.getCode_name().equals("ftDate(y)")) {
-				result = result + ">=':'" + DateTimeUtils.ftDateYear()+ "'";
+				result = result + ">=':'" + DateTimeUtils.ftDateYear() + "'";
 			} else if (adjective.getCode_name().equals("pre1MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre2MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre3MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre4MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre5MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre6MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre12MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre24MONTH")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24) + "\\',<\\'" + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24) + "\\',<\\'"
+						+ DateTimeUtils.getPreDateByMonth(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre1DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre2DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre3DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre7DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre14DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre15DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre30DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre60DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre90DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre180DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre360DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre365DAY")) {
-				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365) + "\\',<\\'" + DateTimeUtils.getLastDateByDay(0) + "\\''";
+				result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365) + "\\',<\\'"
+						+ DateTimeUtils.getLastDateByDay(0) + "\\''";
 			} else if (adjective.getCode_name().equals("pre1YEAR")) {
 				result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByYear(-1) + "\\',<\\'"
 						+ DateTimeUtils.getPreDateByYear(0) + "\\''";
