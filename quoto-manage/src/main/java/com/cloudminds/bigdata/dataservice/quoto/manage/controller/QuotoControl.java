@@ -18,6 +18,8 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonRes
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DataCommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.service.QuotoService;
 
+import lombok.Data;
+
 @RestController
 @RequestMapping("/quotoManage/quoto")
 public class QuotoControl {
@@ -134,13 +136,21 @@ public class QuotoControl {
 	// 获取express信息
 	@RequestMapping(value = "queryExpressInfo", method = RequestMethod.POST)
 	public DataCommonResponse queryExpressInfo(@RequestBody ExpressInfoReq express) {
+		DataCommonResponse dataCommonResponse=new DataCommonResponse();
+		
 		if(StringUtils.isEmpty(express.getExpress())) {
-			DataCommonResponse dataCommonResponse=new DataCommonResponse();
 			dataCommonResponse.setSuccess(false);
 			dataCommonResponse.setMessage("参数值不能为空");
 			return dataCommonResponse;
 		}
-		DataCommonResponse dataCommonResponse = quotoService.caculate(express.getExpress()+"#", 0, 2);
+		express.setExpress(express.getExpress().replace(" ", ""));
+		try {
+		 dataCommonResponse = quotoService.caculate(express.getExpress()+"#", 0, 2);
+		}catch (Exception e) {
+			// TODO: handle exception
+			dataCommonResponse.setSuccess(false);
+			dataCommonResponse.setMessage(e.getMessage());
+		}
 		return dataCommonResponse;
 	}
 
