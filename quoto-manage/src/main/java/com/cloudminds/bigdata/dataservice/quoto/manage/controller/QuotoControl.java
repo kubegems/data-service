@@ -18,8 +18,6 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonRes
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DataCommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.service.QuotoService;
 
-import lombok.Data;
-
 @RestController
 @RequestMapping("/quotoManage/quoto")
 public class QuotoControl {
