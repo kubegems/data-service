@@ -165,7 +165,7 @@ public class AdjectiveService {
 		if (adjectiveQuery.getName() != null && (!adjectiveQuery.getName().equals(""))) {
 			condition = condition + " and name like '" + adjectiveQuery.getName() + "%'";
 		}
-		condition = condition + " order by update_time desc";
+		condition = condition + " order by id asc";
 		int page = adjectiveQuery.getPage();
 		int size = adjectiveQuery.getSize();
 		int startLine = (page - 1) * size;
