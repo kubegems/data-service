@@ -22,6 +22,10 @@ run_service() {
 	"standard-manage")
         java -jar -Duser.timezone=Asia/Shanghai /dataservice/standard-manage/bigdata-dataservice-standard-manage.jar --spring.profiles.active=${2}
         ;;
+		
+	"quoto-manage")
+        java -jar -Duser.timezone=Asia/Shanghai /dataservice/quoto-manage/bigdata-dataservice-quoto-manage.jar --spring.profiles.active=${2}
+        ;;
 
     *)
         echo "command not found; exit now!"
