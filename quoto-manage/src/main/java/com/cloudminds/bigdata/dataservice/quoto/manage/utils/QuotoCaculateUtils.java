@@ -1,6 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.utils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -91,7 +92,7 @@ public class QuotoCaculateUtils {
 				// 抛异常，除数的分母为0
 				throw new UnsupportedOperationException(exceptionMessage);
 			}
-			return aValue.divide(bvalue);
+			return aValue.divide(bvalue, 2,RoundingMode.HALF_UP);
 		}
 	}
 
@@ -323,7 +324,7 @@ public class QuotoCaculateUtils {
 				if (a.getDimensions() == null || a.getDimensions().size() == 0 || b.getDimensions() == null
 						|| b.getDimensions().size() == 0
 						|| !SetUtils.isEqualSet(a.getDimensions(), b.getDimensions())) {
-					throw new UnsupportedOperationException("两个多条的指标数据是不能做四则运算的");
+					throw new UnsupportedOperationException("两个多条的指标数据维度不同时是不能做四则运算的");
 				}
 				List<JSONObject> bList = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 				if (op.equals("*") || op.equals("/")) {
