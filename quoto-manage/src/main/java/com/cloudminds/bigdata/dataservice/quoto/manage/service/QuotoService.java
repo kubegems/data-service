@@ -174,6 +174,7 @@ public class QuotoService {
 		return commonResponse;
 	}
 
+	@SuppressWarnings("deprecation")
 	public CommonResponse insertQuoto(Quoto quoto) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -226,20 +227,30 @@ public class QuotoService {
 				commonResponse.setMessage("加工方式必须有值");
 				return commonResponse;
 			}
-			String expression = quoto.getExpression().replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
+			String expression = quoto.getExpression();
+			expression = expression.replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
 					.replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
 			String[] expressions = expression.split(" ");
-			int[] quotos = new int[expressions.length];
+			List<Integer> quotos = new ArrayList<Integer>();
 			for (int i = 0; i < expressions.length; i++) {
+				if (NumberUtils.isNumber(expressions[i])) {
+					continue;
+				}
 				Quoto quotoInfo = quotoMapper.queryQuotoByName(expressions[i]);
 				if (quotoInfo == null || quotoInfo.getState() != StateEnum.active_state.getCode()) {
 					commonResponse.setSuccess(false);
 					commonResponse.setMessage(expressions[i] + ":此指标不存在或未激活,请重新写");
 					return commonResponse;
 				}
-				quotos[i] = quotoInfo.getId();
+				quotos.add(quotoInfo.getId());
 			}
-			quoto.setQuotos(quotos);
+			if (quotos.size() > 0) {
+				int[] quotosInt = new int[quotos.size()];
+				for(int i=0;i<quotos.size();i++) {
+					quotosInt[i]=quotos.get(i);
+				}
+				quoto.setQuotos(quotosInt);
+			}
 		}
 
 		// 插入数据库
@@ -255,6 +266,7 @@ public class QuotoService {
 		return commonResponse;
 	}
 
+	@SuppressWarnings("deprecation")
 	public CommonResponse updateQuoto(Quoto quoto) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -315,21 +327,30 @@ public class QuotoService {
 					commonResponse.setMessage("加工方式必须有值");
 					return commonResponse;
 				}
-				String expression = quoto.getExpression().replaceAll(" ", "").replaceAll("[(]", "")
-						.replaceAll("[)]", "").replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ")
-						.replaceAll("[/]", " ");
+				String expression = quoto.getExpression();
+				expression = expression.replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
+						.replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
 				String[] expressions = expression.split(" ");
-				int[] quotos = new int[expressions.length];
+				List<Integer> quotos = new ArrayList<Integer>();
 				for (int i = 0; i < expressions.length; i++) {
+					if (NumberUtils.isNumber(expressions[i])) {
+						continue;
+					}
 					Quoto quotoInfo = quotoMapper.queryQuotoByName(expressions[i]);
 					if (quotoInfo == null || quotoInfo.getState() != StateEnum.active_state.getCode()) {
 						commonResponse.setSuccess(false);
 						commonResponse.setMessage(expressions[i] + ":此指标不存在或未激活,请重新写");
 						return commonResponse;
 					}
-					quotos[i] = quotoInfo.getId();
+					quotos.add(quotoInfo.getId());
 				}
-				quoto.setQuotos(quotos);
+				if (quotos.size() > 0) {
+					int[] quotosInt = new int[quotos.size()];
+					for(int i=0;i<quotos.size();i++) {
+						quotosInt[i]=quotos.get(i);
+					}
+					quoto.setQuotos(quotosInt);
+				}
 			}
 		}
 		try {
@@ -800,6 +821,7 @@ public class QuotoService {
 
 	/**
 	 * 解析计算公式获取数据
+	 * 
 	 * @param str   计算公式
 	 * @param page  查询数据的页数
 	 * @param count 每页的条数
