@@ -15,6 +15,9 @@ public interface TableInfoMapper {
 
 	@Update("update Table_info set state=#{state} where id=#{id}")
 	public int updateTableInfoStatus(int id, int state);
+	
+	@Select("select SUM(num) from ((select count(*) as num from Column_alias where table_id=#{id} and is_delete=0) union (select count(*) as num from Quoto_info where table_id=#{id} and is_delete=0)) as tt")
+	public int relateQuotoOrColumnNum(int id);
 
 	@Update("update Table_info set is_delete=#{delete} where id=#{id}")
 	public int updateTableInfoDelete(int id, int delete);

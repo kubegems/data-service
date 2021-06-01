@@ -30,7 +30,7 @@ import com.alibaba.fastjson.JSONObject;
 import apijson.NotNull;
 import apijson.RequestMethod;
 import apijson.entity.ColumnAlias;
-import apijson.entity.CommonResponse;
+import apijson.entity.ConfigLoadResponse;
 import apijson.entity.DatabaseInfo;
 import apijson.entity.QuotoInfo;
 import apijson.entity.TableInfo;
@@ -205,8 +205,8 @@ public class APIJSONParser extends AbstractParser<Long> {
 	// return 50;
 	// }
 	
-	public CommonResponse loadAliasConfig() {
-		CommonResponse commonResponse=new CommonResponse();
+	public ConfigLoadResponse loadAliasConfig() {
+		ConfigLoadResponse commonResponse=new ConfigLoadResponse();
 		// 查询配置的数据库信息
 		SQLConfig sqlConfig = APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
 		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Db_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
@@ -297,7 +297,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 		AbstractSQLConfig.TABLE_KEY_MAP.clear();
 		AbstractSQLConfig.tableColumnMap.clear();
 		AbstractSQLConfig.TABLE_KEY_MAP=TABLE_KEY_MAP;
-		AbstractSQLConfig.tableColumnMap=tableColumnMap;	
+		AbstractSQLConfig.tableColumnMap=tableColumnMap;
+		commonResponse.setTABLE_KEY_MAP(TABLE_KEY_MAP);
+		commonResponse.setTableColumnMap(tableColumnMap);
 		return commonResponse;
 	}
 

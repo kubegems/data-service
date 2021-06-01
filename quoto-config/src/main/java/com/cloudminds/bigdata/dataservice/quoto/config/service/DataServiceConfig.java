@@ -260,6 +260,12 @@ public class DataServiceConfig {
 
 	public CommonResponse updateTableInfoStatus(int id, int status) {
 		CommonResponse commonResponse = new CommonResponse();
+		//表禁用需要表下面没有列别名和指标
+		if(status==0&&tableInfoMapper.relateQuotoOrColumnNum(id)>0){
+			commonResponse.setMessage("表禁用需要表下面没有列别名和指标！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
 		if (tableInfoMapper.updateTableInfoStatus(id, status) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -269,6 +275,13 @@ public class DataServiceConfig {
 
 	public CommonResponse deleteTableInfo(int id) {
 		CommonResponse commonResponse = new CommonResponse();
+		//表删除需要表下面没有列别名和指标
+		if(tableInfoMapper.relateQuotoOrColumnNum(id)>0){
+			commonResponse.setMessage("表删除需要表下面没有列别名和指标！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		
 		if (tableInfoMapper.updateTableInfoDelete(id, 1) != 1) {
 			commonResponse.setMessage("删除失败,请稍后再试！");
 			commonResponse.setSuccess(false);
