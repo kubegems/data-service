@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -21,6 +22,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Adjective;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.DataServiceResponse;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Dimension;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoAccessHistory;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
@@ -599,20 +601,27 @@ public class QuotoService {
 				String group = "'@group':'";
 				bodyRequest = bodyRequest + ";";
 				// 查询维度的名称
-				Set<String> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
-				commonResponse.setDimensions(dimensionName);
+				List<Dimension> dimensionName = quotoMapper.queryDimensionName(quoto.getId());
+				Set<String> dimensionSet=new HashSet<>();
+
 				commonResponse.setDimensionIds(quoto.getDimension());
 				int i = 0;
-				for (String dimension : dimensionName) {
+				for (Dimension dimension : dimensionName) {
+					dimensionSet.add(dimension.getAlias());
+					String columnRequest=dimension.getCode();
+					if(!dimension.getAlias().equals(dimension.getCode())) {
+						columnRequest=columnRequest+":"+dimension.getAlias();
+					}
 					if (i == dimensionName.size() - 1) {
-						group = group + dimension + "'";
-						bodyRequest = bodyRequest + dimension + "'";
+						group = group + dimension.getAlias() + "'";
+						bodyRequest = bodyRequest + columnRequest + "'";
 					} else {
-						group = group + dimension + ",";
-						bodyRequest = bodyRequest + dimension + ";";
+						group = group + dimension.getAlias() + ",";
+						bodyRequest = bodyRequest + columnRequest + ";";
 					}
 					i++;
 				}
+				commonResponse.setDimensions(dimensionSet);
 				bodyRequest = bodyRequest + "," + group;
 			} else {
 				bodyRequest = bodyRequest + "'";
