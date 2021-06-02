@@ -92,7 +92,7 @@ public class QuotoCaculateUtils {
 				// 抛异常，除数的分母为0
 				throw new UnsupportedOperationException(exceptionMessage);
 			}
-			return aValue.divide(bvalue, 2,RoundingMode.HALF_UP);
+			return aValue.divide(bvalue, 4,RoundingMode.HALF_UP);
 		}
 	}
 
