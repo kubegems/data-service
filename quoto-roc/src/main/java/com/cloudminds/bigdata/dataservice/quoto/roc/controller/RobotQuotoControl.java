@@ -45,6 +45,65 @@ public class RobotQuotoControl extends APIJSONController {
 		request = "{'@schema':'ceph_meta'," + request.substring(request.indexOf("{") + 1);
 		return getData(request, session);
 	}
+	@PostMapping(value = "sv")
+	public String getSvData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'sv'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "roc")
+	public String getRocData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'roc'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "vbn")
+	public String getVbnData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'vbn'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "maQiaoDb")
+	public String getMaqiaodbData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'maqiaodb'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "menJing")
+	public String getMenjingData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'menjing'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "fangCangDb")
+	public String getFangcangdbData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'fangcangdb'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "cross")
+	public String getCrossData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'cross'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "cropsRedash")
+	public String getcropsRedashData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'crops_redash'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "cms")
+	public String getCmsData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'cms'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
+	
+	@PostMapping(value = "boss")
+	public String getBossData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'boss'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
 
 	@PostMapping(value = "cdmCo")
 	public String getCdmCoData(@RequestBody String request, HttpSession session) {

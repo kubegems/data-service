@@ -182,7 +182,7 @@ public class AdjectiveService {
 		if (adjectiveQuery.getType() != -1) {
 			condition = condition + " and type=" + adjectiveQuery.getType();
 		}
-		condition = condition + " order by name asc";
+		condition = condition + " order by id asc";
 		commonResponse.setData(adjectiveMapper.queryAllAdjective(condition));
 		return commonResponse;
 	}
