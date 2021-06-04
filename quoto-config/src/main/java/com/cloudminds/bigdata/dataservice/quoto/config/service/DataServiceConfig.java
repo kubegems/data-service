@@ -73,8 +73,8 @@ public class DataServiceConfig {
 				}
 			}
 		} else {
-			String dataType=getColunmType(columnAlias.getTable_id(),columnAlias.getColumn_name());
-			if(dataType==null) {
+			String dataType = getColunmType(columnAlias.getTable_id(), columnAlias.getColumn_name());
+			if (dataType == null) {
 				commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
 				commonResponse.setSuccess(false);
 				return commonResponse;
@@ -90,13 +90,27 @@ public class DataServiceConfig {
 
 	public CommonResponse updateColumnAlias(ColumnAlias columnAlias) {
 		CommonResponse commonResponse = new CommonResponse();
-		String dataType=getColunmType(columnAliasMapper.getColumnAliasById(columnAlias.getId()).getTable_id(),columnAlias.getColumn_name());
-		if(dataType==null) {
-			commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+		// 查询列信息
+		ColumnAlias oldColumnAlias = columnAliasMapper.getColumnAliasById(columnAlias.getId());
+		if (oldColumnAlias == null) {
+			commonResponse.setMessage("列不存！");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		columnAlias.setData_type(dataType);
+        //如果列名没有发生变化,就不用去查询数据类型
+		if (columnAlias.getColumn_name().equals(oldColumnAlias.getColumn_name())) {
+			columnAlias.setData_type(oldColumnAlias.getData_type());
+		} else {
+			String dataType = getColunmType(columnAliasMapper.getColumnAliasById(columnAlias.getId()).getTable_id(),
+					columnAlias.getColumn_name());
+			if (dataType == null) {
+				commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
+			columnAlias.setData_type(dataType);
+		}
+		
 		if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -173,16 +187,16 @@ public class DataServiceConfig {
 
 	public CommonResponse updateQuotoInfoStatus(int id, int status) {
 		CommonResponse commonResponse = new CommonResponse();
-		QuotoInfo quotoInfo=quotoInfoMapper.getQuotoInfoById(id);
-		if(quotoInfo==null) {
+		QuotoInfo quotoInfo = quotoInfoMapper.getQuotoInfoById(id);
+		if (quotoInfo == null) {
 			commonResponse.setMessage("指标信息不存在！");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		if(status==0&&quotoInfo.getState()==1) {
-			String name=quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
-			if(!StringUtils.isEmpty(name)) {
-				commonResponse.setMessage("有激活的指标("+name+")运行,不能禁用！");
+		if (status == 0 && quotoInfo.getState() == 1) {
+			String name = quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+			if (!StringUtils.isEmpty(name)) {
+				commonResponse.setMessage("有激活的指标(" + name + ")运行,不能禁用！");
 				commonResponse.setSuccess(false);
 				return commonResponse;
 			}
@@ -196,17 +210,17 @@ public class DataServiceConfig {
 
 	public CommonResponse deleteQuotoInfo(int id) {
 		CommonResponse commonResponse = new CommonResponse();
-		//查询指标信息
-		QuotoInfo quotoInfo=quotoInfoMapper.getQuotoInfoById(id);
-		if(quotoInfo==null) {
+		// 查询指标信息
+		QuotoInfo quotoInfo = quotoInfoMapper.getQuotoInfoById(id);
+		if (quotoInfo == null) {
 			commonResponse.setMessage("指标信息不存在！");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		if(quotoInfo.getState()==1) {
-			String name=quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
-			if(!StringUtils.isEmpty(name)) {
-				commonResponse.setMessage("有激活的指标("+name+")运行,不能删除！");
+		if (quotoInfo.getState() == 1) {
+			String name = quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+			if (!StringUtils.isEmpty(name)) {
+				commonResponse.setMessage("有激活的指标(" + name + ")运行,不能删除！");
 				commonResponse.setSuccess(false);
 				return commonResponse;
 			}
@@ -260,8 +274,8 @@ public class DataServiceConfig {
 
 	public CommonResponse updateTableInfoStatus(int id, int status) {
 		CommonResponse commonResponse = new CommonResponse();
-		//表禁用需要表下面没有列别名和指标
-		if(status==0&&tableInfoMapper.relateQuotoOrColumnNum(id)>0){
+		// 表禁用需要表下面没有列别名和指标
+		if (status == 0 && tableInfoMapper.relateQuotoOrColumnNum(id) > 0) {
 			commonResponse.setMessage("表禁用需要表下面没有列别名和指标！");
 			commonResponse.setSuccess(false);
 			return commonResponse;
@@ -275,13 +289,13 @@ public class DataServiceConfig {
 
 	public CommonResponse deleteTableInfo(int id) {
 		CommonResponse commonResponse = new CommonResponse();
-		//表删除需要表下面没有列别名和指标
-		if(tableInfoMapper.relateQuotoOrColumnNum(id)>0){
+		// 表删除需要表下面没有列别名和指标
+		if (tableInfoMapper.relateQuotoOrColumnNum(id) > 0) {
 			commonResponse.setMessage("表删除需要表下面没有列别名和指标！");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		
+
 		if (tableInfoMapper.updateTableInfoDelete(id, 1) != 1) {
 			commonResponse.setMessage("删除失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -327,11 +341,13 @@ public class DataServiceConfig {
 		// 与数据库的连接
 		PreparedStatement pStemt = null;
 		try {
-			conn = DriverManager.getConnection(dbConnInfo.getDb_url(), dbConnInfo.getUserName(), dbConnInfo.getPassword());
-			pStemt = conn.prepareStatement("SELECT \""+columnName+"\" FROM \""+dbConnInfo.getDatabase()+"\".\""+dbConnInfo.getTable_name()+"\" limit 1");
-			ResultSet set=pStemt.executeQuery();
+			conn = DriverManager.getConnection(dbConnInfo.getDb_url(), dbConnInfo.getUserName(),
+					dbConnInfo.getPassword());
+			pStemt = conn.prepareStatement("SELECT \"" + columnName + "\" FROM \"" + dbConnInfo.getDatabase() + "\".\""
+					+ dbConnInfo.getTable_name() + "\" limit 1");
+			ResultSet set = pStemt.executeQuery();
 			// 结果集元数据
-			ResultSetMetaData rsmd=set.getMetaData();	
+			ResultSetMetaData rsmd = set.getMetaData();
 //			String dataType=rsmd.getColumnTypeName(1).toLowerCase();
 //			StringUtils.trim(dataType);
 //			if(dataType.contains("int")) {
