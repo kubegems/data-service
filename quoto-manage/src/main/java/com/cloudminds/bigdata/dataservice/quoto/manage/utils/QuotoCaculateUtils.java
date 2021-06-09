@@ -51,8 +51,8 @@ public class QuotoCaculateUtils {
 			// ')'优先级最低，
 			return false;
 		case '*': {
-			// '*/'优先级只比'+-'高
-			if (last == '+' || last == '-')
+			// '*/'优先级只比'+-&'高
+			if (last == '+' || last == '-'|| last == '&')
 				return true;
 			else
 				return false;
@@ -117,7 +117,7 @@ public class QuotoCaculateUtils {
 			} else if (b.getType() == 0) {
 				return a;
 			} else {
-				if (b.getDimensions().size() == 0 && a.getDimensions().size() == 0) {
+				if (b.getDimensions() == null && a.getDimensions() == null) {
 					JSONObject aObject = JSONObject.parseObject(a.getData().toString());
 					JSONObject bObject = JSONObject.parseObject(b.getData().toString());
 					if (a.getType() == 1 && b.getType() == 1) {
@@ -181,7 +181,7 @@ public class QuotoCaculateUtils {
 			}
 		}
 
-		if(b.getFields().size()>1||a.getFields().size()>1) {
+		if((b.getFields()!=null &&b.getFields().size()>1)||(a.getFields()!=null&&a.getFields().size()>1)) {
 			throw new UnsupportedOperationException("&只能是最后一步运算,它之后不能做+-*/运算");
 		}
 		// a为0 代表a查出来没有数据

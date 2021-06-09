@@ -42,7 +42,7 @@ public interface AdjectiveMapper {
 	@Select("select count(*) from adjective where ${condition}")
 	public int queryAdjectiveCount(String condition);
 
-	@Insert("insert into adjective(name, code,code_name,type,req_parm，create_time,update_time, creator,descr) "
+	@Insert("insert into adjective(name, code,code_name,type,req_parm,create_time,update_time, creator,descr) "
 			+ "values(#{name}, #{code}, #{code_name}, #{type}, #{req_parm},now(),now(), #{creator}, #{descr})")
 	public int insertAdjective(Adjective adjective);
 

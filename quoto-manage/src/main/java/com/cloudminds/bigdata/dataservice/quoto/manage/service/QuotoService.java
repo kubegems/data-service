@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.nacos.api.utils.StringUtils;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Adjective;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.DataServiceResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Dimension;
@@ -563,14 +563,14 @@ public class QuotoService {
 		return commonResponse;
 	}
 
-	public DataCommonResponse queryDataFromDataService(Quoto quoto, int page, int count,Set<String> order,Boolean acs) {
+	public DataCommonResponse queryDataFromDataService(Quoto quoto, int page, int count,Set<String> orders,Boolean acs) {
 		DataCommonResponse commonResponse = new DataCommonResponse();
 
 		// 复合指标处理逻辑
 		if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
 			try {
 				DataCommonResponse dataCommonResponse = caculate(quoto.getExpression().replace(" ", "") + "#", page,
-						count,order,acs);
+						count,orders,acs);
 				if (dataCommonResponse.isSuccess()) {
 					quoto.setCycle(dataCommonResponse.getCycle());
 					quoto.setDimension(dataCommonResponse.getDimensionIds());
@@ -645,11 +645,16 @@ public class QuotoService {
 			bodyRequest = bodyRequest + "'";
 		}
 		
-		if(order!=null&&order.size()>0) {
-			Set<String> valueKey=commonResponse.getFields();
-			valueKey.addAll(commonResponse.getDimensions());
-			if(valueKey.containsAll(order)) {
-				bodyRequest=bodyRequest+",'@order':'"+order.toString();
+		if(orders!=null&&orders.size()>0) {
+			boolean isOrder=true;
+			for(String order:orders) {
+				if(!commonResponse.getFields().contains(order)&&!commonResponse.getDimensions().contains(order)) {
+					isOrder=false;
+					break;
+				}
+			}
+			if(isOrder) {
+				bodyRequest=bodyRequest+",'@order':'"+StringUtils.join(orders.toArray(), ",");
 				if(acs!=null&&acs) {
 					bodyRequest=bodyRequest+"+'";
 				}else {
@@ -891,6 +896,11 @@ public class QuotoService {
 					// 如果是加号或者减号，则
 					case '+':
 						result = QuotoCaculateUtils.CalculateValue(b, a, "+");
+						// 将操作结果放入操作数栈
+						numStack.push(result);
+						break;
+					case '&':
+						result = QuotoCaculateUtils.CalculateValue(b, a, "&");
 						// 将操作结果放入操作数栈
 						numStack.push(result);
 						break;
