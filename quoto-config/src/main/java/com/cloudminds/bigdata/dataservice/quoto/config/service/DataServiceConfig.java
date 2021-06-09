@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -97,7 +99,7 @@ public class DataServiceConfig {
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-        //如果列名没有发生变化,就不用去查询数据类型
+		// 如果列名没有发生变化,就不用去查询数据类型
 		if (columnAlias.getColumn_name().equals(oldColumnAlias.getColumn_name())) {
 			columnAlias.setData_type(oldColumnAlias.getData_type());
 		} else {
@@ -110,7 +112,7 @@ public class DataServiceConfig {
 			}
 			columnAlias.setData_type(dataType);
 		}
-		
+
 		if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);
@@ -232,6 +234,7 @@ public class DataServiceConfig {
 		return commonResponse;
 	}
 
+	@SuppressWarnings("deprecation")
 	public CommonResponse insertQuotoInfo(QuotoInfo quotoInfo) {
 		CommonResponse commonResponse = new CommonResponse();
 		QuotoInfo quotoInfoOld = quotoInfoMapper.getQuotoInfo(quotoInfo);
@@ -240,6 +243,22 @@ public class DataServiceConfig {
 				commonResponse.setMessage("数据已存在,请不要重复新增！");
 				commonResponse.setSuccess(false);
 			} else {
+				// 判断是否符合规则
+				if (NumberUtils.isNumber(quotoInfo.getQuoto_name()) || quotoInfo.getQuoto_name().contains("(")
+						|| quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
+						|| quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
+						|| quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
+						|| quotoInfo.getQuoto_name().contains("&")) {
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+					return commonResponse;
+				}
+				// 判断是否有同名的指标
+				if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name()) != null) {
+					commonResponse.setMessage("指标名已存在！");
+					commonResponse.setSuccess(false);
+					return commonResponse;
+				}
 				quotoInfoOld.setDes(quotoInfo.getDes());
 				quotoInfoOld.setQuoto_sql(quotoInfo.getQuoto_sql());
 				if (quotoInfoMapper.updateQuotoInfo(quotoInfoOld) != 1) {
@@ -248,6 +267,22 @@ public class DataServiceConfig {
 				}
 			}
 		} else {
+			// 判断是否符合规则
+			if (NumberUtils.isNumber(quotoInfo.getQuoto_name()) || quotoInfo.getQuoto_name().contains("(")
+					|| quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
+					|| quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
+					|| quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
+					|| quotoInfo.getQuoto_name().contains("&")) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+				return commonResponse;
+			}
+			// 判断是否有同名的指标
+			if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name()) != null) {
+				commonResponse.setMessage("指标名已存在！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
 			if (quotoInfoMapper.insertQuotoInfo(quotoInfo) != 1) {
 				commonResponse.setMessage("新增数据失败,请稍后再试！");
 				commonResponse.setSuccess(false);
@@ -256,8 +291,33 @@ public class DataServiceConfig {
 		return commonResponse;
 	}
 
+	@SuppressWarnings("deprecation")
 	public CommonResponse updateQuotoInfo(QuotoInfo quotoInfo) {
 		CommonResponse commonResponse = new CommonResponse();
+		QuotoInfo oldQuotoInfo = quotoInfoMapper.getQuotoInfoById(quotoInfo.getId());
+		if (oldQuotoInfo == null) {
+			commonResponse.setMessage("指标不存在！");
+			commonResponse.setSuccess(false);
+			return commonResponse;
+		}
+		// 判断是否有同名的指标
+		if (!oldQuotoInfo.getQuoto_name().equals(quotoInfo.getQuoto_name())) {
+			// 判断是否符合规则
+			if (NumberUtils.isNumber(quotoInfo.getQuoto_name()) || quotoInfo.getQuoto_name().contains("(")
+					|| quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
+					|| quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
+					|| quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
+					|| quotoInfo.getQuoto_name().contains("&")) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+				return commonResponse;
+			}
+			if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name()) != null) {
+				commonResponse.setMessage("指标名已存在！");
+				commonResponse.setSuccess(false);
+				return commonResponse;
+			}
+		}
 		if (quotoInfoMapper.updateQuotoInfo(quotoInfo) != 1) {
 			commonResponse.setMessage("更新失败,请稍后再试！");
 			commonResponse.setSuccess(false);

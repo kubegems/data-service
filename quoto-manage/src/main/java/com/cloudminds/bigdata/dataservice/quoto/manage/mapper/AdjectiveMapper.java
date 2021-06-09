@@ -42,11 +42,11 @@ public interface AdjectiveMapper {
 	@Select("select count(*) from adjective where ${condition}")
 	public int queryAdjectiveCount(String condition);
 
-	@Insert("insert into adjective(name, code,code_name,type,create_time,update_time, creator,descr) "
-			+ "values(#{name}, #{code}, #{code_name}, #{type},now(),now(), #{creator}, #{descr})")
+	@Insert("insert into adjective(name, code,code_name,type,req_parm，create_time,update_time, creator,descr) "
+			+ "values(#{name}, #{code}, #{code_name}, #{type}, #{req_parm},now(),now(), #{creator}, #{descr})")
 	public int insertAdjective(Adjective adjective);
 
-	@Update("update adjective set name=#{name}, code=#{code},code_name=#{code_name},type=#{type},descr=#{descr} where id=#{id}")
+	@Update("update adjective set name=#{name},req_parm=#{req_parm}, code=#{code},code_name=#{code_name},type=#{type},descr=#{descr} where id=#{id}")
 	public int updateAdjective(Adjective adjective);
 
 	@Select("select tt.name from (select a.name, substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id " + 
@@ -54,4 +54,6 @@ public interface AdjectiveMapper {
 			"join   mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.deleted=0 and a.adjective!='') as tt where tt.id=#{id}")
 	public List<String> findQuotoNameByAdjectiveId(int id);
 
+	@Select("select * from adjective where adjective.deleted=0 and type in(select adjective_type.id from adjective_type LEFT JOIN dimension ON adjective_type.dimension_id=dimension.id LEFT JOIN Column_alias ON dimension.column_alias=Column_alias.column_alias where Column_alias.table_id=#{tableId} and Column_alias.is_delete=0 AND dimension.deleted=0 and adjective_type.deleted=0)")
+	public List<Adjective> querySupportAdjective(int tableId);
 }

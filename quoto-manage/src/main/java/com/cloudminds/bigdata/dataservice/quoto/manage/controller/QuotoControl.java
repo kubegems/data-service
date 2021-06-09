@@ -1,5 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.controller;
 
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -122,9 +124,9 @@ public class QuotoControl {
 
 	// 获取指标数据
 	@RequestMapping(value = "queryQuotoData", method = RequestMethod.GET)
-	public CommonResponse queryQuotoData(Integer id, String quotoName, Integer page, Integer count) {
+	public CommonResponse queryQuotoData(Integer id, String name,String field, Integer page, Integer count,Set<String> order,Boolean acs) {
 		CommonResponse commonResponse = new CommonResponse();
-		DataCommonResponse dataCommonResponse = quotoService.queryQuotoData(id, quotoName, page, count);
+		DataCommonResponse dataCommonResponse = quotoService.queryQuotoData(id, name,field, page, count,order,acs);
 		commonResponse.setData(dataCommonResponse.getData());
 		commonResponse.setMessage(dataCommonResponse.getMessage());
 		commonResponse.setSuccess(dataCommonResponse.isSuccess());
@@ -143,7 +145,7 @@ public class QuotoControl {
 		}
 		express.setExpress(express.getExpress().replace(" ", ""));
 		try {
-		 dataCommonResponse = quotoService.caculate(express.getExpress()+"#", 0, 2);
+		 dataCommonResponse = quotoService.caculate(express.getExpress()+"#", 0, 2,null,null);
 		}catch (Exception e) {
 			// TODO: handle exception
 			dataCommonResponse.setSuccess(false);

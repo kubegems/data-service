@@ -95,6 +95,11 @@ public interface QuotoMapper {
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoByName(String name);
+	
+	@Select("SELECT * from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where q.deleted=0 and q.field=#{field}")
+	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	public Quoto queryQuotoByField(String field);
 
 	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName);

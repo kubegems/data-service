@@ -33,22 +33,22 @@ public class AdjectiveService {
 	public CommonResponse deleteAdjective(DeleteReq deleteReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
-		//查询修饰词
-		Adjective adjective=adjectiveMapper.findAdjectiveById(deleteReq.getId());
-		if(adjective==null) {
-			commonResponse.setMessage("id为"+deleteReq.getId()+"的修饰词不存在");
+		// 查询修饰词
+		Adjective adjective = adjectiveMapper.findAdjectiveById(deleteReq.getId());
+		if (adjective == null) {
+			commonResponse.setMessage("id为" + deleteReq.getId() + "的修饰词不存在");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		//判断修饰词有没有在用，在用不能删除
-		List<String> quotoNames=adjectiveMapper.findQuotoNameByAdjectiveId(deleteReq.getId());
-		if(quotoNames!=null&&quotoNames.size()>0) {
-			commonResponse.setMessage("指标"+quotoNames.toString()+"在使用("+adjective.getName()+")修饰词,不能删除");
+		// 判断修饰词有没有在用，在用不能删除
+		List<String> quotoNames = adjectiveMapper.findQuotoNameByAdjectiveId(deleteReq.getId());
+		if (quotoNames != null && quotoNames.size() > 0) {
+			commonResponse.setMessage("指标" + quotoNames.toString() + "在使用(" + adjective.getName() + ")修饰词,不能删除");
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
 		if (adjectiveMapper.deleteAdjectiveById(deleteReq.getId()) <= 0) {
-			commonResponse.setMessage(adjective.getName()+"不存在或删除失败,请稍后再试");
+			commonResponse.setMessage(adjective.getName() + "不存在或删除失败,请稍后再试");
 			commonResponse.setSuccess(false);
 		}
 		return commonResponse;
@@ -62,11 +62,11 @@ public class AdjectiveService {
 			commonResponse.setSuccess(false);
 			return commonResponse;
 		}
-		for(int i=0;i<batchDeleteReq.getIds().length;i++) {
-			DeleteReq deleteReq=new DeleteReq();
+		for (int i = 0; i < batchDeleteReq.getIds().length; i++) {
+			DeleteReq deleteReq = new DeleteReq();
 			deleteReq.setId(batchDeleteReq.getIds()[i]);
-			CommonResponse commonResponseDelete=deleteAdjective(deleteReq);
-			if(!commonResponseDelete.isSuccess()) {
+			CommonResponse commonResponseDelete = deleteAdjective(deleteReq);
+			if (!commonResponseDelete.isSuccess()) {
 				return commonResponseDelete;
 			}
 		}
@@ -111,13 +111,13 @@ public class AdjectiveService {
 			commonResponse.setMessage("名字不能为空");
 			return commonResponse;
 		}
-		
+
 		if (StringUtils.isEmpty(adjective.getCode())) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("编码不能为空");
 			return commonResponse;
 		}
-		
+
 		if (StringUtils.isEmpty(adjective.getCode_name())) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("编码简称不能为空");
@@ -129,17 +129,24 @@ public class AdjectiveService {
 			commonResponse.setMessage("名字已存在,请重新命名");
 			return commonResponse;
 		}
-		
+
 		if (adjectiveMapper.findAdjectiveByCode(adjective.getCode()) != null) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("编码已存在,请重新命名");
 			return commonResponse;
 		}
-		
+
 		if (adjectiveMapper.findAdjectiveByCodeName(adjective.getCode_name()) != null) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("编码简称已存在,请重新命名");
 			return commonResponse;
+		}
+		if (adjective.getType() != 1) {
+			if (StringUtils.isEmpty(adjective.getReq_parm())) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("非时间修饰词,数据服务的请求参数不能为空");
+				return commonResponse;
+			}
 		}
 		// 插入数据库
 		try {
@@ -174,7 +181,7 @@ public class AdjectiveService {
 		commonQueryResponse.setTotal(adjectiveMapper.queryAdjectiveCount(condition));
 		return commonQueryResponse;
 	}
-	
+
 	public CommonResponse queryAllAdjective(AdjectiveQuery adjectiveQuery) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -190,8 +197,15 @@ public class AdjectiveService {
 	public CommonResponse updateAdjective(Adjective adjective) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
+		if (adjective.getType() != 1) {
+			if (StringUtils.isEmpty(adjective.getReq_parm())) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("非时间修饰词,数据服务的请求参数不能为空");
+				return commonResponse;
+			}
+		}
 		try {
-			if (adjectiveMapper.updateAdjective(adjective) <=0) {
+			if (adjectiveMapper.updateAdjective(adjective) <= 0) {
 				commonResponse.setSuccess(false);
 				commonResponse.setMessage("编辑修饰词失败，请稍后再试！");
 			}
@@ -201,6 +215,13 @@ public class AdjectiveService {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("编辑修饰词失败，请稍后再试！");
 		}
+		return commonResponse;
+	}
+
+	public CommonResponse querySupportAdjective(int tableId) {
+		// TODO Auto-generated method stub
+		CommonResponse commonResponse = new CommonResponse();
+		commonResponse.setData(adjectiveMapper.querySupportAdjective(tableId));
 		return commonResponse;
 	}
 

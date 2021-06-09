@@ -64,16 +64,16 @@ public class QuotoService {
 			return commonResponse;
 		}
 		if (flag == 0) {
+			quoto = quotoMapper.findQuotoByName(checkReq.getCheckValue());
+		} else if (flag == 1) {
 			String checkValue = checkReq.getCheckValue();
 			if (NumberUtils.isNumber(checkValue) || checkValue.contains("(") || checkValue.contains(")")
 					|| checkValue.contains("+") || checkValue.contains("-") || checkValue.contains("*")
-					|| checkValue.contains("/") || checkValue.contains("#")) {
+					|| checkValue.contains("/") || checkValue.contains("#")|| checkValue.contains("&")) {
 				commonResponse.setSuccess(false);
-				commonResponse.setMessage("名字不能是数或者含有()+-*/#特殊符号");
+				commonResponse.setMessage("编码不能是数或者含有()+-*/&#特殊符号");
 				return commonResponse;
 			}
-			quoto = quotoMapper.findQuotoByName(checkReq.getCheckValue());
-		} else if (flag == 1) {
 			quoto = quotoMapper.findQuotoByField(checkReq.getCheckValue());
 		} else {
 			commonResponse.setSuccess(false);
@@ -238,7 +238,7 @@ public class QuotoService {
 				if (NumberUtils.isNumber(expressions[i])) {
 					continue;
 				}
-				Quoto quotoInfo = quotoMapper.queryQuotoByName(expressions[i]);
+				Quoto quotoInfo = quotoMapper.queryQuotoByField(expressions[i]);
 				if (quotoInfo == null || quotoInfo.getState() != StateEnum.active_state.getCode()) {
 					commonResponse.setSuccess(false);
 					commonResponse.setMessage(expressions[i] + ":此指标不存在或未激活,请重新写");
@@ -338,7 +338,7 @@ public class QuotoService {
 					if (NumberUtils.isNumber(expressions[i])) {
 						continue;
 					}
-					Quoto quotoInfo = quotoMapper.queryQuotoByName(expressions[i]);
+					Quoto quotoInfo = quotoMapper.queryQuotoByField(expressions[i]);
 					if (quotoInfo == null || quotoInfo.getState() != StateEnum.active_state.getCode()) {
 						commonResponse.setSuccess(false);
 						commonResponse.setMessage(expressions[i] + ":此指标不存在或未激活,请重新写");
@@ -497,7 +497,7 @@ public class QuotoService {
 		return commonResponse;
 	}
 
-	public DataCommonResponse queryQuotoData(Integer id, String quotoName, Integer page, Integer count) {
+	public DataCommonResponse queryQuotoData(Integer id, String quotoName,String fildName, Integer page, Integer count,Set<String> order,Boolean acs) {
 		// TODO Auto-generated method stub
 		DataCommonResponse commonResponse = new DataCommonResponse();
 		// 查询指标
@@ -508,6 +508,11 @@ public class QuotoService {
 		if (quoto == null && (!StringUtils.isEmpty(quotoName))) {
 			quoto = quotoMapper.queryQuotoByName(quotoName);
 		}
+		
+		if (quoto == null && (!StringUtils.isEmpty(fildName))) {
+			quoto = quotoMapper.queryQuotoByField(fildName);
+		}
+		
 		if (page == null) {
 			page = 0;
 		}
@@ -530,7 +535,7 @@ public class QuotoService {
 			commonResponse.setMessage("count最大值为10000");
 			return commonResponse;
 		}
-		commonResponse = queryDataFromDataService(quoto, page, count);
+		commonResponse = queryDataFromDataService(quoto, page, count,order,acs);
 		QuotoAccessHistory quotoAccessHistory = new QuotoAccessHistory();
 		quotoAccessHistory.setQuoto_id(quoto.getId());
 		quotoAccessHistory.setQuoto_name(quoto.getName());
@@ -558,14 +563,14 @@ public class QuotoService {
 		return commonResponse;
 	}
 
-	public DataCommonResponse queryDataFromDataService(Quoto quoto, int page, int count) {
+	public DataCommonResponse queryDataFromDataService(Quoto quoto, int page, int count,Set<String> order,Boolean acs) {
 		DataCommonResponse commonResponse = new DataCommonResponse();
 
 		// 复合指标处理逻辑
 		if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
 			try {
 				DataCommonResponse dataCommonResponse = caculate(quoto.getExpression().replace(" ", "") + "#", page,
-						count);
+						count,order,acs);
 				if (dataCommonResponse.isSuccess()) {
 					quoto.setCycle(dataCommonResponse.getCycle());
 					quoto.setDimension(dataCommonResponse.getDimensionIds());
@@ -584,7 +589,9 @@ public class QuotoService {
 		if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
 			atomicQuoto = quotoMapper.findQuotoById(quoto.getOrigin_quoto());
 		}
-		commonResponse.setField(atomicQuoto.getField());
+		Set<String> fileds=new HashSet<>();
+		fileds.add(atomicQuoto.getField());
+		commonResponse.setFields(fileds);
 		commonResponse.setCycle(atomicQuoto.getCycle());
 		// 查询数据服务对应的信息
 		ServicePathInfo servicePathInfo = quotoMapper.queryServicePathInfo(atomicQuoto.getTable_id());
@@ -636,6 +643,19 @@ public class QuotoService {
 			}
 		} else {
 			bodyRequest = bodyRequest + "'";
+		}
+		
+		if(order!=null&&order.size()>0) {
+			Set<String> valueKey=commonResponse.getFields();
+			valueKey.addAll(commonResponse.getDimensions());
+			if(valueKey.containsAll(order)) {
+				bodyRequest=bodyRequest+",'@order':'"+order.toString();
+				if(acs!=null&&acs) {
+					bodyRequest=bodyRequest+"+'";
+				}else {
+					bodyRequest=bodyRequest+"-'";
+				}
+			}
 		}
 		bodyRequest = bodyRequest + "},'page':" + page + ",'count':" + count + "}}";
 		System.out.println(bodyRequest);
@@ -836,7 +856,7 @@ public class QuotoService {
 	 * @param count 每页的条数
 	 * @return
 	 */
-	public DataCommonResponse caculate(String str, int page, int count) {
+	public DataCommonResponse caculate(String str, int page, int count,Set<String> order,Boolean acs) {
 		Stack<Character> priStack = new Stack<Character>();// 操作符栈
 		Stack<DataCommonResponse> numStack = new Stack<DataCommonResponse>();
 		;// 操作数栈
@@ -855,7 +875,7 @@ public class QuotoService {
 				if (!"".equals(tempNum.toString())) {
 					// 当表达式的第一个符号为括号
 					String num = tempNum.toString();
-					numStack.push(getCalculateValue(num, page, count));
+					numStack.push(getCalculateValue(num, page, count,order,acs));
 					tempNum.delete(0, tempNum.length());
 				}
 				// 用当前取得的运算符与栈顶运算符比较优先级：若高于，则因为会先运算，放入栈顶；若等于，因为出现在后面，所以会后计算，所以栈顶元素出栈，取出操作数运算；
@@ -914,14 +934,14 @@ public class QuotoService {
 	 * @return
 	 */
 	@SuppressWarnings("deprecation")
-	private DataCommonResponse getCalculateValue(String fieldName, int page, int count) {
+	private DataCommonResponse getCalculateValue(String fieldName, int page, int count,Set<String> order,Boolean acs) {
 		if (NumberUtils.isNumber(fieldName)) {
 			DataCommonResponse calculateValue = new DataCommonResponse();
 			calculateValue.setData(new BigDecimal(fieldName));
 			calculateValue.setType(3);
 			return calculateValue;
 		}
-		DataCommonResponse commonResponse = queryQuotoData(0, fieldName, page, count);
+		DataCommonResponse commonResponse = queryQuotoData(0, null,fieldName, page, count,order,acs);
 		if (!commonResponse.isSuccess()) {
 			// 抛异常
 			throw new UnsupportedOperationException("指标(" + fieldName + ")获取失败：" + commonResponse.getMessage());

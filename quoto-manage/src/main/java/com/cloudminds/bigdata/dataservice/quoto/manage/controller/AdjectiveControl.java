@@ -63,6 +63,12 @@ public class AdjectiveControl {
 		return adjectiveService.queryAllAdjective(adjectiveQuery);
 	}
 
+	// 查询支持的修饰词
+	@RequestMapping(value = "querySupportAdjective", method = RequestMethod.GET)
+	public CommonResponse querySupportAdjective(int tableId) {
+		return adjectiveService.querySupportAdjective(tableId);
+	}
+
 	// 编辑修饰词
 	@RequestMapping(value = "update", method = RequestMethod.POST)
 	public CommonResponse updateAdjective(@RequestBody Adjective adjective) {

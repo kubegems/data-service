@@ -13,5 +13,5 @@ public class DataCommonResponse {
 	private Set<String> dimensions;
 	private int[] dimensionIds;
 	private int cycle;
-	private String field;
+	private Set<String> fields;
 }

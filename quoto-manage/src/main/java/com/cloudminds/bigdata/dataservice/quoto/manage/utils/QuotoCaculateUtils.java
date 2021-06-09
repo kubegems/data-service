@@ -21,7 +21,7 @@ public class QuotoCaculateUtils {
 	 */
 	public static boolean isOperator(String temp) {
 		boolean isOperator = temp.equals("(") || temp.equals(")") || temp.equals("+") || temp.equals("-")
-				|| temp.equals("*") || temp.equals("/") || temp.equals("#");
+				|| temp.equals("*") || temp.equals("/") || temp.equals("#") || temp.equals("&");
 		return isOperator;
 	}
 
@@ -58,7 +58,7 @@ public class QuotoCaculateUtils {
 				return false;
 		}
 		case '/': {
-			if (last == '+' || last == '-')
+			if (last == '+' || last == '-' || last == '&')
 				return true;
 			else
 				return false;
@@ -67,6 +67,8 @@ public class QuotoCaculateUtils {
 		case '+':
 			return false;
 		case '-':
+			return false;
+		case '&':
 			return false;
 		}
 		return true;
@@ -92,11 +94,13 @@ public class QuotoCaculateUtils {
 				// 抛异常，除数的分母为0
 				throw new UnsupportedOperationException(exceptionMessage);
 			}
-			return aValue.divide(bvalue, 4,RoundingMode.HALF_UP);
+			return aValue.divide(bvalue, 4, RoundingMode.HALF_UP);
 		}
 	}
 
-	/**两个指标做四则运算
+	/**
+	 * 两个指标做四则运算
+	 * 
 	 * @param a  参与计算的第一个数
 	 * @param b  参与计算的第二个数
 	 * @param op 操作符
@@ -105,6 +109,81 @@ public class QuotoCaculateUtils {
 		int cycle = Math.max(a.getCycle(), b.getCycle());
 		a.setCycle(cycle);
 		b.setCycle(cycle);
+		if (op.equals("&")) {
+			if (a.getType() == 0) {
+				return b;
+			} else if (a.getType() == 3 || b.getType() == 3) {
+				throw new UnsupportedOperationException("常数不能做&运算");
+			} else if (b.getType() == 0) {
+				return a;
+			} else {
+				if (b.getDimensions().size() == 0 && a.getDimensions().size() == 0) {
+					JSONObject aObject = JSONObject.parseObject(a.getData().toString());
+					JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+					if (a.getType() == 1 && b.getType() == 1) {
+						for (String field : b.getFields()) {
+							aObject.put(field, bObject.get(field));
+						}
+						a.getFields().addAll(b.getFields());
+						a.setData(aObject);
+						return a;
+					} else {
+						throw new UnsupportedOperationException("没有维度的数据异常");
+					}
+				} else if (SetUtils.isEqualSet(b.getDimensions(), a.getDimensions())) {
+					if (a.getType() == 1) {
+						JSONObject aObject = JSONObject.parseObject(a.getData().toString());
+						if (b.getType() == 1) {
+							JSONObject bObject = JSONObject.parseObject(b.getData().toString());
+							if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
+								for (String field : b.getFields()) {
+									aObject.put(field, bObject.get(field));
+								}
+								a.getFields().addAll(b.getFields());
+								a.setData(aObject);
+								return a;
+							} else {
+								throw new UnsupportedOperationException("&运算,两个指标的数据量需一致,并维度的值也能一一对应");
+							}
+						} else {
+							throw new UnsupportedOperationException("&运算,两个指标的数据量需一致");
+						}
+					} else {
+						if (b.getType() == 2) {
+							List<JSONObject> alist = JSONObject.parseArray(a.getData().toString(), JSONObject.class);
+							List<JSONObject> bList = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
+							for (int i = 0; i < alist.size(); i++) {
+								JSONObject aObject = alist.get(i);
+								for (int j = 0; j < bList.size(); j++) {
+									JSONObject bObject = bList.get(j);
+									if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
+										for (String field : b.getFields()) {
+											aObject.put(field, bObject.get(field));
+										}
+										alist.set(i, aObject);
+										bList.remove(j);
+										break;
+									}
+									if (j == bList.size() - 1) {
+										throw new UnsupportedOperationException("指标维度值不能一一对应时,是不能做&运算");
+									}
+								}
+							}
+							a.getFields().addAll(b.getFields());
+							return a;
+						} else {
+							throw new UnsupportedOperationException("&运算,两个指标的数据量需一致");
+						}
+					}
+				} else {
+					throw new UnsupportedOperationException("有维度时，维度不同不能做&运算");
+				}
+			}
+		}
+
+		if(b.getFields().size()>1||a.getFields().size()>1) {
+			throw new UnsupportedOperationException("&只能是最后一步运算,它之后不能做+-*/运算");
+		}
 		// a为0 代表a查出来没有数据
 		if (a.getType() == 0) {
 			if (op.equals("+")) {
@@ -116,7 +195,7 @@ public class QuotoCaculateUtils {
 					return a;
 				} else {
 					// 抛异常，除数的分母为0
-					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
+					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")");
 				}
 			} else { // 减法
 				if (b.getType() == 0) {
@@ -128,13 +207,13 @@ public class QuotoCaculateUtils {
 					} else if (b.getType() == 2) {
 						List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 						for (int i = 0; i < list.size(); i++) {
-							BigDecimal value = list.get(i).getBigDecimal(b.getField());
-							list.get(i).put(b.getField(), value.multiply(new BigDecimal("-1")));
+							BigDecimal value = list.get(i).getBigDecimal(b.getFields().iterator().next());
+							list.get(i).put(b.getFields().iterator().next(), value.multiply(new BigDecimal("-1")));
 						}
 						b.setData(list);
 					} else {
 						JSONObject object = JSONObject.parseObject(b.getData().toString());
-						object.put(b.getField(), object.getBigDecimal(b.getField()).multiply(new BigDecimal("-1")));
+						object.put(b.getFields().iterator().next(), object.getBigDecimal(b.getFields().iterator().next()).multiply(new BigDecimal("-1")));
 						b.setData(object);
 					}
 					return b;
@@ -151,7 +230,7 @@ public class QuotoCaculateUtils {
 					return b;
 				} else {
 					// 抛异常，除数的分母为0
-					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
+					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
 				b.setData(caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
@@ -159,15 +238,15 @@ public class QuotoCaculateUtils {
 			} else if (b.getType() == 2) {
 				List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 				for (int i = 0; i < list.size(); i++) {
-					list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
-							"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
+					list.get(i).put(b.getFields().iterator().next(), caluclate(aValue, list.get(i).getBigDecimal(b.getFields().iterator().next()), op,
+							"除法里分母为0,具体分母数据：" + b.getFields() + "(" + list.get(i) + ")"));
 				}
 				b.setData(list);
 				return b;
 			} else {
 				JSONObject object = JSONObject.parseObject(b.getData().toString());
-				object.put(b.getField(), caluclate(aValue, object.getBigDecimal(b.getField()), op,
-						"除法里分母为0,具体分母数据：" + b.getField() + "(" + object + ")"));
+				object.put(b.getFields().iterator().next(), caluclate(aValue, object.getBigDecimal(b.getFields().iterator().next()), op,
+						"除法里分母为0,具体分母数据：" + b.getFields() + "(" + object + ")"));
 				b.setData(object);
 				return b;
 			}
@@ -176,17 +255,17 @@ public class QuotoCaculateUtils {
 		// 代表a查出来的数据是只有一个
 		if (a.getType() == 1) {
 			JSONObject aObject = JSONObject.parseObject(a.getData().toString());
-			BigDecimal aValue = aObject.getBigDecimal(a.getField());
+			BigDecimal aValue = aObject.getBigDecimal(a.getFields().iterator().next());
 			if (b.getType() == 0) {
 				if (op.equals("+") || op.equals("-")) {
 					return a;
 				} else if (op.equals("*")) {
 					return b;
 				} else {
-					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
+					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
-				aObject.put(a.getField(),
+				aObject.put(a.getFields().iterator().next(),
 						caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
 				a.setData(aObject);
 				return a;
@@ -199,10 +278,10 @@ public class QuotoCaculateUtils {
 					} else {
 						// 维度相同的运算 1对1
 						JSONObject bObject = JSONObject.parseObject(b.getData().toString());
-						BigDecimal bValue = bObject.getBigDecimal(b.getField());
+						BigDecimal bValue = bObject.getBigDecimal(b.getFields().iterator().next());
 						if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
-							aObject.put(a.getField(), caluclate(aValue, bValue, op,
-									"除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
+							aObject.put(a.getFields().iterator().next(), caluclate(aValue, bValue, op,
+									"除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")"));
 							a.setData(aObject);
 							return a;
 						} else {
@@ -212,7 +291,7 @@ public class QuotoCaculateUtils {
 								if (op.equals("-")) {
 									// 将b的数变成相反数
 									bValue = bValue.negate();
-									bObject.put(b.getField(), bValue);
+									bObject.put(b.getFields().iterator().next(), bValue);
 								}
 								// 合并成list返回
 								List<JSONObject> list = new ArrayList<JSONObject>();
@@ -227,9 +306,9 @@ public class QuotoCaculateUtils {
 				} else {
 					// 一个有维度，一个没有维度，或者都没维度 进行四则运算
 					JSONObject bObject = JSONObject.parseObject(b.getData().toString());
-					BigDecimal bValue = bObject.getBigDecimal(b.getField());
-					aObject.put(a.getField(),
-							caluclate(aValue, bValue, op, "除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")"));
+					BigDecimal bValue = bObject.getBigDecimal(b.getFields().iterator().next());
+					aObject.put(a.getFields().iterator().next(),
+							caluclate(aValue, bValue, op, "除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")"));
 					a.setData(aObject);
 					if (b.getDimensions() != null && b.getDimensions().size() > 0) {
 						a.setDimensions(b.getDimensions());
@@ -241,8 +320,8 @@ public class QuotoCaculateUtils {
 				List<JSONObject> list = JSONObject.parseArray(b.getData().toString(), JSONObject.class);
 				if (a.getDimensions() == null || a.getDimensions().size() == 0) {
 					for (int i = 0; i < list.size(); i++) {
-						list.get(i).put(b.getField(), caluclate(aValue, list.get(i).getBigDecimal(b.getField()), op,
-								"除法里分母为0,具体分母数据：" + b.getField() + "(" + list.get(i) + ")"));
+						list.get(i).put(b.getFields().iterator().next(), caluclate(aValue, list.get(i).getBigDecimal(b.getFields().iterator().next()), op,
+								"除法里分母为0,具体分母数据：" + b.getFields() + "(" + list.get(i) + ")"));
 					}
 					b.setData(list);
 					return b;
@@ -260,7 +339,7 @@ public class QuotoCaculateUtils {
 							// 相减，将b变成负数
 							if (op.equals("-")) {
 								for (int i = 0; i < list.size(); i++) {
-									list.get(i).put(b.getField(), list.get(i).getBigDecimal(b.getField()).negate());
+									list.get(i).put(b.getFields().iterator().next(), list.get(i).getBigDecimal(b.getFields().iterator().next()).negate());
 								}
 							}
 							return addN1(b, a);
@@ -279,12 +358,12 @@ public class QuotoCaculateUtils {
 				} else if (op.equals("*")) {
 					return b;
 				} else {
-					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getField() + "(" + b.getData() + ")");
+					throw new UnsupportedOperationException("除法里分母为0,具体分母数据：" + b.getFields() + "(" + b.getData() + ")");
 				}
 			} else if (b.getType() == 3) {
 				for (int i = 0; i < list.size(); i++) {
-					BigDecimal aValue = list.get(i).getBigDecimal(a.getField());
-					list.get(i).put(a.getField(),
+					BigDecimal aValue = list.get(i).getBigDecimal(a.getFields().iterator().next());
+					list.get(i).put(a.getFields().iterator().next(),
 							caluclate(aValue, new BigDecimal(b.getData().toString()), op, "除法里分母为0,请检查加工方式"));
 				}
 				a.setData(list);
@@ -292,10 +371,10 @@ public class QuotoCaculateUtils {
 			} else if (b.getType() == 1) {
 				// b为1个
 				JSONObject bObject = JSONObject.parseObject(b.getData().toString());
-				BigDecimal bValue = bObject.getBigDecimal(b.getField());
+				BigDecimal bValue = bObject.getBigDecimal(b.getFields().iterator().next());
 				if (b.getDimensions() == null || b.getDimensions().size() == 0) {
 					for (int i = 0; i < list.size(); i++) {
-						list.get(i).put(a.getField(), caluclate(list.get(i).getBigDecimal(a.getField()), bValue, op,
+						list.get(i).put(a.getFields().iterator().next(), caluclate(list.get(i).getBigDecimal(a.getFields().iterator().next()), bValue, op,
 								"除法里分母为0,具体分母数据：" + bObject));
 					}
 					a.setData(list);
@@ -313,7 +392,7 @@ public class QuotoCaculateUtils {
 							}
 							// 做+-操作 如果是-，将b变为相反数
 							if (op.equals("-")) {
-								bObject.put(b.getField(), bValue.negate());
+								bObject.put(b.getFields().iterator().next(), bValue.negate());
 							}
 							return addN1(a, b);
 						}
@@ -337,8 +416,8 @@ public class QuotoCaculateUtils {
 					for (int j = 0; j < bList.size(); j++) {
 						JSONObject bObject = bList.get(j);
 						if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
-							aObject.put(a.getField(), caluclate(aObject.getBigDecimal(a.getField()),
-									bObject.getBigDecimal(b.getField()), op, "除法里分母为0,具体分母数据：" + bObject));
+							aObject.put(a.getFields().iterator().next(), caluclate(aObject.getBigDecimal(a.getFields().iterator().next()),
+									bObject.getBigDecimal(b.getFields().iterator().next()), op, "除法里分母为0,具体分母数据：" + bObject));
 							list.set(i, aObject);
 							bList.remove(j);
 							break;
@@ -358,7 +437,7 @@ public class QuotoCaculateUtils {
 					if (op.equals("-")) {
 						for (int i = 0; i < bList.size(); i++) {
 							JSONObject bObject = bList.get(i);
-							bObject.put(b.getField(), bObject.getBigDecimal(b.getField()).negate());
+							bObject.put(b.getFields().iterator().next(), bObject.getBigDecimal(b.getFields().iterator().next()).negate());
 							bList.set(i, bObject);
 						}
 					}
@@ -404,7 +483,7 @@ public class QuotoCaculateUtils {
 		for (int i = 0; i < list.size(); i++) {
 			JSONObject aObject = list.get(i);
 			if (dimensionValueEqual(aObject, bObject, a.getDimensions())) {
-				aObject.put(a.getField(), aObject.getBigDecimal(a.getField()).add(bObject.getBigDecimal(b.getField())));
+				aObject.put(a.getFields().iterator().next(), aObject.getBigDecimal(a.getFields().iterator().next()).add(bObject.getBigDecimal(b.getFields().iterator().next())));
 				list.set(i, aObject);
 				a.setData(list);
 				return a;

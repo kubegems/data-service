@@ -26,6 +26,9 @@ public interface QuotoInfoMapper {
 	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quoto_name} AND table_id=#{table_id}")
 	public QuotoInfo getQuotoInfo(QuotoInfo quotoInfo);
 	
+	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quotoName} AND is_delete=0 limit 1")
+	public QuotoInfo getQuotoInfoByQuotoName(String quotoName);
+	
 	@Select("SELECT * FROM Quoto_info WHERE is_delete=0 AND id=#{id}")
 	public QuotoInfo getQuotoInfoById(int id);
 	

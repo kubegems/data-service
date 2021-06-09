@@ -14,4 +14,5 @@ public class Adjective extends BaseEntity {
 	private String code_name;
 	private int type;
 	private int quotoNum;
+	private String req_parm;
 }
