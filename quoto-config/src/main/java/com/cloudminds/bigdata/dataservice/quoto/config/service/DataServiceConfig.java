@@ -11,6 +11,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ApiDocMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
@@ -33,6 +34,8 @@ public class DataServiceConfig {
 	private QuotoInfoMapper quotoInfoMapper;
 	@Autowired
 	private TableInfoMapper tableInfoMapper;
+	@Autowired
+	private ApiDocMapper apiDocMapper;
 
 	// columnAlias
 	public CommonResponse getColumnAlias(int tableId) {
@@ -436,6 +439,13 @@ public class DataServiceConfig {
 			}
 		}
 		return null;
+	}
+
+	public CommonResponse getApiDoc() {
+		// TODO Auto-generated method stub
+		CommonResponse commonResponse = new CommonResponse();
+		commonResponse.setData(apiDocMapper.getApiDoc());
+		return commonResponse;
 	}
 
 }

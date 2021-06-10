@@ -129,10 +129,10 @@ public class DataServiceControl {
 		return dataServiceConfig.updateTableInfo(tableInfo);
 	}
 
-	// tableInfo
-	@RequestMapping(value = "tt", method = RequestMethod.GET)
-	public String getTableInfosss(int tableId,String columnName) {
-		return dataServiceConfig.getColunmType(tableId, columnName);
+	// quotoInfo
+	@RequestMapping(value = "getApiDoc", method = RequestMethod.GET)
+	public CommonResponse getApiDoc() {
+		return dataServiceConfig.getApiDoc();
 	}
-	
+
 }
