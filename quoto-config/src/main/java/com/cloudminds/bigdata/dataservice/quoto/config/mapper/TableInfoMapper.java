@@ -2,6 +2,7 @@ package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -29,5 +30,6 @@ public interface TableInfoMapper {
 	public TableInfo getTableInfo(TableInfo tableInfo);
 
 	@Update("insert into Table_info(table_name,database_id,table_alias,des) VALUES(#{table_name},#{database_id},#{table_alias},#{des})")
+	@Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
 	public int insertTableInfo(TableInfo tableInfo);
 }

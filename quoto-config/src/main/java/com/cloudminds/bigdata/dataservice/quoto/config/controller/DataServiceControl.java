@@ -135,4 +135,10 @@ public class DataServiceControl {
 		return dataServiceConfig.getApiDoc();
 	}
 
+	// quotoInfo
+	@RequestMapping(value = "test", method = RequestMethod.GET)
+	public boolean test(int tableId) {
+		return dataServiceConfig.insertColumnAlias(tableId);
+	}
+
 }

@@ -14,7 +14,7 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.DbInfo;
 
 @Mapper
 public interface DatabaseInfoMapper {
-	@Select("SELECT * FROM Database_info WHERE is_delete=0 AND state=1")
+	@Select("select Database_info.id,Database_info.`database`,Database_info.des,Database_info.state,Database_info.is_delete,CONCAT(Db_info.service_path,Database_info.service_path) as service_path from Database_info LEFT JOIN Db_info ON Database_info.db_id=Db_info.id")
 	public List<DatabaseInfo> getDataBase();
 	
 	@Select("SELECT * FROM Database_info WHERE is_delete=0 AND state=1 AND db_id=#{dbId}")

@@ -1,13 +1,29 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +32,7 @@ import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableInfoMapper;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
@@ -386,6 +403,9 @@ public class DataServiceConfig {
 				commonResponse.setSuccess(false);
 			}
 		}
+		if(commonResponse.isSuccess()) {
+			insertColumnAlias(tableInfo.getId());
+		}
 		return commonResponse;
 	}
 
@@ -446,6 +466,125 @@ public class DataServiceConfig {
 		CommonResponse commonResponse = new CommonResponse();
 		commonResponse.setData(apiDocMapper.getApiDoc());
 		return commonResponse;
+	}
+
+	public boolean insertColumnAlias(int tableId) {
+		DbConnInfo dbConnInfo = databaseInfoMapper.getdbConnInfoByTableId(tableId);
+		if(dbConnInfo==null) {
+			System.out.println("tableId:"+tableId+" 不存在");
+			return false;
+		}
+		String url = dbConnInfo.getDb_url();
+		String dbType = url.substring(5, url.indexOf(":", 5));
+		if (dbType.equals("clickhouse")) {
+			Connection conn = null;
+			// 与数据库的连接
+			PreparedStatement pStemt = null;
+			try {
+				conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+				pStemt = conn.prepareStatement("SELECT name,type,comment FROM system.columns where database='"
+						+ dbConnInfo.getDatabase() + "' and table='" + dbConnInfo.getTable_name() + "'");
+				ResultSet set = pStemt.executeQuery();
+				while (set.next()) {
+					ColumnAlias columnAlias = new ColumnAlias();
+					columnAlias.setColumn_name(set.getString("name"));
+					columnAlias.setColumn_alias(set.getString("name"));
+					columnAlias.setData_type(set.getString("type"));
+					columnAlias.setDes(set.getString("comment"));
+					columnAlias.setTable_id(tableId);
+					if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+						return false;
+					}
+				}
+
+			} catch (
+
+			SQLException e) {
+				e.printStackTrace();
+				return false;
+			} finally {
+				if (pStemt != null) {
+					try {
+						pStemt.close();
+						conn.close();
+					} catch (SQLException e) {
+					}
+				}
+			}
+		} else if (dbType.equals("kylin")) {
+			String user = dbConnInfo.getUserName();
+			String password = dbConnInfo.getPassword();
+			int projectLocation = url.lastIndexOf("/");
+			String projectName = url.substring(projectLocation + 1);
+			String ipAddress = url.substring(url.indexOf(":", 5), projectLocation);
+			url = "http" + ipAddress + "/kylin/api/tables?ext=true&project=" + projectName;
+			System.out.println("kylin访问地址:" + url);
+			HttpHost target = new HttpHost(ipAddress.substring(3, ipAddress.lastIndexOf(":")),
+					Integer.parseInt(ipAddress.substring(ipAddress.lastIndexOf(":") + 1)), "http");
+			CredentialsProvider credsProvider = new BasicCredentialsProvider();
+			credsProvider.setCredentials(new AuthScope(target.getHostName(), target.getPort()),
+					new UsernamePasswordCredentials(user, password));
+			CloseableHttpClient httpclient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+			try {
+				AuthCache authCache = new BasicAuthCache();
+				BasicScheme basicAuth = new BasicScheme();
+				authCache.put(target, basicAuth);
+				HttpClientContext localContext = HttpClientContext.create();
+				localContext.setAuthCache(authCache);
+				HttpGet httpget = new HttpGet(url);
+				CloseableHttpResponse response = null;
+				try {
+					response = httpclient.execute(target, httpget, localContext);
+					// 失败返回
+					if (response.getStatusLine().getStatusCode() != 200) {
+						System.out.println("kylin访问失败");
+						return false;
+					}
+					List<JSONObject> result = JSONObject.parseArray(EntityUtils.toString(response.getEntity()),
+							JSONObject.class);
+					for (JSONObject jsonObject : result) {
+						if (jsonObject.getString("database").equals(dbConnInfo.getDatabase())
+								&& jsonObject.getString("name").equals(dbConnInfo.getTable_name())) {
+							List<JSONObject> columns = JSONObject.parseArray(jsonObject.getString("columns"),
+									JSONObject.class);
+							for (JSONObject column : columns) {
+								ColumnAlias columnAlias = new ColumnAlias();
+								columnAlias.setColumn_name(column.getString("name"));
+								columnAlias.setColumn_alias(column.getString("name"));
+								columnAlias.setData_type(column.getString("datatype"));
+								columnAlias.setDes(column.getString("comment"));
+								columnAlias.setTable_id(tableId);
+								if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+									return false;
+								}
+							}
+							return true;
+						}
+					}
+					System.out.println("kylin查询表信息的接口返回数据有问题");
+					return false;
+				} catch (IOException e) {
+					System.out.println(e);
+				} finally {
+					response.close();
+				}
+			} catch (Exception e) {
+				System.out.println(e);
+			} finally {
+				try {
+					httpclient.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return true;
+				}
+			}
+
+		} else {
+			return false;
+		}
+
+		return true;
 	}
 
 }
