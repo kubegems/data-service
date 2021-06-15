@@ -461,8 +461,14 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		// table;
 		// 如果要强制小写，则可在子类重写这个方法再 toLowerCase return
 		// DATABASE_POSTGRESQL.equals(getDatabase()) ? t.toLowerCase() : t;
-		return TABLE_KEY_MAP.containsKey(getSchema() + "." + table) ? TABLE_KEY_MAP.get(getSchema() + "." + table)
-				: table;
+		if(TABLE_KEY_MAP.containsKey(getSchema() + "." + table)) {
+			return TABLE_KEY_MAP.get(getSchema() + "." + table);
+		}else {
+			if(isDATASERVICE()) {
+				return table;
+			}
+			throw new IllegalArgumentException("此table未在配置服务里配置,不支持查询");
+		}
 	}
 
 	@JSONField(serialize = false)
