@@ -11,4 +11,5 @@ public class CommonField extends BaseEntity{
 	private int type;
 	private String version;
 	private List<Field> fields;
+	private boolean changeFields=true;
 }
