@@ -268,7 +268,7 @@ public class LogFieldService {
         if (eventQuery.getType() != -1) {
             condition = condition + "and type=" + eventQuery.getType()+" ";
         }
-        condition = "order by create_time desc";
+        condition =condition+ "order by create_time desc";
         int page = eventQuery.getPage();
         int size = eventQuery.getSize();
         int startLine = (page - 1) * size;
