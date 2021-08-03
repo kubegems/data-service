@@ -393,6 +393,7 @@ public class EventService {
 				}
 				eventOldInfo.setDescr(eventInfo.getDescr());
 				eventOldInfo.setFields(eventInfo.getFields());
+				eventOldInfo.setModel_fields(eventInfo.getModel_fields());
 				eventOldInfo.setJira_num(eventInfo.getJira_num());
 				eventOldInfo.setModel_name(eventInfo.getModel_name());
 				eventOldInfo.setModel_version(eventInfo.getModel_version());
@@ -406,6 +407,7 @@ public class EventService {
 			} else {
 				eventOldInfo.setDescr(eventInfo.getDescr());
 				eventOldInfo.setFields(eventInfo.getFields());
+				eventOldInfo.setModel_fields(eventInfo.getModel_fields());
 				eventOldInfo.setJira_num(eventInfo.getJira_num());
 				if (eventMapper.updateEvent(eventOldInfo) != 1) {
 					commonResponse.setSuccess(false);
@@ -434,6 +436,7 @@ public class EventService {
 			eventOldInfo.setJira_num(eventInfo.getJira_num());
 			eventOldInfo.setCreator(eventInfo.getCreator());
 			eventOldInfo.setFields(eventInfo.getFields());
+			eventOldInfo.setModel_fields(eventInfo.getModel_fields());
 			eventOldInfo.setState(StateEnum.develop_state.getCode());
 			// 插入数据库
 			try {

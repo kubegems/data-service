@@ -22,4 +22,5 @@ public class EventInfo extends BaseEntity {
 	private boolean uniqueVersion=true;
 	private boolean changeFields=true;
 	private List<Field> fields;
+	private List<Field> model_fields;
 }
