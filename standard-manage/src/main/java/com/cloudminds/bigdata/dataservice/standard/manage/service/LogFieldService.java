@@ -205,6 +205,7 @@ public class LogFieldService {
 
         //如果版本号不是当天的，历史版本不变，新增版本
         modelField.setVersion(version);
+        modelField.setModel_id(oldModelField.getModel_id());
         // 插入数据库
         try {
             modelFieldMapper.insertModelField(modelField);
