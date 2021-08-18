@@ -7,12 +7,15 @@ public class GatewayUtil {
     public static String getIpAddress(ServerHttpRequest request) {
         HttpHeaders headers = request.getHeaders();
         String ip = headers.getFirst("x-forwarded-for");
+        System.out.println("headers:"+headers.toString());
+        System.out.println("remoteAddress:"+request.getRemoteAddress().getAddress().getHostAddress());
         if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
             // 多次反向代理后会有多个ip值，第一个ip才是真实ip
             if (ip.indexOf(",") != -1) {
                 ip = ip.split(",")[0];
             }
         }
+
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = headers.getFirst("Proxy-Client-IP");
         }
