@@ -33,4 +33,21 @@ public class GatewayUtil {
         }
         return ip;
     }
+
+    public static String getIpAndPathKey(ServerHttpRequest request) {
+        String ip=getIpAddress(request);
+        String path=request.getPath().toString();
+        String[] paths=path.split("/");
+        String key="";
+        if(paths.length>2) {
+            if(paths[2].equals("quoto")||paths[2].equals("unForce")) {
+                key=paths[1]+"_"+paths[2];
+            }else {
+                key=paths[1];
+            }
+        }else {
+            key=path;
+        }
+        return key+"-"+ip;
+    }
 }

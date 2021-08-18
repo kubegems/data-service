@@ -10,8 +10,8 @@ import reactor.core.publisher.Mono;
 public class KeyResolverConfiguration {
 
     @Bean
-    KeyResolver ipKeyResolver() {
-        return exchange -> Mono.just(GatewayUtil.getIpAddress(exchange.getRequest()));
+    KeyResolver keyResolver() {
+        return exchange -> Mono.just(GatewayUtil.getIpAndPathKey(exchange.getRequest()));
     }
 
     //    /**
