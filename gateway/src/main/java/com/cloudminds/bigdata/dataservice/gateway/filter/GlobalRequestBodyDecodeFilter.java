@@ -1,4 +1,5 @@
 package com.cloudminds.bigdata.dataservice.gateway.filter;
+import com.cloudminds.bigdata.dataservice.gateway.utils.GatewayUtil;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,7 +19,7 @@ public class GlobalRequestBodyDecodeFilter implements GlobalFilter, Ordered {
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 		ServerHttpRequest request = exchange.getRequest();
-		System.out.println(request.getRemoteAddress().getAddress());
+		System.out.println("ip地址："+ GatewayUtil.getIpAddress(request)+" 访问接口："+request.getPath().toString());
 		return chain.filter(exchange);
 	}
 
