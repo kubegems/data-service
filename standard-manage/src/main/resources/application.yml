@@ -12,3 +12,13 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  ldap:
+    urls: ldap://l-172016023039.cloudminds.com:389
+    base: dc=cloudminds,dc=com
+    username: uid=hue,ou=People,dc=cloudminds,dc=com
+    password: hue123
+  mail:
+    username: ops.bigdata@cloudminds.com.cn
+    password: Cloudbigdata1688
+    host: mail.cloudminds.com.cn
+    port: 25

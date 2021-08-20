@@ -8,3 +8,4 @@ spring:
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
+hueUrl: http://l-172016031107-bigdata.cloudminds.com:8888/cloudminds/dataspec/#/

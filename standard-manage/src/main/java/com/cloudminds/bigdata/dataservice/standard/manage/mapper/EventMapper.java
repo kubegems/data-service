@@ -2,6 +2,7 @@ package com.cloudminds.bigdata.dataservice.standard.manage.mapper;
 
 import java.util.List;
 
+import com.cloudminds.bigdata.dataservice.standard.manage.entity.EmailInfo;
 import org.apache.ibatis.annotations.*;
 
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.EventInfo;
@@ -63,4 +64,7 @@ public interface EventMapper {
 
 	@Update("update eventment set event_name=#{event_name},model_name=#{model_name},model_version=#{model_version},jira_num=#{jira_num},state=#{state},fields=#{fields,typeHandler=com.cloudminds.bigdata.dataservice.standard.manage.handler.JsonListTypeHandler},model_fields=#{model_fields,typeHandler=com.cloudminds.bigdata.dataservice.standard.manage.handler.JsonListTypeHandler},descr=#{descr},creator=#{creator} where id=#{id}")
 	public int updateEvent(EventInfo event);
+
+	@Select("select * from reviewer_email where type=0 limit 1")
+	public EmailInfo queryReviewerEmail();
 }

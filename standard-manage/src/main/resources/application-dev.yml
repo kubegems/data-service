@@ -8,3 +8,4 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
+hueUrl: http://cdh-slave01.cloudminds.com:8888/cloudminds/dataspec/#/
