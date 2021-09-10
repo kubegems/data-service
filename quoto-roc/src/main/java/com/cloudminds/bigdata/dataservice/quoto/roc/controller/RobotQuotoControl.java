@@ -110,6 +110,11 @@ public class RobotQuotoControl extends APIJSONController {
 		request = "{'@schema':'cdm_co'," + request.substring(request.indexOf("{") + 1);
 		return getData(request, session);
 	}
+	@PostMapping(value = "cmd")
+	public String getCmdData(@RequestBody String request, HttpSession session) {
+		request = "{'@schema':'cmd'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session);
+	}
 
 	public String getData(String request, HttpSession session) {
 		// 从redis获取配置信息
