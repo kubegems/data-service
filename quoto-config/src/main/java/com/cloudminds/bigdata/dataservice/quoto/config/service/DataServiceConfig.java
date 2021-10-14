@@ -392,6 +392,7 @@ public class DataServiceConfig {
 				commonResponse.setSuccess(false);
 			} else {
 				tableInfoOld.setTable_alias(tableInfo.getTable_alias());
+				tableInfoOld.setDes(tableInfo.getDes());
 				if (tableInfoMapper.updateTableInfo(tableInfoOld) != 1) {
 					commonResponse.setMessage("新增数据失败,请稍后再试！");
 					commonResponse.setSuccess(false);
