@@ -1,5 +1,8 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.controller;
 
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Business;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.DataDomain;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.BusinessProcess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,16 +40,52 @@ public class QuotoControl {
 		return quotoService.queryAllBusiness();
 	}
 
+	// 增加业务线
+	@RequestMapping(value = "addBusiness", method = RequestMethod.POST)
+	public CommonResponse addBusiness(@RequestBody Business business) {
+		return quotoService.addBusiness(business);
+	}
+
+	//删除业务线
+	@RequestMapping(value = "deleteBusiness", method = RequestMethod.POST)
+	public CommonResponse deleteBusiness(@RequestBody DeleteReq deleteReq) {
+		return quotoService.deleteBusiness(deleteReq);
+	}
+
 	// 获取所有的数据域
 	@RequestMapping(value = "queryAllDataDomain", method = RequestMethod.GET)
 	public CommonResponse queryAllDataDomain(int businessId) {
 		return quotoService.queryAllDataDomain(businessId);
 	}
 
+	// 增加数据域
+	@RequestMapping(value = "addDataDomain", method = RequestMethod.POST)
+	public CommonResponse addDataDomain(@RequestBody DataDomain dataDomain) {
+		return quotoService.addDataDomain(dataDomain);
+	}
+
+	//删除数据域
+	@RequestMapping(value = "deleteDataDomain", method = RequestMethod.POST)
+	public CommonResponse deleteDataDomain(@RequestBody DeleteReq deleteReq) {
+		return quotoService.deleteDataDomain(deleteReq);
+	}
+
 	// 获取所有的业务过程
 	@RequestMapping(value = "queryAllBusinessProcess", method = RequestMethod.GET)
 	public CommonResponse queryAllBusinessProcess(int dataDomainId) {
 		return quotoService.queryAllBusinessProcess(dataDomainId);
+	}
+
+	// 增加业务过程
+	@RequestMapping(value = "addBusinessProcess", method = RequestMethod.POST)
+	public CommonResponse addBusinessProcess(@RequestBody BusinessProcess businessProcess) {
+		return quotoService.addBusinessProcess(businessProcess);
+	}
+
+	//删除业务过程
+	@RequestMapping(value = "deleteBusinessProcess", method = RequestMethod.POST)
+	public CommonResponse deleteBusinessProcess(@RequestBody DeleteReq deleteReq) {
+		return quotoService.deleteBusinessProcess(deleteReq);
 	}
 
 	// 获取所有的数据服务

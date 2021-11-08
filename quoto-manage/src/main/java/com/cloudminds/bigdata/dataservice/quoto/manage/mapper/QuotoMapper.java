@@ -2,6 +2,9 @@ package com.cloudminds.bigdata.dataservice.quoto.manage.mapper;
 
 import java.sql.Array;
 import java.util.List;
+
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.*;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.BusinessProcess;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Result;
@@ -9,13 +12,6 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.type.JdbcType;
 
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Adjective;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Business;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Dimension;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Quoto;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.QuotoInfo;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ServicePathInfo;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler;
 
 @Mapper
@@ -37,11 +33,41 @@ public interface QuotoMapper {
 	@Select("select * from business where deleted=0")
 	public List<Business> queryAllBusiness();
 
+	@Select("select * from business where deleted=0 and name=#{name} limit 1")
+	public Business queryBusiness(String name);
+
+	@Update("update business set deleted=null where id=#{id}")
+	public int deleteBusinessById(int id);
+
+	@Insert("insert into business(name,create_time,update_time, creator,descr) "
+			+ "values(#{name},now(),now(), #{creator}, #{descr})")
+	public int addBusiness(Business business);
+
 	@Select("select * from data_domain where deleted=0 and business_id=#{businessId}")
 	public List<Business> queryAllDataDomain(int businessId);
 
+	@Select("select * from data_domain where deleted=0 and business_id=#{businessId} and name=#{name} limit 1")
+	public DataDomain queryDataDomain(String name, int businessId);
+
+	@Insert("insert into data_domain(name,business_id,create_time,update_time, creator,descr) "
+			+ "values(#{name},#{business_id},now(),now(), #{creator}, #{descr})")
+	public int addDataDomain(DataDomain dataDomain);
+
+	@Update("update data_domain set deleted=null where id=#{id}")
+	public int deleteDataDomainById(int id);
+
 	@Select("select * from business_process where deleted=0 and data_domain_id=#{dataDomainId}")
 	public List<Business> queryAllBusinessProcess(int dataDomainId);
+
+	@Select("select * from business_process where deleted=0 and data_domain_id=#{data_domain_id} and name=#{name} limit 1")
+	public BusinessProcess queryBusinessProcess(String name, int data_domain_id);
+
+	@Insert("insert into business_process(name,data_domain_id,create_time,update_time, creator,descr) "
+			+ "values(#{name},#{data_domain_id},now(),now(), #{creator}, #{descr})")
+	public int addBusinessProcess(BusinessProcess businessProcess);
+
+	@Update("update business_process set deleted=null where id=#{id}")
+	public int deleteBusinessProcess(int id);
 
 	@Select("select * from Table_info where is_delete=0")
 	public List<TableInfo> queryAllDataService();
@@ -66,6 +92,9 @@ public interface QuotoMapper {
 
 	@Select("select count(*) from quoto q LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name, bb.id as business_id from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on q.business_process_id=tt.id where ${condition}")
 	public int queryQuotoCount(String condition);
+
+	@Select("SELECT * from quoto where deleted=0 and business_process_id=#{businessProcessId}")
+	public List<Quoto> queryQuotoByBusinessProcess(int businessProcessId);
 
 	@Select("SELECT * from quoto where ${condition}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
