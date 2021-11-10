@@ -1,0 +1,10 @@
+server:
+  port: 8075
+spring:
+  profiles:
+    active: dev
+  application:
+    name: dataServer-markdownManage
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8

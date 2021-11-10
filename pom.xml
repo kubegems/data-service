@@ -66,5 +66,6 @@
 		<module>standard-manage</module>
 		<module>clickhouseAtlas</module>
 		<module>quoto-manage</module>
+		<module>markdown-manage</module>
 	</modules>
 </project>

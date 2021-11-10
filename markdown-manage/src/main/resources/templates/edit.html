@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>Simple example - Editor.md examples</title>
+    <link rel="stylesheet" th:href="@{/css/examples/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/editormd.css}" />
+    <link rel="shortcut icon" href="https://pandao.github.io/editor.md/favicon.ico" type="image/x-icon" />
+</head>
+<body>
+<div id="layout">
+    <header>
+        <h1>Simple example</h1>
+    </header>
+    <form name="mdEditorForm">
+        标题:<input type="text" name="title"><br>
+        作者:<input type="text" name="creator">
+        <div id="test-editormd">
+            <textarea style="display:none;" name="content"></textarea>
+        </div>
+    </form>
+
+</div>
+<script th:src="@{/js/examples/jquery.min.js}"></script>
+<script th:src="@{/js/editormd.min.js}"></script>
+<script type="text/javascript">
+    var testEditor;
+
+    $(function() {
+        testEditor = editormd("test-editormd", {
+            width   : "90%",
+            height  : 640,
+            syncScrolling : "single",
+            path    : "../lib/",
+            imageUpload : true,
+            imageFormats : ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
+            imageUploadURL : "/article/image/upload",
+            toolbarIcons : function () {
+                return ["undo","redo","|","bold","del","italic","quote","ucwords","uppercase","lowercase","|","h1","h2","h3","h4","h5","h6","|","list-ul","list-ol","hr","|","link","reference-link","image","code","preformatted-text","code-block","table","datetime","emoji","html-entities","pagebreak","|","goto-line","watch","preview","fullscreen","clear","search","|","help","info", "||", "publish"];
+            },
+            
+            toolbarIconTexts: {
+                publish: "<span bgcolor='gray'>发布</span>"
+            },
+            
+            toolbarHandlers : {
+                publish: function (cm, icon, cursor, selection) {
+                    mdEditorForm.method = "post";
+                    mdEditorForm.action = "/article/publish";//提交至服务器的路径
+                    mdEditorForm.submit();
+                }
+            }
+        });
+
+        /*
+        // or
+        testEditor = editormd({
+            id      : "test-editormd",
+            width   : "90%",
+            height  : 640,
+            path    : "../lib/"
+        });
+        */
+    });
+</script>
+</body>
+</html>
