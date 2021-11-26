@@ -313,7 +313,7 @@ public class EventService {
                 commonResponse.setMessage("申请失败,请稍后再试");
                 return commonResponse;
             } else {
-                if(!env.equals("online"))
+                if (!env.equals("online"))
                     return commonResponse;
                 //邮件通知审核人
                 EmailInfo emailInfo = eventMapper.queryReviewerEmail();
@@ -525,6 +525,25 @@ public class EventService {
         commonResponse.setSuccess(false);
         commonResponse.setMessage("此状态不支持修改");
         return commonResponse;
+    }
+
+    public CommonResponse getEmailAddress(String userName) {
+        CommonResponse commonResponse = new CommonResponse();
+        try {
+            Account t = ldapTemplate.findOne(query().where("uid").is(userName), Account.class);
+            if (StringUtils.isEmpty(t.getEmail())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("用户没有设置邮箱,请联系管理员");
+                return commonResponse;
+            } else {
+                commonResponse.setData(t.getEmail());
+                return commonResponse;
+            }
+        } catch (Exception e) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("获取用户邮箱error,请联系管理员");
+            return commonResponse;
+        }
     }
 
     public String findEmailAddress(String userName) {
