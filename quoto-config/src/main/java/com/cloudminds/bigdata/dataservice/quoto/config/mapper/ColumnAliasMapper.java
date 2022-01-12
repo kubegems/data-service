@@ -19,6 +19,9 @@ public interface ColumnAliasMapper {
 
 	@Update("update Column_alias set is_delete=#{delete} where id=#{id}")
 	public int updateColumnAliasDelete(int id,int delete);
+
+	@Update("update Column_alias set is_delete=#{delete} where table_id=#{tableId}")
+	public int updateColumnAliasDeleteByTableId(int tableId,int delete);
 	
 	@Update("update Column_alias set column_alias=#{column_alias},des=#{des},column_name=#{column_name},data_type=#{data_type},is_delete=0,state=1 where id=#{id}")
 	public int updateColumnAlias(ColumnAlias columnAlias);

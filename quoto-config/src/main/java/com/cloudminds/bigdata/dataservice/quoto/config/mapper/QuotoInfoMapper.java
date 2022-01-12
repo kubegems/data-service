@@ -19,6 +19,9 @@ public interface QuotoInfoMapper {
 
 	@Update("update Quoto_info set is_delete=#{delete} where id=#{id}")
 	public int updateQuotoInfoDelete(int id,int delete);
+
+	@Update("update Quoto_info set is_delete=#{delete} where table_id=#{tableId}")
+	public int updateQuotoInfoDeleteByTableId(int tableId,int delete);
 	
 	@Update("update Quoto_info set quoto_name=#{quoto_name},des=#{des},quoto_sql=#{quoto_sql},is_delete=0,state=1 where id=#{id}")
 	public int updateQuotoInfo(QuotoInfo quotoInfo);

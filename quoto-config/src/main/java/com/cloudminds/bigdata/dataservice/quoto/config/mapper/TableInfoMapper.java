@@ -29,7 +29,13 @@ public interface TableInfoMapper {
 	@Select("SELECT * FROM Table_info WHERE table_name=#{table_name} AND database_id=#{database_id} ")
 	public TableInfo getTableInfo(TableInfo tableInfo);
 
+	@Select("SELECT * FROM Table_info WHERE is_delete=0 and id=#{tableId}")
+	public TableInfo getTableInfoById(int tableId);
+
 	@Update("insert into Table_info(table_name,database_id,table_alias,des) VALUES(#{table_name},#{database_id},#{table_alias},#{des})")
 	@Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
 	public int insertTableInfo(TableInfo tableInfo);
+
+	@Select("select GROUP_CONCAT(`name`) from quoto where table_id=#{tableId} and deleted=0 and state=1")
+	public String getRelationQuotoName(int tableId);
 }
