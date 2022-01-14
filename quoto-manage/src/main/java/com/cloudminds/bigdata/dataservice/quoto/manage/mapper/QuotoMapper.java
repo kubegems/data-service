@@ -72,6 +72,9 @@ public interface QuotoMapper {
 	@Select("select * from Table_info where is_delete=0")
 	public List<TableInfo> queryAllDataService();
 
+	@Select("select * from Table_info where is_delete=0 and (business_process_id=#{business_process_id} or business_process_id is null)")
+	public List<TableInfo> queryAllDataServiceByBusinessProcessId(int business_process_id);
+
 	@Select("select d.* from dimension d LEFT JOIN Column_alias c ON d.column_alias=c.column_alias where c.table_id=#{tableId} and d.deleted=0 AND c.is_delete=0")
 	public List<Dimension> queryAllDimension(int tableId);
 

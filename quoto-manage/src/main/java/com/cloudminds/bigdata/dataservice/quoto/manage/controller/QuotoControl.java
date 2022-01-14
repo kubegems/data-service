@@ -90,8 +90,8 @@ public class QuotoControl {
 
 	// 获取所有的数据服务
 	@RequestMapping(value = "queryAllDataService", method = RequestMethod.GET)
-	public CommonResponse queryAllDataService() {
-		return quotoService.queryAllDataService();
+	public CommonResponse queryAllDataService(Integer business_process_id) {
+		return quotoService.queryAllDataService(business_process_id);
 	}
 
 	// 获取所有的计算周期

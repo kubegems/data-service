@@ -249,10 +249,14 @@ public class QuotoService {
         return commonResponse;
     }
 
-    public CommonResponse queryAllDataService() {
+    public CommonResponse queryAllDataService(Integer business_process_id) {
         // TODO Auto-generated method stub
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(quotoMapper.queryAllDataService());
+        if(business_process_id==null) {
+            commonResponse.setData(quotoMapper.queryAllDataService());
+        }else {
+            commonResponse.setData(quotoMapper.queryAllDataServiceByBusinessProcessId(business_process_id));
+        }
         return commonResponse;
     }
 

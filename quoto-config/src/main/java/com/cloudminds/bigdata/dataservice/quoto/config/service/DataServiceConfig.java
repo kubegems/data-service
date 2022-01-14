@@ -411,6 +411,7 @@ public class DataServiceConfig {
             } else {
                 tableInfoOld.setTable_alias(tableInfo.getTable_alias());
                 tableInfoOld.setDes(tableInfo.getDes());
+                tableInfoOld.setBusiness_process_id(tableInfo.getBusiness_process_id());
                 if (tableInfoMapper.updateTableInfo(tableInfoOld) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
@@ -478,21 +479,6 @@ public class DataServiceConfig {
             ResultSet set = pStemt.executeQuery();
             // 结果集元数据
             ResultSetMetaData rsmd = set.getMetaData();
-//			String dataType=rsmd.getColumnTypeName(1).toLowerCase();
-//			StringUtils.trim(dataType);
-//			if(dataType.contains("int")) {
-//				return "int";
-//			}else if(dataType.equals("float32")) {
-//				return "float";
-//			}else if(dataType.equals("float64")) {
-//				return "double";
-//			}else if(dataType.equals("date")) {
-//				return "date";
-//			}else if(dataType.equals("datetime")||dataType.equals("timestamp")) {
-//				return "dateTime";
-//			}else if(dataType.equals("varchar")) {
-//				return "string";
-//			}
             return rsmd.getColumnTypeName(1);
         } catch (SQLException e) {
             e.printStackTrace();
