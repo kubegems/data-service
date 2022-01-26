@@ -7,8 +7,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
+import com.cloudminds.bigdata.dataservice.quoto.config.mapper.*;
+import com.cloudminds.bigdata.dataservice.quoto.config.redis.RedisUtil;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -27,19 +33,8 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ApiDocMapper;
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.ColumnAliasMapper;
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.DatabaseInfoMapper;
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.QuotoInfoMapper;
-import com.cloudminds.bigdata.dataservice.quoto.config.mapper.TableInfoMapper;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.DbConnInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
 @Service
 public class DataServiceConfig {
@@ -53,6 +48,10 @@ public class DataServiceConfig {
     private TableInfoMapper tableInfoMapper;
     @Autowired
     private ApiDocMapper apiDocMapper;
+    @Autowired
+    private UserTokenMapper userTokenMapper;
+    @Autowired
+    private RedisUtil redisUtil;
 
     // columnAlias
     public CommonResponse getColumnAlias(int tableId) {
@@ -620,4 +619,127 @@ public class DataServiceConfig {
         return true;
     }
 
+    public synchronized CommonResponse insertUserToken(UserToken userToken) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setSuccess(false);
+        //校验参数
+        if (userToken.getUser_name() == null || userToken.getUser_name().equals("")) {
+            commonResponse.setMessage("用户名不能为空！");
+            return commonResponse;
+        }
+        //校验用户是否存在
+        if (userTokenMapper.getUserTokenByUserName(userToken.getUser_name()) != null) {
+            commonResponse.setMessage("用户已经存在,请不要重复添加！");
+            return commonResponse;
+        }
+        //生成唯一token
+        Random random = new Random();
+        char[] numbersAndLetters = ("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ").toCharArray();
+        char[] randBuffer = new char[20];
+        for (int i = 0; i < randBuffer.length; i++) {
+            randBuffer[i] = numbersAndLetters[random.nextInt(36)];
+        }
+        userToken.setToken(new String(randBuffer));
+        //入库
+        if (userTokenMapper.insertUserToken(userToken) != 1) {
+            commonResponse.setMessage("入库失败,请稍后再试！");
+            return commonResponse;
+        }
+        commonResponse.setSuccess(true);
+        commonResponse.setMessage("新增用户成功");
+        return commonResponse;
+    }
+
+    public CommonResponse updateUserToken(UserToken userToken) {
+        CommonResponse commonResponse = new CommonResponse();
+        //校验用户是否存在
+        UserToken oldUserToken = userTokenMapper.getUserTokenById(userToken.getId());
+        if (oldUserToken == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("用户不存在");
+            return commonResponse;
+        }
+        oldUserToken.setDes(userToken.getDes());
+        oldUserToken.setTables(userToken.getTables());
+        if (userTokenMapper.updateUserToken(oldUserToken) != 1) {
+            commonResponse.setMessage("数据库更新失败,请稍后再试！");
+            return commonResponse;
+        }
+        commonResponse.setMessage("更新成功！");
+        return commonResponse;
+    }
+
+    public CommonResponse updateUserTokenStatus(int id, int status) {
+        CommonResponse commonResponse = new CommonResponse();
+        //校验用户是否存在
+        UserToken oldUserToken = userTokenMapper.getUserTokenById(id);
+        if (oldUserToken == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("用户不存在");
+            return commonResponse;
+        }
+        oldUserToken.setState(status);
+        if (userTokenMapper.updateUserToken(oldUserToken) != 1) {
+            commonResponse.setMessage("操作失败,请稍后再试！");
+            return commonResponse;
+        }
+        commonResponse.setMessage("操作成功！");
+        return commonResponse;
+    }
+
+    public CommonResponse deleteUserToken(int id) {
+        CommonResponse commonResponse = new CommonResponse();
+        //校验用户是否存在
+        UserToken oldUserToken = userTokenMapper.getUserTokenById(id);
+        if (oldUserToken == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("用户不存在");
+            return commonResponse;
+        }
+        oldUserToken.setIs_delete(1);
+        if (userTokenMapper.updateUserToken(oldUserToken) != 1) {
+            commonResponse.setMessage("删除失败,请稍后再试！");
+            return commonResponse;
+        }
+        commonResponse.setMessage("删除成功！");
+        return commonResponse;
+    }
+
+    public CommonResponse getUserToken() {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(userTokenMapper.getUserToken());
+        return commonResponse;
+    }
+
+    public CommonResponse refreshUserToken() {
+        CommonResponse commonResponse = new CommonResponse();
+        List<UserToken> superUserToken= userTokenMapper.findSuperUserToken();
+        //roc服务加载用户权限
+        List<UserToken> userTokenCk = userTokenMapper.findTokenTables("Clickhouse");
+        Map<String,String> userTokenCkMap=new HashMap<>();
+        for(UserToken userToken:superUserToken){
+            userTokenCkMap.put(userToken.getToken(),"ALL");
+        }
+        if(userTokenCk!=null&&userTokenCk.size()>0){
+            for(UserToken userToken:userTokenCk){
+                userTokenCkMap.put(userToken.getToken(),userToken.getDes());
+            }
+        }
+        redisUtil.set("roc_token",userTokenCkMap);
+        //chatbot服务加载用户权限
+        List<UserToken> userTokenKylin = userTokenMapper.findTokenTables("Kylin");
+        Map<String,String> userTokenMapKylin=new HashMap<>();
+        for(UserToken userToken:superUserToken){
+            userTokenMapKylin.put(userToken.getToken(),"ALL");
+        }
+        if(userTokenKylin!=null&&userTokenKylin.size()>0){
+            for(UserToken userToken:userTokenKylin){
+                userTokenMapKylin.put(userToken.getToken(),userToken.getDes());
+            }
+            redisUtil.set("chatbot_token",userTokenMapKylin);
+        }
+
+        commonResponse.setMessage("刷新成功！");
+        return commonResponse;
+    }
 }

@@ -1,16 +1,12 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.controller;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.ColumnAlias;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.DatabaseInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.QuotoInfo;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.service.DataServiceConfig;
 
 @RestController
@@ -135,10 +131,39 @@ public class DataServiceControl {
 		return dataServiceConfig.getApiDoc();
 	}
 
-	// 刷新表字段
-	@RequestMapping(value = "refreshTable", method = RequestMethod.GET)
-	public CommonResponse test(int tableId) {
-		return dataServiceConfig.refreshTableCloumn(tableId);
+	//新增用户token
+	@RequestMapping(value="insertUserToken",method = RequestMethod.POST)
+	public CommonResponse insertUserToken(@RequestBody UserToken userToken){
+		return dataServiceConfig.insertUserToken(userToken);
 	}
 
+	//更新用户token
+	@RequestMapping(value="updateUserToken",method = RequestMethod.POST)
+	public CommonResponse updateUserToken(@RequestBody UserToken userToken){
+		return dataServiceConfig.updateUserToken(userToken);
+	}
+
+	//禁用或启用用户token
+	@RequestMapping(value="updateUserTokenStatus",method = RequestMethod.POST)
+	public CommonResponse updateUserTokenStatus(int id, int status){
+		return dataServiceConfig.updateUserTokenStatus(id,status);
+	}
+
+	//删除用户token
+	@RequestMapping(value = "deleteUserToken", method = RequestMethod.POST)
+	public CommonResponse deleteUserToken(int id) {
+		return dataServiceConfig.deleteUserToken(id);
+	}
+
+	//查询用户token
+	@RequestMapping(value = "getUserToken", method = RequestMethod.GET)
+	public CommonResponse getUserToken() {
+		return dataServiceConfig.getUserToken();
+	}
+
+	//刷新用户token
+	@RequestMapping(value="refresh",method = RequestMethod.GET)
+	public CommonResponse refreshUserToken(){
+		return dataServiceConfig.refreshUserToken();
+	}
 }

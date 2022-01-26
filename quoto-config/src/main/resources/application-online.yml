@@ -8,3 +8,6 @@ spring:
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
+  redis:
+    host: bigdata-redis
+    port: 6379
