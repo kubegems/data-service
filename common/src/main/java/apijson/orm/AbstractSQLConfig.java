@@ -1267,8 +1267,8 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	public String[] dealKeys(String[] keys) {
 		for (int i = 0; i < keys.length; i++) {
 			if (tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn") != null
-					&& tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn").containsKey(keys[i])) {
-				keys[i] = tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn").get(keys[i]) + " as"
+					&& tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn").containsKey(keys[i]) && !tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn").get(keys[i]).equals(keys[i])) {
+				keys[i] = tableColumnMap.get(getSchema() + "." + getSQLTable() + "_aliasColumn").get(keys[i]) + " AS "
 						+ keys[i];
 			}
 		}

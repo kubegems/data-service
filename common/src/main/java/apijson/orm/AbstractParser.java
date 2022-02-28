@@ -402,6 +402,7 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 			requestObject.put("sql:generate|cache|execute|maxExecute", getSQLExecutor().getGeneratedSQLCount() + "|" + getSQLExecutor().getCachedSQLCount() + "|" + getSQLExecutor().getExecutedSQLCount() + "|" + getMaxSQLCount());
 			requestObject.put("depth:count|max", queryDepth + "|" + getMaxQueryDepth());
 			requestObject.put("time:start|duration|end", startTime + "|" + duration + "|" + endTime);
+			res.put("execute_sql",getSQLExecutor().getExecutedSQL());
 			if (error != null) {
 				requestObject.put("throw", error.getClass().getName());
 				requestObject.put("trace", error.getStackTrace());
@@ -421,7 +422,6 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 		}
 		Log.d(TAG, "parseResponse  endTime = " + endTime + ";  duration = " + duration
 				+ ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n\n");
-
 		return res;
 	}
 

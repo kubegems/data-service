@@ -817,6 +817,7 @@ public class QuotoService {
         // 请求数据服务
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("token","L0V91TZWH4K8YZPBBG3M");
         // 将请求头部和参数合成一个请求
         HttpEntity<String> requestEntity = new HttpEntity<>(bodyRequest, headers);
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, requestEntity, String.class);

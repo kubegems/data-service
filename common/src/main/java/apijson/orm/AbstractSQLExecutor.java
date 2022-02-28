@@ -46,10 +46,12 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 	private int generatedSQLCount;
 	private int cachedSQLCount;
 	private int executedSQLCount;
+	private String executedSql;
 	public AbstractSQLExecutor() {
 		generatedSQLCount = 0;
 		cachedSQLCount = 0;
 		executedSQLCount = 0;
+		executedSql = "";
 	}
 
 	@Override
@@ -64,6 +66,8 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 	public int getExecutedSQLCount() {
 		return executedSQLCount;
 	}
+	@Override
+	public String getExecutedSQL() { return executedSql; }
 
 	/**
 	 * 缓存map
@@ -151,7 +155,7 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 		boolean prepared = config.isPrepared();
 
 		final String sql = config.getSQL(false);
-
+		executedSql=sql;
 		config.setPrepared(prepared);
 
 		if (StringUtil.isEmpty(sql, true)) {
@@ -673,11 +677,14 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 	@Override
 	public PreparedStatement getStatement(@NotNull SQLConfig config) throws Exception {
 		PreparedStatement statement; //创建Statement对象
+		if(config.getMethod() == RequestMethod.POST&&config.getTable().equals("dataservice_access_history")) {
+			config.getColumn().remove(0);
+			config.getValues().get(0).remove(0);
+		}
 		if (config.getMethod() == RequestMethod.POST && config.getId() == null) { //自增id
 			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()), Statement.RETURN_GENERATED_KEYS);
 		}
 		else {
-			statement = getConnection(config).prepareStatement(config.getSQL(config.isPrepared()));
 			if(config.isKYLIN()) {
 				String sql=config.getSQL(false);
 				statement = getConnection(config).prepareStatement(sql);

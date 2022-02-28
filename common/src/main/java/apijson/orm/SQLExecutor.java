@@ -115,5 +115,6 @@ public interface SQLExecutor {
 
 	int getExecutedSQLCount();
 
+	String getExecutedSQL();
 	
 }

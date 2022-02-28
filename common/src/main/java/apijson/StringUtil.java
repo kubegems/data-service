@@ -387,6 +387,7 @@ public class StringUtil {
 		supportMethod.put("hour", false);
 		supportMethod.put("minute", false);
 		supportMethod.put("second", false);
+		supportMethod.put("toString",false);
 		// 特殊处理
 		supportMethod.put("date", true);
 //		supportMethod.put("date_format", true);
