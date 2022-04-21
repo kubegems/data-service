@@ -164,25 +164,16 @@ public class ChatbotQuotoControl extends APIJSONController {
 		//t.start();
 	}
 
-	@PostMapping(value = "default")
+	@PostMapping(value = "oozie")
 	public String getDefaultData(@RequestBody String request, HttpServletRequest session) {
-		request = "{'@schema':'DEFAULT'," + request.substring(request.indexOf("{") + 1);
-		return getData(request, session,"default");
+		request = "{'@schema':'oozie'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session,"oozie");
 	}
 
-	@PostMapping(value = "cms")
+	@PostMapping(value = "metastore")
 	public String getCmsData(@RequestBody String request, HttpServletRequest session) {
-		request = "{'@schema':'CMS'," + request.substring(request.indexOf("{") + 1);
-		return getData(request, session,"cms");
-	}
-
-	@PostMapping(value = "sv")
-	public String getSvData(@RequestBody String request, HttpServletRequest session) {
-		return getData(request, session,"sv");
-	}
-	@PostMapping(value = "test")
-	public String test(@RequestBody String request, HttpServletRequest session) {
-		return post(request,session.getSession());
+		request = "{'@schema':'metastore'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session,"metastore");
 	}
 
 

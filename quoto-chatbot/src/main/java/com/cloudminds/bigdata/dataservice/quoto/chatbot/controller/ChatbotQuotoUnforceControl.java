@@ -160,21 +160,16 @@ public class ChatbotQuotoUnforceControl extends APIJSONController {
 		//t.start();
 	}
 
-	@PostMapping(value = "default")
+	@PostMapping(value = "oozie")
 	public String getDefaultDataNoForce(@RequestBody String request, HttpServletRequest session) {
-		request = "{'@force':false,'@schema':'DEFAULT'," + request.substring(request.indexOf("{") + 1);
-		return getData(request, session,"default");
+		request = "{'@force':false,'@schema':'oozie'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session,"oozie");
 	}
 
-	@PostMapping(value = "cms")
+	@PostMapping(value = "metastore")
 	public String getCmsDataNoForce(@RequestBody String request, HttpServletRequest session) {
-		request = "{'@force':false,'@schema':'CMS'," + request.substring(request.indexOf("{") + 1);
-		return getData(request, session,"cms");
+		request = "{'@force':false,'@schema':'metastore'," + request.substring(request.indexOf("{") + 1);
+		return getData(request, session,"metastore");
 	}
 
-	@PostMapping(value = "sv")
-	public String getSvDataNoForce(@RequestBody String request, HttpServletRequest session) {
-		request = "{'@force':false," + request.substring(request.indexOf("{") + 1);
-		return getData(request, session,"sv");
-	}
 }

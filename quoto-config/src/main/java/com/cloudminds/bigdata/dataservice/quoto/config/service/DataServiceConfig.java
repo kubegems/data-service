@@ -612,7 +612,42 @@ public class DataServiceConfig {
                 }
             }
 
-        } else {
+        } else if (dbType.equals("mysql")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("SELECT column_name as name,data_type as type,column_comment as comment FROM information_schema.columns where TABLE_SCHEMA='"
+                        + dbConnInfo.getDatabase() + "' and TABLE_NAME='" + dbConnInfo.getTable_name() + "'");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("name"));
+                    columnAlias.setColumn_alias(set.getString("name"));
+                    columnAlias.setData_type(set.getString("type"));
+                    columnAlias.setDes(set.getString("comment"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        return false;
+                    }
+                }
+
+            } catch (
+
+                    SQLException e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        }  else {
             return false;
         }
 
@@ -727,7 +762,7 @@ public class DataServiceConfig {
         }
         redisUtil.set("roc_token",userTokenCkMap);
         //chatbot服务加载用户权限
-        List<UserToken> userTokenKylin = userTokenMapper.findTokenTables("Kylin");
+        List<UserToken> userTokenKylin = userTokenMapper.findTokenTables("Mysql");
         Map<String,String> userTokenMapKylin=new HashMap<>();
         for(UserToken userToken:superUserToken){
             userTokenMapKylin.put(userToken.getToken(),"ALL");
@@ -736,8 +771,8 @@ public class DataServiceConfig {
             for(UserToken userToken:userTokenKylin){
                 userTokenMapKylin.put(userToken.getToken(),userToken.getDes());
             }
-            redisUtil.set("chatbot_token",userTokenMapKylin);
         }
+        redisUtil.set("chatbot_token",userTokenMapKylin);
 
         commonResponse.setMessage("刷新成功！");
         return commonResponse;
