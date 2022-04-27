@@ -176,7 +176,7 @@ public class ChatbotQuotoControl extends APIJSONController {
 		return getData(request, session,"metastore");
 	}
 
-
+   //刷新逻辑优化
 	@GetMapping(value = "refreshConfig")
 	public CommonResponse refush() {
 		APIJSONParser abstractParser = new APIJSONParser();

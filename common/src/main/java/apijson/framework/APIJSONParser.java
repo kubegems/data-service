@@ -25,6 +25,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpSession;
 
+import apijson.StringUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import apijson.NotNull;
@@ -209,6 +210,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 		ConfigLoadResponse commonResponse=new ConfigLoadResponse();
 		// 查询配置的数据库信息
 		SQLConfig sqlConfig = APIJSONApplication.DEFAULT_APIJSON_CREATOR.createSQLConfig();
+		String quote = sqlConfig.getQuote();
 		String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"Db_info\": {\"@column\":\"id\",\"is_delete\":0,\"state\":1,\"db_url\":\""
 				+ sqlConfig.getDBUri() + "\"}}";
 		setNeedVerify(false);
@@ -234,7 +236,7 @@ public class APIJSONParser extends AbstractParser<Long> {
 			String databaseName=databaseInfo.getDatabase();
 			request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Table_info\": {\"is_delete\":0,\"state\":1,\"database_id\":"
 					+ dataBaseId + "},\"count\":0}}";
-			object = parseResponse(request);		
+			object = parseResponse(request);
 			if (object.get("[]") == null) {
 				continue;
 			}
@@ -267,8 +269,8 @@ public class APIJSONParser extends AbstractParser<Long> {
 					for (int j = 0; j < columnAliass.size(); j++) {
 						ColumnAlias columnAlias = JSONObject.parseObject(columnAliass.get(j).getString("Column_alias"),
 								ColumnAlias.class);
-						value.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
-						valueAlias.put("\"" + columnAlias.getColumn_alias() + "\"", "\"" + columnAlias.getColumn_name() + "\"");
+						value.put(quote + columnAlias.getColumn_alias() + quote, quote + columnAlias.getColumn_name() + quote);
+						valueAlias.put(quote + columnAlias.getColumn_alias() + quote, quote + columnAlias.getColumn_name() + quote);
 						valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn_name());
 					}
 					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_processColumn", value);
@@ -284,7 +286,9 @@ public class APIJSONParser extends AbstractParser<Long> {
 					for (int j = 0; j < quotoInfos.size(); j++) {
 						QuotoInfo quotoInfo = JSONObject.parseObject(quotoInfos.get(j).getString("Quoto_info"),
 								QuotoInfo.class);
-						valueAlias.put("\"" + quotoInfo.getQuoto_name() + "\"", quotoInfo.getQuoto_sql());
+						if(quotoInfo.getQuoto_name()!=null) {
+							valueAlias.put(quote + quotoInfo.getQuoto_name() + quote, quotoInfo.getQuoto_sql());
+						}
 					}
 					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_aliasColumn", valueAlias);
 				}else {
