@@ -273,8 +273,6 @@ public class APIJSONParser extends AbstractParser<Long> {
 						valueAlias.put(quote + columnAlias.getColumn_alias() + quote, quote + columnAlias.getColumn_name() + quote);
 						valueReal.put(columnAlias.getColumn_alias(), columnAlias.getColumn_name());
 					}
-					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_processColumn", value);
-					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_realColumn", valueReal);
 				}
 
 				// 根据表信息查询指标信息
@@ -288,12 +286,18 @@ public class APIJSONParser extends AbstractParser<Long> {
 								QuotoInfo.class);
 						if(quotoInfo.getQuoto_name()!=null) {
 							valueAlias.put(quote + quotoInfo.getQuoto_name() + quote, quotoInfo.getQuoto_sql());
+							value.put(quote + quotoInfo.getQuoto_name() + quote, quotoInfo.getQuoto_sql());
+							valueReal.put(quotoInfo.getQuoto_name(),  quotoInfo.getQuoto_sql());
 						}
 					}
 					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_aliasColumn", valueAlias);
+					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_processColumn", value);
+					tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_realColumn", valueReal);
 				}else {
 					if(!valueAlias.isEmpty()) {
 						tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_aliasColumn", valueAlias);
+						tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_processColumn", value);
+						tableColumnMap.put(databaseName+"."+tableInfo.getTable_name() + "_realColumn", valueReal);
 					}
 				}
 			}
