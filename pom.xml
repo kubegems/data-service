@@ -67,5 +67,6 @@
 		<module>clickhouseAtlas</module>
 		<module>quoto-manage</module>
 		<module>markdown-manage</module>
+		<module>quoto-search</module>
 	</modules>
 </project>
