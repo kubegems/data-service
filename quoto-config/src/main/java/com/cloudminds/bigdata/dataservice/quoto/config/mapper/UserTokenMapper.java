@@ -1,5 +1,6 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAccessInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.UserToken;
 import com.cloudminds.bigdata.dataservice.quoto.config.handler.ArrayTypeHandler;
 import org.apache.ibatis.annotations.*;
@@ -18,6 +19,10 @@ public interface UserTokenMapper {
     @Select("SELECT * FROM user_token WHERE id=#{id} AND is_delete=0")
     @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
     public UserToken getUserTokenById(int id);
+
+    @Select("SELECT * FROM user_token WHERE token=#{token} AND is_delete=0")
+    @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+    public UserToken getUserTokenByToken(String token);
 
     @Select("SELECT * FROM user_token WHERE is_delete=0")
     @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
@@ -38,4 +43,10 @@ public interface UserTokenMapper {
 
     @Select("select * from user_token where `tables`='0'")
     public List<UserToken> findSuperUserToken();
+
+    @Select("select tt.id,tt.table_alias,tt.des as table_des,dd.des as db_des,concat(db.service_path,dd.service_path) as service_path from Table_info tt left join Database_info dd on tt.database_id=dd.id left JOIN Db_info db on dd.db_id=db.id where tt.id is not null and tt.is_delete=0 and tt.state=1 and dd.is_delete=0 and dd.state=1 and db.is_delete=0 and db.state=1")
+    public List<TableAccessInfo> findAllTableAccessInfo();
+
+    @Select("select tt.id,tt.table_alias,tt.des as table_des,dd.des as db_des,concat(db.service_path,dd.service_path) as service_path from (SELECT a.token, SUBSTRING_INDEX( SUBSTRING_INDEX( a.`tables`, ',', b.help_topic_id + 1 ), ',',- 1 ) AS table_id FROM user_token a JOIN mysql.help_topic AS b ON b.help_topic_id < ( length( a.`tables` ) - length( REPLACE ( a.`tables`, ',', '' ) ) + 1 ) where a.is_delete=0 and a.state=1 and a.token=#{token}) too left join Table_info tt on too.table_id=tt.id left join Database_info dd on tt.database_id=dd.id left JOIN Db_info db on dd.db_id=db.id where tt.id is not null and tt.is_delete=0 and tt.state=1 and dd.is_delete=0 and dd.state=1 and db.is_delete=0 and db.state=1")
+    public List<TableAccessInfo> findTableAccessInfo(String token);
 }

@@ -68,5 +68,6 @@
 		<module>quoto-manage</module>
 		<module>markdown-manage</module>
 		<module>quoto-search</module>
-	</modules>
+        <module>label-manage</module>
+    </modules>
 </project>

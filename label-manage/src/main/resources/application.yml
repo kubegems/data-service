@@ -1,0 +1,14 @@
+server:
+  port: 8077
+spring:
+  profiles:
+    active: test
+  application:
+    name: dataServer-labelManage
+  cloud:
+    nacos:
+      discovery:
+        group: bigdata
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8

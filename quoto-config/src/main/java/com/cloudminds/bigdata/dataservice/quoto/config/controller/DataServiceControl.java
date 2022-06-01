@@ -166,4 +166,10 @@ public class DataServiceControl {
 	public CommonResponse refreshUserToken(){
 		return dataServiceConfig.refreshUserToken();
 	}
+
+	// 根据token获取表访问信息
+	@RequestMapping(value = "getTableAccessInfo", method = RequestMethod.GET)
+	public CommonResponse getTableAccessInfo(String token) {
+		return dataServiceConfig.getTableAccessInfo(token);
+	}
 }

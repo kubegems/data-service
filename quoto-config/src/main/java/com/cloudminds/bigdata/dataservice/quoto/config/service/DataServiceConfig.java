@@ -777,4 +777,25 @@ public class DataServiceConfig {
         commonResponse.setMessage("刷新成功！");
         return commonResponse;
     }
+
+    public CommonResponse getTableAccessInfo(String token){
+        CommonResponse commonResponse = new CommonResponse();
+        if(token==null){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("token值不能为空");
+            return commonResponse;
+        }
+        UserToken userToken = userTokenMapper.getUserTokenByToken(token);
+        if(userToken==null){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("此token不存在,请联系数据服务管理员获取token");
+            return commonResponse;
+        }
+        if(userToken.getTables()!=null && userToken.getTables().length==1 && userToken.getTables()[0]==0){
+            commonResponse.setData(userTokenMapper.findAllTableAccessInfo());
+            return commonResponse;
+        }
+        commonResponse.setData(userTokenMapper.findTableAccessInfo(token));
+        return  commonResponse;
+    }
 }
