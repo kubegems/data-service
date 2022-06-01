@@ -80,6 +80,8 @@ public interface SQLConfig {
 	 */
 	String getSQL(boolean prepared) throws Exception;
 
+	String getSql();
+	SQLConfig setSql(String sql);
 
 
 	boolean isTest();

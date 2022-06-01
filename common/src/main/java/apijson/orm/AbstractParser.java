@@ -754,6 +754,7 @@ public abstract class AbstractParser<T> implements Parser<T>, ParserCreator<T>, 
 			config.setOrder(JSONRequest.KEY_VERSION + (version > 0 ? "+" : "-"));
 			config.setCount(1);
 
+			config.setSql(JSONRequest.KEY_SQL);
 			//too many connections error: 不try-catch，可以让客户端看到是服务器内部异常
 			result = getSQLExecutor().execute(config, false);
 

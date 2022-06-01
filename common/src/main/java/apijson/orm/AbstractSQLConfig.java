@@ -4,22 +4,7 @@ This source code is licensed under the Apache License Version 2.0.*/
 
 package apijson.orm;
 
-import static apijson.JSONObject.KEY_CACHE;
-import static apijson.JSONObject.KEY_COLUMN;
-import static apijson.JSONObject.KEY_COMBINE;
-import static apijson.JSONObject.KEY_DATABASE;
-import static apijson.JSONObject.KEY_EXPLAIN;
-import static apijson.JSONObject.KEY_FROM;
-import static apijson.JSONObject.KEY_GROUP;
-import static apijson.JSONObject.KEY_HAVING;
-import static apijson.JSONObject.KEY_ID;
-import static apijson.JSONObject.KEY_JSON;
-import static apijson.JSONObject.KEY_ORDER;
-import static apijson.JSONObject.KEY_RAW;
-import static apijson.JSONObject.KEY_ROLE;
-import static apijson.JSONObject.KEY_SCHEMA;
-import static apijson.JSONObject.KEY_USER_ID;
-import static apijson.JSONObject.KEY_FORCE;
+import static apijson.JSONObject.*;
 import static apijson.RequestMethod.DELETE;
 import static apijson.RequestMethod.GET;
 import static apijson.RequestMethod.GETS;
@@ -161,6 +146,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	private String having; // 聚合函数的字符串数组，','分隔
 	private String order; // 排序方式的字符串数组，','分隔
 	private List<String> raw; // 需要保留原始 SQL 的字段，','分隔
+	private String sql; //直接透传sql
 	private List<String> json; // 需要转为 JSON 的字段，','分隔
 	private Subquery from; // 子查询临时表
 	private List<String> column; // 表内字段名(或函数名，仅查询操作可用)的字符串数组，','分隔
@@ -192,6 +178,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	public String getProcedure() {
 		return procedure;
 	}
+
 
 	public AbstractSQLConfig(RequestMethod method) {
 		setMethod(method);
@@ -431,10 +418,23 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	}
 	
 	@Override
+	public AbstractSQLConfig setSql(String sql) {
+		if(sql!=null) {
+			this.sql = sql;
+		}		
+		return this;
+	}
+
+	@Override
+	public String getSql() {
+		return sql;
+	}
+
+	@Override
 	public AbstractSQLConfig setForce(Boolean force) {
 		if(force!=null) {
 			this.force = force;
-		}		
+		}
 		return this;
 	}
 
@@ -2574,7 +2574,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	/**
 	 * 转为JSONArray
 	 * 
-	 * @param tv
+	 * @param obj
 	 * @return
 	 */
 	@NotNull
@@ -2713,6 +2713,10 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		if (config == null) {
 			Log.i(TAG, "getSQL  config == null >> return null;");
 			return null;
+		}
+
+		if(config.getSql()!=null && !config.getSql().isEmpty()){
+            return config.getSql();
 		}
 
 		// TODO procedure 改为 List<Procedure> procedureList; behind : true; function:
@@ -3046,6 +3050,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		String group = request.getString(KEY_GROUP);
 		String having = request.getString(KEY_HAVING);
 		String order = request.getString(KEY_ORDER);
+		String sql = request.getString(KEY_SQL);
 		String raw = request.getString(KEY_RAW);
 		String json = request.getString(KEY_JSON);
 
@@ -3289,6 +3294,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			config.setGroup(group);
 			config.setHaving(having);
 			config.setOrder(order);
+			config.setSql(sql);
 
 			String[] jsonArr = StringUtil.split(json);
 			config.setJson(jsonArr == null || jsonArr.length <= 0 ? null : new ArrayList<>(Arrays.asList(jsonArr)));
