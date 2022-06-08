@@ -5,8 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 @Data
-public class CodeInfo extends BaseEntity{
-    private int id;
-    private String code;
-    private String name;
+public class TagEnumValue extends BaseEntity{
+    private String tag_id;
+    private String tag_value;
 }
