@@ -7,3 +7,4 @@ COPY quoto-chatbot/target/bigdata-dataservice-quoto-chatbot.jar /dataservice/quo
 COPY standard-manage/target/bigdata-dataservice-standard-manage.jar /dataservice/standard-manage/
 COPY quoto-manage/target/bigdata-dataservice-quoto-manage.jar /dataservice/quoto-manage/
 COPY quoto-search/target/bigdata-dataservice-quoto-search.jar /dataservice/quoto-search/
+COPY label-manage/target/bigdata-dataservice-label-manage.jar /dataservice/label-manage/
