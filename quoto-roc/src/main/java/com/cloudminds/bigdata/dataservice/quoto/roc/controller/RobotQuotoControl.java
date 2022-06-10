@@ -1,13 +1,17 @@
 package com.cloudminds.bigdata.dataservice.quoto.roc.controller;
 
+import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import apijson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.cloudminds.bigdata.dataservice.quoto.roc.service.SaveAccessHistory;
+import com.mysql.cj.xdevapi.JsonArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -121,6 +125,222 @@ public class RobotQuotoControl extends APIJSONController {
     public String getCmdData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cmd'," + request.substring(request.indexOf("{") + 1);
         return getData(request, session,"cmd");
+    }
+
+    @PostMapping(value = "tag")
+    public String getTagData(@RequestBody String request, HttpServletRequest session) {
+        JSONObject requestJson = JSON.parseObject(JSON.parseObject(request));
+        String page = "0";
+        String count = "10";
+        String table="";
+        boolean queryCount=false;
+        String subSql="";
+        //得到真实的表名和库名
+        if(requestJson.containsKey("table_name")){
+            String tableName = requestJson.get("table_name").toString();
+            if(AbstractSQLConfig.TABLE_KEY_MAP.containsKey("tag."+tableName)){
+                table=AbstractSQLConfig.TABLE_KEY_MAP.get("tag."+tableName);
+                table="tag."+table;
+            }else{
+                JSONObject response=new JSONObject();
+                response.put("ok",false);
+                response.put("code",401);
+                response.put("msg","表tag."+tableName+"没有配置,请联系管理员");
+                return response.toString();
+            }
+
+        }else{
+            JSONObject response=new JSONObject();
+            response.put("ok",false);
+            response.put("code",401);
+            response.put("msg","table_name必须传入");
+            return response.toString();
+        }
+
+        //是否请求count
+        if(requestJson.containsKey("query")&&requestJson.getObject("query",Integer.class)==1){
+            queryCount=true;
+            subSql="select count(*) as total from "+table+" where id in (select arrayJoin(";
+        }else if(requestJson.containsKey("column")){
+            subSql="select "+requestJson.getString("column")+" from "+table+" where id in (select arrayJoin(";
+        }else{
+            subSql="select * from "+table+" where id in (select arrayJoin(";
+        }
+
+        String sql = "WITH";
+        //解析tag_str的sql
+        boolean tag_str=false;
+        String tag_str_sql="SELECT sv_ids FROM tag.cv_tag_string WHERE ";
+        if(requestJson.containsKey("tag_str")){
+            List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_str").toString(), JSONObject.class);
+            for (JSONObject tagJson : tagJsons){
+                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
+                    if(tag_str){
+                        tag_str_sql = tag_str_sql+" and ";
+                    }
+                    tag_str_sql = tag_str_sql + tagJson.getString("column")+" "+tagJson.getString("op")+" '"+tagJson.getString("value")+"'";
+                    tag_str = true;
+                }else{
+                    JSONObject response=new JSONObject();
+                    response.put("ok",false);
+                    response.put("code",401);
+                    response.put("msg","tag_str column,op,value必须成对出现!");
+                    return response.toString();
+                }
+            }
+        }
+        //解析tag_int的sql
+        boolean tag_int=false;
+        String tag_int_sql="select sv_ids from tag.cv_tag_int where ";
+        if(requestJson.containsKey("tag_int")){
+            List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_int").toString(), JSONObject.class);
+            for (JSONObject tagJson : tagJsons){
+                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
+                    if(tag_int){
+                        tag_int_sql = tag_int_sql+" and ";
+                    }
+                    tag_int_sql = tag_int_sql + tagJson.getString("column")+" "+tagJson.getString("op");
+                    if(tagJson.get("value") instanceof String){
+                        tag_int_sql = tag_int_sql+" '"+tagJson.getString("value")+"'";
+                    }else{
+                        tag_int_sql = tag_int_sql+" "+tagJson.getString("value");
+                    }
+                    tag_int = true;
+                }else{
+                    JSONObject response=new JSONObject();
+                    response.put("ok",false);
+                    response.put("code",401);
+                    response.put("msg","tag_int column,op,value必须成对出现!");
+                    return response.toString();
+                }
+            }
+        }
+        //解析tag_long的sql
+        boolean tag_long=false;
+        String tag_long_sql="select sv_ids from tag.cv_tag_long where ";
+        if(requestJson.containsKey("tag_long")){
+            List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_long").toString(), JSONObject.class);
+            for (JSONObject tagJson : tagJsons){
+                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
+                    if(tag_long){
+                        tag_long_sql = tag_long_sql+" and ";
+                    }
+                    tag_long_sql = tag_long_sql + tagJson.getString("column")+" "+tagJson.getString("op");
+                    if(tagJson.get("value") instanceof String){
+                        tag_long_sql = tag_long_sql+" '"+tagJson.getString("value")+"'";
+                    }else{
+                        tag_long_sql = tag_long_sql+" "+tagJson.getString("value");
+                    }
+                    tag_long = true;
+                }else{
+                    JSONObject response=new JSONObject();
+                    response.put("ok",false);
+                    response.put("code",401);
+                    response.put("msg","tag_long column,op,value必须成对出现!");
+                    return response.toString();
+                }
+            }
+        }
+        //解析tag_date的sql
+        boolean tag_date=false;
+        String tag_date_sql="select sv_ids from tag.cv_tag_date where ";
+        if(requestJson.containsKey("tag_date")){
+            List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_date").toString(), JSONObject.class);
+            for (JSONObject tagJson : tagJsons){
+                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
+                    if(tag_date){
+                        tag_date_sql = tag_date_sql+" and ";
+                    }
+                    tag_date_sql = tag_date_sql + tagJson.getString("column")+" "+tagJson.getString("op")+" '"+tagJson.getString("value")+"'";
+                    tag_date = true;
+                }else{
+                    JSONObject response=new JSONObject();
+                    response.put("ok",false);
+                    response.put("code",401);
+                    response.put("msg","tag_date column,op,value必须成对出现!");
+                    return response.toString();
+                }
+            }
+        }
+
+        //组装整体sql
+        int i=0;
+        if(tag_str){
+            i++;
+            sql=sql+"("+tag_str_sql+") AS bitmap"+i;
+        }
+        if(tag_int){
+            if(i>0){
+                sql=sql+",";
+            }
+            i++;
+            sql=sql+"("+tag_int_sql+") AS bitmap"+i;
+        }
+        if(tag_long){
+            if(i>0){
+                sql=sql+",";
+            }
+            i++;
+            sql=sql+"("+tag_long_sql+") AS bitmap"+i;
+        }
+        if(tag_date){
+            if(i>0){
+                sql=sql+",";
+            }
+            i++;
+            sql=sql+"("+tag_date_sql+") AS bitmap"+i;
+        }
+        if(i==0){
+            JSONObject response=new JSONObject();
+            response.put("ok",false);
+            response.put("code",401);
+            response.put("msg","筛选条件必须传入");
+            return response.toString();
+        }else if(i==1){
+            sql =sql+" "+subSql+"bitmapToArray(bitmap1)))";
+        }else if(i==2){
+            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmap1, bitmap2))))";
+        }else if(i==3){
+            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3))))";
+        }else if(i==4){
+            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3),bitmap4))))";
+        }
+        if(!queryCount){
+            if(requestJson.containsKey("count")&&requestJson.containsKey("page")){
+                page = requestJson.getString("page");
+                count = requestJson.getString("count");
+                sql=sql+" order by id LIMIT "+requestJson.getString("count");
+                if(requestJson.getObject("page",Integer.class)>0){
+                    sql=sql + " offset "+requestJson.getObject("count",Integer.class)*requestJson.getObject("page",Integer.class);
+                }
+            }
+        }
+        request = "{\"@schema\":\"tag\",\"[]\":{\""+requestJson.getString("table_name")+"\": {\"@sql\":\""+sql+"\"},\"page\":"+page+",\"count\":"+count+"}}";
+        String result = getData(request, session,"tag");
+        JSONObject jsonResult=JSON.parseObject(result);
+        if(jsonResult.getString("msg").contains("DB::Exception: Scalar subquery returned empty result of type")){
+            JSONObject makeResult=new JSONObject();
+            makeResult.put("ok",true);
+            makeResult.put("code",200);
+            makeResult.put("msg","success");
+            if(queryCount){
+                makeResult.put("total",0);
+            }
+            return makeResult.toString();
+        }
+        if(queryCount){
+
+            if(jsonResult.containsKey("ok")&&jsonResult.getObject("ok",Boolean.class)){
+                Object total = JSONArray.parseArray(jsonResult.get("[]").toString(), JSONObject.class).get(0).getJSONObject(requestJson.getString("table_name")).get("total");
+                jsonResult.remove("[]");
+                jsonResult.put("total",total);
+                return jsonResult.toString();
+            }else{
+                return result;
+            }
+        }else{
+            return result;
+        }
     }
 
     public String getData(String request, HttpServletRequest httpServletRequest, String servicePath) {
