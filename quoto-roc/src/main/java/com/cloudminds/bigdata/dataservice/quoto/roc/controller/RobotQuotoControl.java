@@ -160,17 +160,17 @@ public class RobotQuotoControl extends APIJSONController {
         //是否请求count
         if(requestJson.containsKey("query")&&requestJson.getObject("query",Integer.class)==1){
             queryCount=true;
-            subSql="select count(*) as total from "+table+" where id in (select arrayJoin(";
+            subSql="select count(*) as total from "+table+" where oid in (select arrayJoin(";
         }else if(requestJson.containsKey("column")){
-            subSql="select "+requestJson.getString("column")+" from "+table+" where id in (select arrayJoin(";
+            subSql="select "+requestJson.getString("column")+" from "+table+" where oid in (select arrayJoin(";
         }else{
-            subSql="select * from "+table+" where id in (select arrayJoin(";
+            subSql="select * from "+table+" where oid in (select arrayJoin(";
         }
 
         String sql = "WITH";
         //解析tag_str的sql
         boolean tag_str=false;
-        String tag_str_sql="SELECT sv_ids FROM tag.cv_tag_string WHERE ";
+        String tag_str_sql="SELECT oids FROM tag.dis_cv_tag_string WHERE ";
         if(requestJson.containsKey("tag_str")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_str").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -191,7 +191,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_int的sql
         boolean tag_int=false;
-        String tag_int_sql="select sv_ids from tag.cv_tag_int where ";
+        String tag_int_sql="select oids from tag.dis_cv_tag_int where ";
         if(requestJson.containsKey("tag_int")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_int").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -217,7 +217,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_long的sql
         boolean tag_long=false;
-        String tag_long_sql="select sv_ids from tag.cv_tag_long where ";
+        String tag_long_sql="select oids from tag.dis_cv_tag_Long where ";
         if(requestJson.containsKey("tag_long")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_long").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -243,7 +243,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_date的sql
         boolean tag_date=false;
-        String tag_date_sql="select sv_ids from tag.cv_tag_date where ";
+        String tag_date_sql="select oids from tag.dis_cv_tag_date where ";
         if(requestJson.containsKey("tag_date")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_date").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -309,7 +309,7 @@ public class RobotQuotoControl extends APIJSONController {
             if(requestJson.containsKey("count")&&requestJson.containsKey("page")){
                 page = requestJson.getString("page");
                 count = requestJson.getString("count");
-                sql=sql+" order by id LIMIT "+requestJson.getString("count");
+                sql=sql+" order by oid LIMIT "+requestJson.getString("count");
                 if(requestJson.getObject("page",Integer.class)>0){
                     sql=sql + " offset "+requestJson.getObject("count",Integer.class)*requestJson.getObject("page",Integer.class);
                 }
