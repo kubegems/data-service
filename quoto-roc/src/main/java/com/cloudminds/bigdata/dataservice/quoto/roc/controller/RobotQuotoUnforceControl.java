@@ -119,6 +119,17 @@ public class RobotQuotoUnforceControl extends APIJSONController {
         request = "{'@force':false,'@schema':'cmd'," + request.substring(request.indexOf("{") + 1);
         return getData(request, session, "cmd");
     }
+    @PostMapping(value = "cloud")
+    public String getCloudData(@RequestBody String request, HttpServletRequest session) {
+        request = "{'@force':false,'@schema':'cloud'," + request.substring(request.indexOf("{") + 1);
+        return getData(request, session,"cloud");
+    }
+
+    @PostMapping(value = "omd")
+    public String getOmdData(@RequestBody String request, HttpServletRequest session) {
+        request = "{'@force':false,'@schema':'omd'," + request.substring(request.indexOf("{") + 1);
+        return getData(request, session,"omd");
+    }
 
     public String getData(String request, HttpServletRequest httpServletRequest, String servicePath) {
         JSONObject response=new JSONObject();

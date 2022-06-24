@@ -81,7 +81,7 @@ public class RobotQuotoControl extends APIJSONController {
 
     @PostMapping(value = "menJing")
     public String getMenjingData(@RequestBody String request, HttpServletRequest session) {
-        request = "{'@schema':'menjing'," + request.substring(request.indexOf("{") + 1);
+        request = "{'@schema':'menjindb'," + request.substring(request.indexOf("{") + 1);
         return getData(request, session,"menJing");
     }
 
@@ -115,6 +115,12 @@ public class RobotQuotoControl extends APIJSONController {
         return getData(request, session,"boss");
     }
 
+    @PostMapping(value = "omd")
+    public String getOmdData(@RequestBody String request, HttpServletRequest session) {
+        request = "{'@schema':'omd'," + request.substring(request.indexOf("{") + 1);
+        return getData(request, session,"omd");
+    }
+
     @PostMapping(value = "cdmCo")
     public String getCdmCoData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cdm_co'," + request.substring(request.indexOf("{") + 1);
@@ -125,6 +131,11 @@ public class RobotQuotoControl extends APIJSONController {
     public String getCmdData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cmd'," + request.substring(request.indexOf("{") + 1);
         return getData(request, session,"cmd");
+    }
+    @PostMapping(value = "cloud")
+    public String getCloudData(@RequestBody String request, HttpServletRequest session) {
+        request = "{'@schema':'cloud'," + request.substring(request.indexOf("{") + 1);
+        return getData(request, session,"cloud");
     }
 
     @PostMapping(value = "tag")
