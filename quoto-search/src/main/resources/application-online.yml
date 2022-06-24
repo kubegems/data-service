@@ -1,0 +1,8 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos.cloudminds.com
+elasticsearch:
+  host: 172.16.23.2
+  port: 9400
