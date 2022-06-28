@@ -7,10 +7,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.*;
@@ -797,5 +796,103 @@ public class DataServiceConfig {
         }
         commonResponse.setData(userTokenMapper.findTableAccessInfo(token));
         return  commonResponse;
+    }
+
+    public CommonResponse getSourceInfo() {
+        CommonResponse commonResponse = new CommonResponse();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        String yesterDayDate = dateFormat.format(calendar.getTime());
+        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        String beforeYesterday = dateFormat.format(calendar.getTime());
+        List<SourceInfo> sourceInfos = new ArrayList<>();
+        Connection conn = null;
+        // 与数据库的连接
+        PreparedStatement pStemt = null;
+        try {
+            conn = DriverManager.getConnection("jdbc:postgresql://172.16.31.1:32086/cdmdq", "postgres", "cloud1688");
+            pStemt = conn.prepareStatement("select table_type_name,sum(db_count) as db_count,sum(tb_count) as tb_count,sum(total_size) as total_size from ads.warehouse_stat where dt='"+yesterDayDate+"' group by table_type_name");
+            ResultSet set = pStemt.executeQuery();
+            while (set.next()) {
+                SourceInfo sourceInfo = new SourceInfo();
+                sourceInfo.setSourceName(set.getString("table_type_name")+"_db");
+                sourceInfo.setDb(set.getLong("db_count"));
+                sourceInfo.setTable(set.getLong("tb_count"));
+                sourceInfo.setTotalFileSize(set.getLong("total_size"));
+                sourceInfos.add(sourceInfo);
+            }
+            if(sourceInfos.isEmpty()) {
+                pStemt = conn.prepareStatement("select table_type_name,sum(db_count) as db_count,sum(tb_count) as tb_count,sum(total_size) as total_size from ads.warehouse_stat where dt='" + beforeYesterday + "' group by table_type_name");
+                set = pStemt.executeQuery();
+                while (set.next()) {
+                    SourceInfo sourceInfo = new SourceInfo();
+                    sourceInfo.setSourceName(set.getString("table_type_name") + "_db");
+                    sourceInfo.setDb(set.getLong("db_count"));
+                    sourceInfo.setTable(set.getLong("tb_count"));
+                    sourceInfo.setTotalFileSize(set.getLong("total_size"));
+                    sourceInfos.add(sourceInfo);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        } finally {
+            if (pStemt != null) {
+                try {
+                    pStemt.close();
+                    conn.close();
+                } catch (SQLException e) {
+                }
+            }
+        }
+        commonResponse.setData(sourceInfos);
+        return commonResponse;
+    }
+
+    public CommonResponse getDepartmentSize() {
+        CommonResponse commonResponse = new CommonResponse();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        String yesterDayDate = dateFormat.format(calendar.getTime());
+        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        String beforeYesterday = dateFormat.format(calendar.getTime());
+        Map<String,Long> departmentSize = new HashMap<>();
+        Connection conn = null;
+        // 与数据库的连接
+        PreparedStatement pStemt = null;
+        try {
+            conn = DriverManager.getConnection("jdbc:postgresql://172.16.31.1:32086/cdmdq", "postgres", "cloud1688");
+            pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='"+yesterDayDate+"' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
+            ResultSet set = pStemt.executeQuery();
+            while (set.next()) {
+                departmentSize.put(set.getString("analyse_value"),set.getLong("total_size"));
+            }
+            if(departmentSize.isEmpty()) {
+                pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='"+beforeYesterday+"' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
+                set = pStemt.executeQuery();
+                while (set.next()) {
+                    departmentSize.put(set.getString("analyse_value"),set.getLong("total_size"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        } finally {
+            if (pStemt != null) {
+                try {
+                    pStemt.close();
+                    conn.close();
+                } catch (SQLException e) {
+                }
+            }
+        }
+        commonResponse.setData(departmentSize);
+        return commonResponse;
     }
 }

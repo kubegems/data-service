@@ -172,4 +172,16 @@ public class DataServiceControl {
 	public CommonResponse getTableAccessInfo(String token) {
 		return dataServiceConfig.getTableAccessInfo(token);
 	}
+
+	// 查询数据源的信息详情
+	@RequestMapping(value = "getSourceInfo", method = RequestMethod.GET)
+	public CommonResponse getSourceInfo() {
+		return dataServiceConfig.getSourceInfo();
+	}
+
+	// 查询各部门存储信息
+	@RequestMapping(value = "getDepartmentSize", method = RequestMethod.GET)
+	public CommonResponse getDepartmentSize() {
+		return dataServiceConfig.getDepartmentSize();
+	}
 }
