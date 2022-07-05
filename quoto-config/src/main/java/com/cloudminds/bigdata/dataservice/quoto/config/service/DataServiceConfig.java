@@ -981,4 +981,10 @@ public class DataServiceConfig {
         commonResponse.setData(dbInfo);
         return commonResponse;
     }
+
+    public CommonResponse getAllTableInfo() {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getAllTableInfo());
+        return commonResponse;
+    }
 }

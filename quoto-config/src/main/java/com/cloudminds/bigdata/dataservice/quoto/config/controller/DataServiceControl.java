@@ -126,6 +126,11 @@ public class DataServiceControl {
 		return dataServiceConfig.getTableInfo(databaseId);
 	}
 
+	@RequestMapping(value = "getAllTableInfo", method = RequestMethod.GET)
+	public CommonResponse getAllTableInfo(){
+		return dataServiceConfig.getAllTableInfo();
+	}
+
 	@RequestMapping(value = "updateTableInfoStatus", method = RequestMethod.POST)
 	public CommonResponse updateTableInfoStatus(int id, int status) {
 		return dataServiceConfig.updateTableInfoStatus(id, status);

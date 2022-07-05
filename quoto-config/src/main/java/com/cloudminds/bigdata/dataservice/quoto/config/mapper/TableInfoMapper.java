@@ -1,6 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 import java.util.List;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableExtendInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
@@ -38,4 +39,7 @@ public interface TableInfoMapper {
 
 	@Select("select GROUP_CONCAT(`name`) from quoto where table_id=#{tableId} and deleted=0 and state=1")
 	public String getRelationQuotoName(int tableId);
+
+	@Select("select t.*,d.`database`,d.db_id,d.service_path from Table_info t left join Database_info d on t.database_id=d.id where t.is_delete=0")
+	public List<TableExtendInfo> getAllTableInfo();
 }

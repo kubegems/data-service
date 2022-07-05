@@ -12,6 +12,7 @@ public class UserToken extends BaseEntity{
     private String user_name;
     private String token;
     private int[] tables;
+    private String[] table_names;
     private String creator;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date create_time;
