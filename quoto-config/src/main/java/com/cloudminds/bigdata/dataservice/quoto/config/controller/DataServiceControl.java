@@ -47,6 +47,27 @@ public class DataServiceControl {
 		return dataServiceConfig.getdbInfo();
 	}
 
+	@RequestMapping(value = "insertDbInfo", method = RequestMethod.POST)
+	public CommonResponse insertDbInfo(@RequestBody DbInfo dbInfo) {
+		return dataServiceConfig.insertDbInfo(dbInfo);
+	}
+
+	@RequestMapping(value = "updateDbInfo", method = RequestMethod.POST)
+	public CommonResponse updateDbInfo(@RequestBody DbInfo dbInfo) {
+		return dataServiceConfig.updateDbInfo(dbInfo);
+	}
+
+	@RequestMapping(value = "deleteDbInfo", method = RequestMethod.POST)
+	public CommonResponse deleteDbInfo(@RequestBody DbInfo dbInfo) {
+		return dataServiceConfig.deleteDbInfo(dbInfo);
+	}
+
+	@RequestMapping(value = "getDbInfoById", method = RequestMethod.GET)
+	public CommonResponse getDbInfoById(int id) {
+		return dataServiceConfig.getDbInfoById(id);
+	}
+
+
 	// database
 	@RequestMapping(value = "getDataBase", method = RequestMethod.GET)
 	public CommonResponse getDataBase() {

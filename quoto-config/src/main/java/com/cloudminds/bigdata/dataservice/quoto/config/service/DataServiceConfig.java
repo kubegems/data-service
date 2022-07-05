@@ -183,16 +183,22 @@ public class DataServiceConfig {
             if (databaseInfoOld.getIs_delete() == 0) {
                 commonResponse.setMessage("数据已存在,请不要重复新增！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             } else {
                 if (databaseInfoMapper.updateDatabaseInfoDelete(databaseInfoOld.getId(), 0) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
+                    return commonResponse;
                 }
+                databaseInfo.setId(databaseInfoOld.getId());
+                databaseInfoMapper.updateDataBaseInfo(databaseInfo);
+                return commonResponse;
             }
         } else {
             if (databaseInfoMapper.insertDatabaseInfo(databaseInfo) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             }
         }
         return commonResponse;
@@ -646,7 +652,7 @@ public class DataServiceConfig {
                     }
                 }
             }
-        }  else {
+        } else {
             return false;
         }
 
@@ -747,64 +753,64 @@ public class DataServiceConfig {
 
     public CommonResponse refreshUserToken() {
         CommonResponse commonResponse = new CommonResponse();
-        List<UserToken> superUserToken= userTokenMapper.findSuperUserToken();
+        List<UserToken> superUserToken = userTokenMapper.findSuperUserToken();
         //roc服务加载用户权限
         List<UserToken> userTokenCk = userTokenMapper.findTokenTables("Clickhouse");
-        Map<String,String> userTokenCkMap=new HashMap<>();
-        for(UserToken userToken:superUserToken){
-            userTokenCkMap.put(userToken.getToken(),"ALL");
+        Map<String, String> userTokenCkMap = new HashMap<>();
+        for (UserToken userToken : superUserToken) {
+            userTokenCkMap.put(userToken.getToken(), "ALL");
         }
-        if(userTokenCk!=null&&userTokenCk.size()>0){
-            for(UserToken userToken:userTokenCk){
-                userTokenCkMap.put(userToken.getToken(),userToken.getDes());
+        if (userTokenCk != null && userTokenCk.size() > 0) {
+            for (UserToken userToken : userTokenCk) {
+                userTokenCkMap.put(userToken.getToken(), userToken.getDes());
             }
         }
-        redisUtil.set("roc_token",userTokenCkMap);
+        redisUtil.set("roc_token", userTokenCkMap);
         //chatbot服务加载用户权限
         List<UserToken> userTokenKylin = userTokenMapper.findTokenTables("Mysql");
-        Map<String,String> userTokenMapKylin=new HashMap<>();
-        for(UserToken userToken:superUserToken){
-            userTokenMapKylin.put(userToken.getToken(),"ALL");
+        Map<String, String> userTokenMapKylin = new HashMap<>();
+        for (UserToken userToken : superUserToken) {
+            userTokenMapKylin.put(userToken.getToken(), "ALL");
         }
-        if(userTokenKylin!=null&&userTokenKylin.size()>0){
-            for(UserToken userToken:userTokenKylin){
-                userTokenMapKylin.put(userToken.getToken(),userToken.getDes());
+        if (userTokenKylin != null && userTokenKylin.size() > 0) {
+            for (UserToken userToken : userTokenKylin) {
+                userTokenMapKylin.put(userToken.getToken(), userToken.getDes());
             }
         }
-        redisUtil.set("chatbot_token",userTokenMapKylin);
+        redisUtil.set("chatbot_token", userTokenMapKylin);
 
         commonResponse.setMessage("刷新成功！");
         return commonResponse;
     }
 
-    public CommonResponse getTableAccessInfo(String token){
+    public CommonResponse getTableAccessInfo(String token) {
         CommonResponse commonResponse = new CommonResponse();
-        if(token==null){
+        if (token == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("token值不能为空");
             return commonResponse;
         }
         UserToken userToken = userTokenMapper.getUserTokenByToken(token);
-        if(userToken==null){
+        if (userToken == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("此token不存在,请联系数据服务管理员获取token");
             return commonResponse;
         }
-        if(userToken.getTables()!=null && userToken.getTables().length==1 && userToken.getTables()[0]==0){
+        if (userToken.getTables() != null && userToken.getTables().length == 1 && userToken.getTables()[0] == 0) {
             commonResponse.setData(userTokenMapper.findAllTableAccessInfo());
             return commonResponse;
         }
         commonResponse.setData(userTokenMapper.findTableAccessInfo(token));
-        return  commonResponse;
+        return commonResponse;
     }
 
     public CommonResponse getSourceInfo() {
         CommonResponse commonResponse = new CommonResponse();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Calendar calendar = java.util.Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        calendar.set(Calendar.HOUR_OF_DAY, -24);
         String yesterDayDate = dateFormat.format(calendar.getTime());
-        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        calendar.set(Calendar.HOUR_OF_DAY, -24);
         String beforeYesterday = dateFormat.format(calendar.getTime());
         List<SourceInfo> sourceInfos = new ArrayList<>();
         Connection conn = null;
@@ -812,17 +818,17 @@ public class DataServiceConfig {
         PreparedStatement pStemt = null;
         try {
             conn = DriverManager.getConnection("jdbc:postgresql://172.16.31.1:32086/cdmdq", "postgres", "cloud1688");
-            pStemt = conn.prepareStatement("select table_type_name,sum(db_count) as db_count,sum(tb_count) as tb_count,sum(total_size) as total_size from ads.warehouse_stat where dt='"+yesterDayDate+"' group by table_type_name");
+            pStemt = conn.prepareStatement("select table_type_name,sum(db_count) as db_count,sum(tb_count) as tb_count,sum(total_size) as total_size from ads.warehouse_stat where dt='" + yesterDayDate + "' group by table_type_name");
             ResultSet set = pStemt.executeQuery();
             while (set.next()) {
                 SourceInfo sourceInfo = new SourceInfo();
-                sourceInfo.setSourceName(set.getString("table_type_name")+"_db");
+                sourceInfo.setSourceName(set.getString("table_type_name") + "_db");
                 sourceInfo.setDb(set.getLong("db_count"));
                 sourceInfo.setTable(set.getLong("tb_count"));
                 sourceInfo.setTotalFileSize(set.getLong("total_size"));
                 sourceInfos.add(sourceInfo);
             }
-            if(sourceInfos.isEmpty()) {
+            if (sourceInfos.isEmpty()) {
                 pStemt = conn.prepareStatement("select table_type_name,sum(db_count) as db_count,sum(tb_count) as tb_count,sum(total_size) as total_size from ads.warehouse_stat where dt='" + beforeYesterday + "' group by table_type_name");
                 set = pStemt.executeQuery();
                 while (set.next()) {
@@ -856,26 +862,26 @@ public class DataServiceConfig {
         CommonResponse commonResponse = new CommonResponse();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Calendar calendar = java.util.Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        calendar.set(Calendar.HOUR_OF_DAY, -24);
         String yesterDayDate = dateFormat.format(calendar.getTime());
-        calendar.set(Calendar.HOUR_OF_DAY,-24);
+        calendar.set(Calendar.HOUR_OF_DAY, -24);
         String beforeYesterday = dateFormat.format(calendar.getTime());
-        Map<String,Long> departmentSize = new HashMap<>();
+        Map<String, Long> departmentSize = new HashMap<>();
         Connection conn = null;
         // 与数据库的连接
         PreparedStatement pStemt = null;
         try {
             conn = DriverManager.getConnection("jdbc:postgresql://172.16.31.1:32086/cdmdq", "postgres", "cloud1688");
-            pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='"+yesterDayDate+"' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
+            pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='" + yesterDayDate + "' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
             ResultSet set = pStemt.executeQuery();
             while (set.next()) {
-                departmentSize.put(set.getString("analyse_value"),set.getLong("total_size"));
+                departmentSize.put(set.getString("analyse_value"), set.getLong("total_size"));
             }
-            if(departmentSize.isEmpty()) {
-                pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='"+beforeYesterday+"' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
+            if (departmentSize.isEmpty()) {
+                pStemt = conn.prepareStatement("select analyse_value,sum(total_size) as total_size from (select analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='" + beforeYesterday + "' and analyse_type_name='部门' GROUP BY analyse_value union all select 'bigdata' as analyse_value,sum(file_size) as total_size from ads.hdfs_stat where dt='2022-06-27' and analyse_type_name='主题') t group by analyse_value");
                 set = pStemt.executeQuery();
                 while (set.next()) {
-                    departmentSize.put(set.getString("analyse_value"),set.getLong("total_size"));
+                    departmentSize.put(set.getString("analyse_value"), set.getLong("total_size"));
                 }
             }
         } catch (SQLException e) {
@@ -893,6 +899,86 @@ public class DataServiceConfig {
             }
         }
         commonResponse.setData(departmentSize);
+        return commonResponse;
+    }
+
+    public CommonResponse insertDbInfo(DbInfo dbInfo) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
+            return commonResponse;
+        }
+        DbInfo dbInfoOld = databaseInfoMapper.getDbInfoByDbUrl(dbInfo);
+        if (dbInfoOld != null) {
+            if (dbInfoOld.getIs_delete() == 0) {
+                commonResponse.setMessage("数据已存在,请不要重复新增！");
+                commonResponse.setSuccess(false);
+            } else {
+                if (databaseInfoMapper.updateDbInfoDelete(dbInfoOld.getId(), 0) != 1) {
+                    commonResponse.setMessage("新增数据失败,请稍后再试！");
+                    commonResponse.setSuccess(false);
+                }
+                dbInfo.setId(dbInfoOld.getId());
+                databaseInfoMapper.updateDbInfo(dbInfo);
+            }
+        } else {
+            if (databaseInfoMapper.insertDnInfo(dbInfo) != 1) {
+                commonResponse.setMessage("新增数据失败,请稍后再试！");
+                commonResponse.setSuccess(false);
+            }
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse updateDbInfo(DbInfo dbInfo) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
+            return commonResponse;
+        }
+        DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
+        if(dbInfoOld == null){
+            commonResponse.setMessage("原始数据不存在,请刷新后再操作");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        if (databaseInfoMapper.updateDbInfo(dbInfo)<1){
+            commonResponse.setMessage("更新失败,请稍后再试");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        commonResponse.setMessage("更新成功");
+        return commonResponse;
+    }
+
+    public CommonResponse deleteDbInfo(DbInfo dbInfo) {
+        CommonResponse commonResponse = new CommonResponse();
+        DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
+        if(dbInfoOld == null){
+            commonResponse.setMessage("原始数据不存在,请刷新后再操作");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        if(databaseInfoMapper.updateDbInfoDelete(dbInfo.getId(),1)<1){
+            commonResponse.setMessage("删除失败,请稍后再试");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        commonResponse.setMessage("删除成功");
+        return commonResponse;
+    }
+
+    public CommonResponse getDbInfoById(int id) {
+        CommonResponse commonResponse = new CommonResponse();
+        DbInfo dbInfo = databaseInfoMapper.getDbInfoById(id);
+        if(dbInfo == null){
+            commonResponse.setMessage("数据不存在!");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        commonResponse.setData(dbInfo);
         return commonResponse;
     }
 }
