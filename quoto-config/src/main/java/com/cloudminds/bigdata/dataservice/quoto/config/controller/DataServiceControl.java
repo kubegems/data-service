@@ -187,6 +187,12 @@ public class DataServiceControl {
 		return dataServiceConfig.getUserToken();
 	}
 
+	//查询用户token
+	@RequestMapping(value = "getUserTokenByUserName", method = RequestMethod.GET)
+	public CommonResponse getUserTokenByUserName(String userName) {
+		return dataServiceConfig.getUserTokenByUserName(userName);
+	}
+
 	//刷新用户token
 	@RequestMapping(value="refresh",method = RequestMethod.GET)
 	public CommonResponse refreshUserToken(){

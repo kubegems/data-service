@@ -687,6 +687,7 @@ public class DataServiceConfig {
         }
         commonResponse.setSuccess(true);
         commonResponse.setMessage("新增用户成功");
+        refreshUserToken();
         return commonResponse;
     }
 
@@ -706,6 +707,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         commonResponse.setMessage("更新成功！");
+        refreshUserToken();
         return commonResponse;
     }
 
@@ -724,6 +726,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         commonResponse.setMessage("操作成功！");
+        refreshUserToken();
         return commonResponse;
     }
 
@@ -742,6 +745,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         commonResponse.setMessage("删除成功！");
+        refreshUserToken();
         return commonResponse;
     }
 
@@ -985,6 +989,12 @@ public class DataServiceConfig {
     public CommonResponse getAllTableInfo() {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(tableInfoMapper.getAllTableInfo());
+        return commonResponse;
+    }
+
+    public CommonResponse getUserTokenByUserName(String userName) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(userTokenMapper.getUserTokenByUserName(userName));
         return commonResponse;
     }
 }

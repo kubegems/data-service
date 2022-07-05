@@ -13,8 +13,9 @@ import java.util.List;
 @Mapper
 public interface UserTokenMapper {
 
-    @Select("SELECT * FROM user_token WHERE user_name=#{userName} AND is_delete=0")
+    @Select("select t.token,t.user_name,t.`tables`,t.des,t.creator,t.create_time,t.update_time,t.is_delete,t.state,GROUP_CONCAT(Table_info.des) as table_names from (SELECT a.token,a.`tables`,a.user_name,a.des,a.creator,a.create_time,a.update_time,a.is_delete,a.state,SUBSTRING_INDEX( SUBSTRING_INDEX( a.`tables`, ',', b.help_topic_id + 1 ), ',',- 1 ) AS table_id FROM user_token a JOIN mysql.help_topic AS b ON b.help_topic_id < ( length( a.`tables` ) - length( REPLACE ( a.`tables`, ',', '' ) ) + 1 ) where a.is_delete=0 and a.user_name !='hive' and a.user_name=#{userName}) t LEFT JOIN Table_info on t.table_id=Table_info.id LEFT JOIN Database_info ON Table_info.database_id=Database_info.id LEFT JOIN Db_info ON Database_info.db_id=Db_info.id  group BY token,`tables`,des,creator,create_time,update_time,is_delete,state,user_name")
     @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+    @Result(column = "table_names", property = "table_names", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayVarcharHandler.class)
     public UserToken getUserTokenByUserName(String userName);
 
     @Select("SELECT * FROM user_token WHERE id=#{id} AND is_delete=0")
@@ -25,7 +26,7 @@ public interface UserTokenMapper {
     @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
     public UserToken getUserTokenByToken(String token);
 
-    @Select("select t.token,t.user_name,t.`tables`,t.des,t.creator,t.create_time,t.update_time,t.is_delete,t.state,GROUP_CONCAT(Table_info.table_name) as table_names from (SELECT a.token,a.`tables`,a.user_name,a.des,a.creator,a.create_time,a.update_time,a.is_delete,a.state,SUBSTRING_INDEX( SUBSTRING_INDEX( a.`tables`, ',', b.help_topic_id + 1 ), ',',- 1 ) AS table_id FROM user_token a JOIN mysql.help_topic AS b ON b.help_topic_id < ( length( a.`tables` ) - length( REPLACE ( a.`tables`, ',', '' ) ) + 1 ) where a.is_delete=0 and a.state=1 and a.user_name !='hive') t LEFT JOIN Table_info on t.table_id=Table_info.id LEFT JOIN Database_info ON Table_info.database_id=Database_info.id LEFT JOIN Db_info ON Database_info.db_id=Db_info.id  group BY token,`tables`,des,creator,create_time,update_time,is_delete,state,user_name")
+    @Select("select t.token,t.user_name,t.`tables`,t.des,t.creator,t.create_time,t.update_time,t.is_delete,t.state,GROUP_CONCAT(Table_info.table_name) as table_names from (SELECT a.token,a.`tables`,a.user_name,a.des,a.creator,a.create_time,a.update_time,a.is_delete,a.state,SUBSTRING_INDEX( SUBSTRING_INDEX( a.`tables`, ',', b.help_topic_id + 1 ), ',',- 1 ) AS table_id FROM user_token a JOIN mysql.help_topic AS b ON b.help_topic_id < ( length( a.`tables` ) - length( REPLACE ( a.`tables`, ',', '' ) ) + 1 ) where a.is_delete=0 and a.user_name !='hive') t LEFT JOIN Table_info on t.table_id=Table_info.id LEFT JOIN Database_info ON Table_info.database_id=Database_info.id LEFT JOIN Db_info ON Database_info.db_id=Db_info.id  group BY token,`tables`,des,creator,create_time,update_time,is_delete,state,user_name")
     @Result(column = "tables", property = "tables", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
     @Result(column = "table_names", property = "table_names", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayVarcharHandler.class)
     public List<UserToken> getUserToken();
