@@ -48,10 +48,10 @@ public interface DatabaseInfoMapper {
 	@Update("update Db_info set is_delete=#{delete} where id=#{id}")
 	public int updateDbInfoDelete(int id,int delete);
 
-	@Update("update Db_info set db_url=#{db_url},db_name=#{db_name},userName=#{userName},password=#{password},service_path=#{service_path},des=#{des} where id=#{id}")
+	@Update("update Db_info set db_url=#{db_url},db_name=#{db_name},userName=#{userName},password=#{password},service_path=#{service_path},service_name=#{service_name},des=#{des} where id=#{id}")
 	public int updateDbInfo(DbInfo dbInfo);
 
-	@Update("insert into Db_info(db_url,db_name,userName,password,service_path,des) VALUES(#{db_url},#{db_name},#{userName},#{password},#{service_path},#{des})")
+	@Update("insert into Db_info(db_url,db_name,userName,password,service_path,service_name,des) VALUES(#{db_url},#{db_name},#{userName},#{password},#{service_path},#{service_name},#{des})")
 	public int insertDnInfo(DbInfo dbInfo);
 	
 	@Select("SELECT db_url,userName,`password`,`database`,table_name from Table_info LEFT JOIN Database_info ON Table_info.database_id=Database_info.id LEFT JOIN Db_info ON Database_info.db_id=Db_info.id where Table_info.id=#{tableId} AND Table_info.is_delete=0 AND Table_info.state=1")

@@ -904,7 +904,7 @@ public class DataServiceConfig {
 
     public CommonResponse insertDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()) {
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()|| dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
@@ -933,7 +933,7 @@ public class DataServiceConfig {
 
     public CommonResponse updateDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()) {
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()|| dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
