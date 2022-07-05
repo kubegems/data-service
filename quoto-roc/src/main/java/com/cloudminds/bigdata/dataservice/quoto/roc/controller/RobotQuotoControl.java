@@ -141,6 +141,7 @@ public class RobotQuotoControl extends APIJSONController {
     @PostMapping(value = "tag")
     public String getTagData(@RequestBody String request, HttpServletRequest session) {
         JSONObject requestJson = JSON.parseObject(JSON.parseObject(request));
+        String business ="cv";
         String page = "0";
         String count = "10";
         String table="";
@@ -152,6 +153,11 @@ public class RobotQuotoControl extends APIJSONController {
             if(AbstractSQLConfig.TABLE_KEY_MAP.containsKey("tag."+tableName)){
                 table=AbstractSQLConfig.TABLE_KEY_MAP.get("tag."+tableName);
                 table="tag."+table;
+                table.split("_");
+                if(table.split("_").length>1){
+                    business = table.split("_")[1];
+                }
+
             }else{
                 JSONObject response=new JSONObject();
                 response.put("ok",false);
@@ -171,7 +177,7 @@ public class RobotQuotoControl extends APIJSONController {
         //是否请求count
         if(requestJson.containsKey("query")&&requestJson.getObject("query",Integer.class)==1){
             queryCount=true;
-            subSql="select count(*) as total from "+table+" where oid in (select arrayJoin(";
+            subSql="select count(*) as total from "+table+" where oid global in (select arrayJoin(";
         }else if(requestJson.containsKey("column")){
             subSql="select "+requestJson.getString("column")+" from "+table+" where oid in (select arrayJoin(";
         }else{
@@ -181,7 +187,7 @@ public class RobotQuotoControl extends APIJSONController {
         String sql = "WITH";
         //解析tag_str的sql
         boolean tag_str=false;
-        String tag_str_sql="SELECT oids FROM tag.dis_cv_tag_string WHERE ";
+        String tag_str_sql="SELECT oids FROM tag.dis_"+business+"_tag_string WHERE ";
         if(requestJson.containsKey("tag_str")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_str").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -202,7 +208,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_int的sql
         boolean tag_int=false;
-        String tag_int_sql="select oids from tag.dis_cv_tag_int where ";
+        String tag_int_sql="select oids from tag.dis_"+business+"_tag_int where ";
         if(requestJson.containsKey("tag_int")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_int").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -228,7 +234,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_long的sql
         boolean tag_long=false;
-        String tag_long_sql="select oids from tag.dis_cv_tag_Long where ";
+        String tag_long_sql="select oids from tag.dis_"+business+"_tag_Long where ";
         if(requestJson.containsKey("tag_long")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_long").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
@@ -254,7 +260,7 @@ public class RobotQuotoControl extends APIJSONController {
         }
         //解析tag_date的sql
         boolean tag_date=false;
-        String tag_date_sql="select oids from tag.dis_cv_tag_date where ";
+        String tag_date_sql="select oids from tag.dis_"+business+"_tag_date where ";
         if(requestJson.containsKey("tag_date")){
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_date").toString(), JSONObject.class);
             for (JSONObject tagJson : tagJsons){
