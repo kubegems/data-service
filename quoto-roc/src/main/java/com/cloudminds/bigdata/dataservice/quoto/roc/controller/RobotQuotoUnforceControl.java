@@ -131,6 +131,12 @@ public class RobotQuotoUnforceControl extends APIJSONController {
         return getData(request, session,"omd");
     }
 
+    @PostMapping(value = "tag")
+    public String getTagData(@RequestBody String request, HttpServletRequest session) {
+        request ="{'@force':false,'@schema':'tag'," + request.substring(request.indexOf("{") + 1);
+        return getData(request, session,"tag");
+    }
+
     public String getData(String request, HttpServletRequest httpServletRequest, String servicePath) {
         JSONObject response=new JSONObject();
         response.put("ok",false);
