@@ -159,16 +159,16 @@ public class RobotQuotoControl extends APIJSONController {
                 }
 
             }else{
-                request = "{'@schema':'tag'," + request.substring(request.indexOf("{") + 1);
-                return getData(request, session,"tag");
+                JSONObject response=new JSONObject();
+                response.put("ok",false);
+                response.put("code",401);
+                response.put("msg","表tag."+tableName+"没有配置,请联系管理员");
+                return response.toString();
             }
 
         }else{
-            JSONObject response=new JSONObject();
-            response.put("ok",false);
-            response.put("code",401);
-            response.put("msg","table_name必须传入");
-            return response.toString();
+            request = "{'@schema':'tag'," + request.substring(request.indexOf("{") + 1);
+            return getData(request, session,"tag");
         }
 
         //是否请求count
