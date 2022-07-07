@@ -176,9 +176,9 @@ public class RobotQuotoControl extends APIJSONController {
             queryCount=true;
             subSql="select count(*) as total from "+table+" where oid global in (select arrayJoin(";
         }else if(requestJson.containsKey("column")){
-            subSql="select "+requestJson.getString("column")+" from "+table+" where oid in (select arrayJoin(";
+            subSql="select "+requestJson.getString("column")+" from "+table+" where oid global in (select arrayJoin(";
         }else{
-            subSql="select * from "+table+" where oid in (select arrayJoin(";
+            subSql="select * from "+table+" where oid global in (select arrayJoin(";
         }
 
         String sql = "WITH";
