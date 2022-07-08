@@ -255,7 +255,13 @@ public class QuotoService {
         if(business_process_id==null) {
             commonResponse.setData(quotoMapper.queryAllDataService());
         }else {
-            commonResponse.setData(quotoMapper.queryAllDataServiceByBusinessProcessId(business_process_id));
+            BusinessProcess businessProcess = quotoMapper.queryBusinessProcessById(business_process_id);
+            if(businessProcess == null){
+                commonResponse.setMessage("此业务过程不存在,请确认后再试");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+            commonResponse.setData(quotoMapper.queryAllDataServiceByDataDomainId(businessProcess.getData_domain_id()));
         }
         return commonResponse;
     }

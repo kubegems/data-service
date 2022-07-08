@@ -126,9 +126,19 @@ public class DataServiceControl {
 		return dataServiceConfig.getTableInfo(databaseId);
 	}
 
+	@RequestMapping(value = "getTableNum", method = RequestMethod.GET)
+	public CommonResponse getTableNum() {
+		return dataServiceConfig.getTableNum();
+	}
+
 	@RequestMapping(value = "getAllTableInfo", method = RequestMethod.GET)
 	public CommonResponse getAllTableInfo(){
 		return dataServiceConfig.getAllTableInfo();
+	}
+
+	@RequestMapping(value = "getTableInfoByBusinessId", method = RequestMethod.GET)
+	public CommonResponse getTableInfoByBusinessId(int businessId){
+		return dataServiceConfig.getTableInfoByBusinessId(businessId);
 	}
 
 	@RequestMapping(value = "updateTableInfoStatus", method = RequestMethod.POST)
@@ -215,5 +225,17 @@ public class DataServiceControl {
 	@RequestMapping(value = "getDepartmentSize", method = RequestMethod.GET)
 	public CommonResponse getDepartmentSize() {
 		return dataServiceConfig.getDepartmentSize();
+	}
+
+	// 查询按天的访问数
+	@RequestMapping(value = "getApiAccessTotalGroupByDay", method = RequestMethod.GET)
+	public CommonResponse getApiAccessTotalGroupByDay(String startDate,String endDate) {
+		return dataServiceConfig.getApiAccessTotalGroupByDay(startDate,endDate);
+	}
+
+	// 查询api的访问top信息
+	@RequestMapping(value = "getApiAccessTop", method = RequestMethod.GET)
+	public CommonResponse getApiAccessTop(String startDate,String endDate,int top) {
+		return dataServiceConfig.getApiAccessTop(startDate,endDate,top);
 	}
 }

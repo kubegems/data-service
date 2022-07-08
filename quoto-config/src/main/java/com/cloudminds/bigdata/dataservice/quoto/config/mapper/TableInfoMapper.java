@@ -1,6 +1,8 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 import java.util.List;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAccessTop;
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAccessTotalByDay;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableExtendInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -12,7 +14,7 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
 @Mapper
 public interface TableInfoMapper {
-	@Select("SELECT * FROM Table_info t LEFT JOIN (select b.id, b.name as business_process_name, d.name as data_domain_name,bb.name as business_name from business_process b LEFT JOIN data_domain d on b.data_domain_id=d.id LEFT JOIN business bb on d.business_id=bb.id) as tt on t.business_process_id=tt.id WHERE t.is_delete=0 AND database_id=#{dataBaseId}")
+	@Select("SELECT * FROM Table_info t LEFT JOIN (select d.id, d.name as data_domain_name,bb.name as business_name from data_domain d LEFT JOIN business bb on d.business_id=bb.id) as tt on t.data_domain_id=tt.id WHERE t.is_delete=0 AND database_id=#{dataBaseId}")
 	public List<TableInfo> getTableInfoByDataBaseId(int dataBaseId);
 
 	@Update("update Table_info set state=#{state} where id=#{id}")
@@ -24,7 +26,7 @@ public interface TableInfoMapper {
 	@Update("update Table_info set is_delete=#{delete} where id=#{id}")
 	public int updateTableInfoDelete(int id, int delete);
 	
-	@Update("update Table_info set table_alias=#{table_alias},business_process_id=#{business_process_id},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
+	@Update("update Table_info set table_alias=#{table_alias},data_domain_id=#{data_domain_id},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
 	public int updateTableInfo(TableInfo tableInfo);
 
 	@Select("SELECT * FROM Table_info WHERE table_name=#{table_name} AND database_id=#{database_id} ")
@@ -33,7 +35,7 @@ public interface TableInfoMapper {
 	@Select("SELECT * FROM Table_info WHERE is_delete=0 and id=#{tableId}")
 	public TableInfo getTableInfoById(int tableId);
 
-	@Update("insert into Table_info(table_name,database_id,business_process_id,table_alias,des) VALUES(#{table_name},#{database_id},#{business_process_id},#{table_alias},#{des})")
+	@Update("insert into Table_info(table_name,database_id,data_domain_id,table_alias,des) VALUES(#{table_name},#{database_id},#{data_domain_id},#{table_alias},#{des})")
 	@Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
 	public int insertTableInfo(TableInfo tableInfo);
 
@@ -42,4 +44,16 @@ public interface TableInfoMapper {
 
 	@Select("select t.*,d.`database`,d.db_id,d.service_path from Table_info t left join Database_info d on t.database_id=d.id where t.is_delete=0")
 	public List<TableExtendInfo> getAllTableInfo();
+
+	@Select("SELECT t.*,tt.*,CONCAT(i.service_path,dd.service_path) as service_path FROM Table_info t LEFT JOIN Database_info dd on t.database_id=dd.id LEFT JOIN Db_info i on dd.db_id=i.id LEFT JOIN (select d.id, d.name as data_domain_name,bb.name as business_name,bb.id as business_id from data_domain d LEFT JOIN business bb on d.business_id=bb.id) as tt on t.data_domain_id=tt.id WHERE t.is_delete=0 and t.state=1 AND business_id=#{business_id}")
+	public List<TableExtendInfo> getTableInfoByBusinessId(int businessId);
+
+	@Select("select count(*) from Table_info where is_delete=0 and state=1")
+	public int getTableNum();
+
+	@Select("select date(create_time) as date,count(*) as total from dataservice_access_history where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} group by date")
+	public List<TableAccessTotalByDay> getApiAccessTotalGroupByDay(String startDate, String endDate);
+
+	@Select("select tb.des,tb.id,tb.table_alias,tb.table_name,count(*) as total from dataservice_access_history d left join Table_info tb on d.table_alias=tb.table_alias where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} and tb.id is not null group by tb.des,tb.id,tb.table_alias,tb.table_name order by total desc limit #{top}")
+	public List<TableAccessTop> getApiAccessTop(String startDate, String endDate, int top);
 }

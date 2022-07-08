@@ -415,7 +415,7 @@ public class DataServiceConfig {
             } else {
                 tableInfoOld.setTable_alias(tableInfo.getTable_alias());
                 tableInfoOld.setDes(tableInfo.getDes());
-                tableInfoOld.setBusiness_process_id(tableInfo.getBusiness_process_id());
+                tableInfoOld.setData_domain_id(tableInfo.getData_domain_id());
                 if (tableInfoMapper.updateTableInfo(tableInfoOld) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
@@ -995,6 +995,30 @@ public class DataServiceConfig {
     public CommonResponse getUserTokenByUserName(String userName) {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(userTokenMapper.getUserTokenByUserName(userName));
+        return commonResponse;
+    }
+
+    public CommonResponse getTableInfoByBusinessId(int businessId) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getTableInfoByBusinessId(businessId));
+        return commonResponse;
+    }
+
+    public CommonResponse getTableNum() {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getTableNum());
+        return commonResponse;
+    }
+
+    public CommonResponse getApiAccessTotalGroupByDay(String startDate, String endDate) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getApiAccessTotalGroupByDay(startDate,endDate));
+        return commonResponse;
+    }
+
+    public CommonResponse getApiAccessTop(String startDate, String endDate, int top) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getApiAccessTop(startDate,endDate,top));
         return commonResponse;
     }
 }

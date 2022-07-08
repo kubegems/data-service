@@ -62,6 +62,9 @@ public interface QuotoMapper {
 	@Select("select * from business_process where deleted=0 and data_domain_id=#{data_domain_id} and name=#{name} limit 1")
 	public BusinessProcess queryBusinessProcess(String name, int data_domain_id);
 
+	@Select("select * from business_process where deleted=0 and id=#{id}")
+	public BusinessProcess queryBusinessProcessById(int id);
+
 	@Insert("insert into business_process(name,data_domain_id,create_time,update_time, creator,descr) "
 			+ "values(#{name},#{data_domain_id},now(),now(), #{creator}, #{descr})")
 	public int addBusinessProcess(BusinessProcess businessProcess);
@@ -72,8 +75,8 @@ public interface QuotoMapper {
 	@Select("select * from Table_info where is_delete=0")
 	public List<TableInfo> queryAllDataService();
 
-	@Select("select * from Table_info where is_delete=0 and (business_process_id=#{business_process_id} or business_process_id is null)")
-	public List<TableInfo> queryAllDataServiceByBusinessProcessId(int business_process_id);
+	@Select("select * from Table_info where is_delete=0 and (data_domain_id=#{data_domain_id} or data_domain_id is null)")
+	public List<TableInfo> queryAllDataServiceByDataDomainId(int data_domain_id);
 
 	@Select("select d.* from dimension d LEFT JOIN Column_alias c ON d.column_alias=c.column_alias where c.table_id=#{tableId} and d.deleted=0 AND c.is_delete=0")
 	public List<Dimension> queryAllDimension(int tableId);
