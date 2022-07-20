@@ -1,42 +1,55 @@
 package com.cloudminds.bigdata.dataservice.label.manage.service;
 
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagCate;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagEnumValue;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItem;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.request.UpdateLabelItemState;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.CommonResponse;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.TagInfo;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.LabelItemMapper;
+import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagCateMapper;
+import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class LabelService {
     @Autowired
     private LabelItemMapper labelItemMapper;
+    @Autowired
+    private TagCateMapper tagCateMapper;
+    @Autowired
+    private TagObjectMapper tagObjectMapper;
 
     // 查询事件详情
-    public CommonResponse findLabelItemByPid(String pid,int value) {
+    public CommonResponse findLabelItemByPid(String pid, int value) {
         CommonResponse commonResponse = new CommonResponse();
-        if(pid == null){
+        if (pid == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("pid不能为空");
             return commonResponse;
         }
         //pid 为0 首次查询分类
-        if(pid.equals("0")) {
+        if (pid.equals("0")) {
             commonResponse.setData(labelItemMapper.findTagInfoFromCate(pid));
             return commonResponse;
         }
         //pid不为0 value不为0
-        if(value>0){
+        if (value > 0) {
             TagItem labelItem = labelItemMapper.findTagItemByTagId(pid);
-            if(labelItem==null){
+            if (labelItem == null) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("标签不存在");
                 return commonResponse;
             }
             //
-            if(labelItem.getValue_type()!=1){
+            if (labelItem.getValue_type() != 1) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("已经是最后层级了");
                 return commonResponse;
@@ -48,11 +61,310 @@ public class LabelService {
 
         //pid不为0 value为0
         List<TagInfo> taginfos = labelItemMapper.findTagInfoFromCate(pid);
-        if(taginfos==null||taginfos.isEmpty()){
+        if (taginfos == null || taginfos.isEmpty()) {
             commonResponse.setData(labelItemMapper.findTagInfoFromTagItem(pid));
-        }else{
+        } else {
             commonResponse.setData(taginfos);
         }
+        return commonResponse;
+    }
+
+    public CommonResponse insertLableItem(TagItem tagItem) {
+        CommonResponse commonResponse = new CommonResponse();
+        //验证参数是否合法
+        if (StringUtils.isEmpty(tagItem.getTag_name())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签名不能为空");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(tagItem.getTag_cate_id())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签类别不能为空");
+            return commonResponse;
+        }
+
+        TagCate tagCate = tagCateMapper.queryTagCateById(tagItem.getTag_cate_id());
+        if (tagCate == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签类别不存在");
+            return commonResponse;
+        }
+        if (tagCate.getPid().equals("0")) {
+            List<TagCate> subTagCates = tagCateMapper.queryTagCateByPid(tagItem.getTag_cate_id(), tagCate.getTag_object_id());
+            if (subTagCates != null && subTagCates.size() > 0) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("请选择二级分类");
+                return commonResponse;
+            }
+        }
+        if (StringUtils.isEmpty(tagItem.getSource())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签来源不能为空");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(tagItem.getTag_type()) || tagItem.getTag_type().length() > 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签类型不能为空,请只能为单字符");
+            return commonResponse;
+        }
+
+        if (StringUtils.isEmpty(tagItem.getCreator())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("创建者不能为空");
+            return commonResponse;
+        }
+
+        //判断标签名是否存在
+        if (labelItemMapper.findTagItemByTagCateIdAndName(tagItem.getTag_cate_id(), tagItem.getTag_name()) != null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签已存在,请不要重复定义");
+            return commonResponse;
+        }
+        //生成标签id
+        String maxTagId = labelItemMapper.findMaxTagIdCode(tagItem.getTag_cate_id());
+        if (StringUtils.isEmpty(maxTagId)) {
+            maxTagId = "001";
+        } else {
+            maxTagId = (Integer.parseInt(maxTagId) + 1) + "";
+            while (maxTagId.length() < 3) {
+                maxTagId = "0" + maxTagId;
+            }
+        }
+        String tagId = tagObjectMapper.queryTagObject(tagCate.getTag_object_id()).getCode() + tagItem.getTag_type();
+        if (tagItem.isExclusive()) {
+            tagId = tagId + "1";
+        } else {
+            tagId = tagId + "0";
+        }
+        if (tagCate.getPid().equals("0")) {
+            tagId = tagId + tagCate.getTag_cate_id().substring(tagCate.getTag_cate_id().length() - 3) + "000" + maxTagId;
+        } else {
+            tagId = tagId + tagCate.getTag_cate_id().substring(tagCate.getTag_cate_id().length() - 6) + maxTagId;
+        }
+        tagItem.setTag_id(tagId);
+        //枚举类型验证参数是否合法,并生成枚举值的id
+        if (tagItem.getValue_type() == 1) {
+            if (tagItem.getTagEnumValueList() == null || tagItem.getTagEnumValueList().size() == 0) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("标签类型为枚举时,取值范围必须有值");
+                return commonResponse;
+            }
+            Set<String> name = new HashSet<String>();
+            for (int i = 0; i < tagItem.getTagEnumValueList().size(); i++) {
+                if (StringUtils.isEmpty(tagItem.getTagEnumValueList().get(i).getTag_value())) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("枚举值名不能为空");
+                    return commonResponse;
+                }
+                name.add(tagItem.getTagEnumValueList().get(i).getTag_value());
+                String tagEnumId = i + 1 + "";
+                while (tagEnumId.length() < 3) {
+                    tagEnumId = "0" + tagEnumId;
+                }
+                tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagId+tagEnumId);
+            }
+            if (name.size() < tagItem.getTagEnumValueList().size()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("枚举值名不能重复");
+                return commonResponse;
+            }
+        }
+        //入库
+        if (labelItemMapper.insertTagItem(tagItem) < 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("数据插入失败,请联系管理员");
+            return commonResponse;
+        }
+        //枚举类型要入库
+        if (tagItem.getValue_type() == 1) {
+            if (labelItemMapper.batchSaveTagEnumValue(tagItem.getTagEnumValueList(), tagItem.getTag_id(), tagItem.getCreator()) < 0) {
+                commonResponse.setMessage("取值范围插入失败,请联系管理员或者更新标签");
+            }
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse updateLabelItem(TagItem tagItem) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (StringUtils.isEmpty(tagItem.getTag_id())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("编码不能为空");
+            return commonResponse;
+        }
+        TagItem oldTagItem = labelItemMapper.findTagItemByTagId(tagItem.getTag_id());
+        if (oldTagItem == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("原始编码不存在");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(tagItem.getTag_name())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签名不能为空");
+            return commonResponse;
+        }
+        List<TagEnumValue> tagEnumValuesInsert = new ArrayList<>();
+        List<TagEnumValue> tagEnumValuesUpdate = new ArrayList<>();
+        if (tagItem.getValue_type() == 1) {
+            int maxCode = 1;
+            if (oldTagItem.getValue_type() == 1) {
+                maxCode = Integer.parseInt(labelItemMapper.findMaxTagEnumIdCode(tagItem.getTag_id())) + 1;
+            }
+            if (tagItem.getTagEnumValueList() == null || tagItem.getTagEnumValueList().size() == 0) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("标签类型为枚举时,取值范围必须有值");
+                return commonResponse;
+            }
+            Set<String> name = new HashSet<String>();
+            for (int i = 0; i < tagItem.getTagEnumValueList().size(); i++) {
+                if (StringUtils.isEmpty(tagItem.getTagEnumValueList().get(i).getTag_value())) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("枚举值名不能为空");
+                    return commonResponse;
+                }
+                name.add(tagItem.getTagEnumValueList().get(i).getTag_value());
+                if (StringUtils.isEmpty(tagItem.getTagEnumValueList().get(i).getTag_enum_id())) {
+                    String tagEnumId = maxCode + "";
+                    maxCode = maxCode + 1;
+                    while (tagEnumId.length() < 3) {
+                        tagEnumId = "0" + tagEnumId;
+                    }
+                    tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagItem.getTag_id()+tagEnumId);
+                    tagEnumValuesInsert.add(tagItem.getTagEnumValueList().get(i));
+                } else {
+                    tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                }
+
+            }
+            if (name.size() < tagItem.getTagEnumValueList().size()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("枚举值名不能重复");
+                return commonResponse;
+            }
+
+        }
+        //更改标签名需判断标签名是否存在
+        if (!tagItem.getTag_name().equals(oldTagItem.getTag_name())) {
+            if (labelItemMapper.findTagItemByTagCateIdAndName(tagItem.getTag_cate_id(), tagItem.getTag_name()) != null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("标签已存在,请不要重复定义");
+                return commonResponse;
+            }
+        }
+        if (StringUtils.isEmpty(tagItem.getSource())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签来源不能为空");
+            return commonResponse;
+        }
+
+        if (StringUtils.isEmpty(tagItem.getUpdater())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("更新者不能为空");
+            return commonResponse;
+        }
+        //更新标签
+        if (labelItemMapper.updateTagItem(tagItem) < 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("更新失败,请联系管理员或稍后再试");
+            return commonResponse;
+        }
+        //更新枚举值
+        try {
+            if (oldTagItem.getValue_type() == 1) {
+                if (tagItem.getValue_type() == 1) {
+                    //新增枚举值
+                    boolean insertFail = false;
+                    if (tagEnumValuesInsert.size() > 0) {
+                        if (labelItemMapper.batchSaveTagEnumValue(tagEnumValuesInsert, tagItem.getTag_id(), tagItem.getUpdater()) < 0) {
+                            insertFail = true;
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("枚举值插入失败,请联系管理员或者更新标签");
+                        }
+                    }
+                    //更新枚举值
+                    if (tagEnumValuesUpdate.size() > 0) {
+                        if (labelItemMapper.batchUpdateTagEnumValue(tagEnumValuesUpdate, tagItem.getUpdater()) < 0) {
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("枚举值更新失败,请联系管理员或者更新标签");
+                            if (insertFail) {
+                                commonResponse.setMessage("枚举值更新和插入都失败,请联系管理员");
+                            }
+                        }
+                    }
+                    //删除枚举值
+                    labelItemMapper.deleteTagEnumValue(tagItem.getTagEnumValueList(), tagItem.getTag_id(), tagItem.getUpdater());
+                } else {
+                    //删除所有的枚举值
+                    if (labelItemMapper.deleteTagEnumValueByTagId(tagItem.getTag_id()) < 1) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("枚举值删除失败,请联系管理员或者更新标签");
+                    }
+
+                }
+            } else {
+                if (tagItem.getValue_type() == 1) {
+                    //新增所有的枚举值
+                    if (labelItemMapper.batchSaveTagEnumValue(tagItem.getTagEnumValueList(), tagItem.getTag_id(), tagItem.getCreator()) < 0) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("枚举值插入失败,请联系管理员或者更新标签");
+                    }
+                }
+            }
+        }catch(Exception e){
+            System.out.println(e);
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("枚举值更新失败,请联系管理员");
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse updateLabelItemState(UpdateLabelItemState updateLabelItemState) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(updateLabelItemState.getTag_ids()==null || updateLabelItemState.getTag_ids().length==0){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("tag_ids不能为空");
+            return commonResponse;
+        }
+        if(StringUtils.isEmpty(updateLabelItemState.getUpdater())){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("更新者不能为空");
+            return commonResponse;
+        }
+        labelItemMapper.updateTagItemState(updateLabelItemState.getTag_ids(), updateLabelItemState.getState(),updateLabelItemState.getUpdater());
+        return commonResponse;
+    }
+
+    public CommonResponse deleteLabelItem(UpdateLabelItemState updateLabelItemState) {
+        CommonResponse commonResponse = new CommonResponse();
+        //参数校验
+        if(updateLabelItemState.getTag_ids()==null || updateLabelItemState.getTag_ids().length==0){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("tag_ids不能为空");
+            return commonResponse;
+        }
+        if(StringUtils.isEmpty(updateLabelItemState.getUpdater())){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("更新者不能为空");
+            return commonResponse;
+        }
+        //判断是否有标签状态为上线中
+        String onlineTagName = labelItemMapper.findOnlineTagItemName(updateLabelItemState.getTag_ids());
+        if(!StringUtils.isEmpty(onlineTagName)){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(onlineTagName+"--为上线状态,请先下线");
+            return commonResponse;
+        }
+        //批量删除标签
+        if(labelItemMapper.batchDeleteTagItem(updateLabelItemState.getTag_ids(), updateLabelItemState.getUpdater())<1){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("删除失败,请联系管理员或稍后再试!");
+            return commonResponse;
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse queryLabelItem(int tag_object_id) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(labelItemMapper.findTagItemByTagObjectId(tag_object_id));
         return commonResponse;
     }
 }

@@ -35,9 +35,9 @@ spring:
   cloud:
     nacos:
       config:
-        server-addr: 172.16.23.85:31215
+        server-addr: 172.16.31.146:8848
       discovery:
-        server-addr: 172.16.23.85:31215
+        server-addr: 172.16.31.146:8848
         
 ---
 #线上环境配置

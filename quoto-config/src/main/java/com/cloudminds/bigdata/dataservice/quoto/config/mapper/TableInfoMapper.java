@@ -42,7 +42,7 @@ public interface TableInfoMapper {
 	@Select("select GROUP_CONCAT(`name`) from quoto where table_id=#{tableId} and deleted=0 and state=1")
 	public String getRelationQuotoName(int tableId);
 
-	@Select("select t.*,d.`database`,d.db_id,d.service_path from Table_info t left join Database_info d on t.database_id=d.id where t.is_delete=0")
+	@Select("select t.*,d.`database`,d.db_id,concat(dd.service_path,d.service_path) as service_path,dd.service_name from Table_info t left join Database_info d on t.database_id=d.id left join Db_info dd on dd.id=d.db_id where t.is_delete=0 and t.state=1")
 	public List<TableExtendInfo> getAllTableInfo();
 
 	@Select("SELECT t.*,tt.*,CONCAT(i.service_path,dd.service_path) as service_path FROM Table_info t LEFT JOIN Database_info dd on t.database_id=dd.id LEFT JOIN Db_info i on dd.db_id=i.id LEFT JOIN (select d.id, d.name as data_domain_name,bb.name as business_name,bb.id as business_id from data_domain d LEFT JOIN business bb on d.business_id=bb.id) as tt on t.data_domain_id=tt.id WHERE t.is_delete=0 and t.state=1 AND business_id=#{business_id}")

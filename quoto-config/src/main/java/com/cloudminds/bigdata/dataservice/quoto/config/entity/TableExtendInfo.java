@@ -16,4 +16,5 @@ public class TableExtendInfo extends BaseEntity{
     private int db_id;
     private String database;
     private String service_path;
+    private String service_name;
 }

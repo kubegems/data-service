@@ -2,7 +2,7 @@ server:
   port: 8077
 spring:
   profiles:
-    active: test
+    active: dev
   application:
     name: dataServer-labelManage
   cloud:
@@ -12,3 +12,6 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+metaJdbcConnet: jdbc:clickhouse://clickhouse.cloudminds.com:9090
+metaJdbcUser: distributed-read
+metaJdbcPassword: cloudminds123

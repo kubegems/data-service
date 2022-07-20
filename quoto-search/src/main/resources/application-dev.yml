@@ -2,7 +2,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: 172.16.31.146:8848
 elasticsearch:
   host: 172.16.23.2
   port: 9400

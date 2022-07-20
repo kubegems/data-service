@@ -15,4 +15,10 @@ public class SearchQuotoControl {
     public CommonResponse findLabelItemByPid(String key) {
         return eSQueryService.matchQuery(key);
     }
+
+    // 查询事件
+    @RequestMapping(value = "boolQueryByKey", method = RequestMethod.GET)
+    public CommonResponse boolQueryByKey(String key) {
+        return eSQueryService.boolQuery(key);
+    }
 }
