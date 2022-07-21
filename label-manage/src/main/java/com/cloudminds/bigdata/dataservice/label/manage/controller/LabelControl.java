@@ -51,4 +51,10 @@ public class LabelControl {
     public CommonResponse queryLabelItem(int tag_object_id) {
         return labelService.queryLabelItem(tag_object_id);
     }
+
+    //查询标签
+    @RequestMapping(value = "dataPreview", method = RequestMethod.GET)
+    public CommonResponse dataPreview(String tag_id) {
+        return labelService.dataPreview(tag_id);
+    }
 }

@@ -15,3 +15,4 @@ spring:
 metaJdbcConnet: jdbc:clickhouse://clickhouse.cloudminds.com:9090
 metaJdbcUser: distributed-read
 metaJdbcPassword: cloudminds123
+dataServiceUrl: http://172.16.23.83:30515/roc/quoto/tag

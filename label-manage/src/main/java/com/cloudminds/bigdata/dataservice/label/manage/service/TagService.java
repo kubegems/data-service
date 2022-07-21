@@ -148,6 +148,7 @@ public class TagService {
             commonResponse.setMessage("新增标签失败,请联系管理员！");
             return commonResponse;
         }
+        commonResponse.setData(tagCate.getTag_cate_id());
         return commonResponse;
     }
 

@@ -1,17 +1,27 @@
 package com.cloudminds.bigdata.dataservice.label.manage.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagCate;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagEnumValue;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItem;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagObject;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.request.UpdateLabelItemState;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.CommonResponse;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.response.DataCommonResponse;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.response.DataServiceResponse;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.TagInfo;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.LabelItemMapper;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagCateMapper;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +36,10 @@ public class LabelService {
     private TagCateMapper tagCateMapper;
     @Autowired
     private TagObjectMapper tagObjectMapper;
+    @Value("${dataServiceUrl}")
+    private String dataServiceUrl;
+    @Autowired
+    RestTemplate restTemplate;
 
     // 查询事件详情
     public CommonResponse findLabelItemByPid(String pid, int value) {
@@ -161,7 +175,7 @@ public class LabelService {
                 while (tagEnumId.length() < 3) {
                     tagEnumId = "0" + tagEnumId;
                 }
-                tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagId+tagEnumId);
+                tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagId + tagEnumId);
             }
             if (name.size() < tagItem.getTagEnumValueList().size()) {
                 commonResponse.setSuccess(false);
@@ -228,7 +242,7 @@ public class LabelService {
                     while (tagEnumId.length() < 3) {
                         tagEnumId = "0" + tagEnumId;
                     }
-                    tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagItem.getTag_id()+tagEnumId);
+                    tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagItem.getTag_id() + tagEnumId);
                     tagEnumValuesInsert.add(tagItem.getTagEnumValueList().get(i));
                 } else {
                     tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
@@ -309,7 +323,7 @@ public class LabelService {
                     }
                 }
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println(e);
             commonResponse.setSuccess(false);
             commonResponse.setMessage("枚举值更新失败,请联系管理员");
@@ -319,42 +333,42 @@ public class LabelService {
 
     public CommonResponse updateLabelItemState(UpdateLabelItemState updateLabelItemState) {
         CommonResponse commonResponse = new CommonResponse();
-        if(updateLabelItemState.getTag_ids()==null || updateLabelItemState.getTag_ids().length==0){
+        if (updateLabelItemState.getTag_ids() == null || updateLabelItemState.getTag_ids().length == 0) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("tag_ids不能为空");
             return commonResponse;
         }
-        if(StringUtils.isEmpty(updateLabelItemState.getUpdater())){
+        if (StringUtils.isEmpty(updateLabelItemState.getUpdater())) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("更新者不能为空");
             return commonResponse;
         }
-        labelItemMapper.updateTagItemState(updateLabelItemState.getTag_ids(), updateLabelItemState.getState(),updateLabelItemState.getUpdater());
+        labelItemMapper.updateTagItemState(updateLabelItemState.getTag_ids(), updateLabelItemState.getState(), updateLabelItemState.getUpdater());
         return commonResponse;
     }
 
     public CommonResponse deleteLabelItem(UpdateLabelItemState updateLabelItemState) {
         CommonResponse commonResponse = new CommonResponse();
         //参数校验
-        if(updateLabelItemState.getTag_ids()==null || updateLabelItemState.getTag_ids().length==0){
+        if (updateLabelItemState.getTag_ids() == null || updateLabelItemState.getTag_ids().length == 0) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("tag_ids不能为空");
             return commonResponse;
         }
-        if(StringUtils.isEmpty(updateLabelItemState.getUpdater())){
+        if (StringUtils.isEmpty(updateLabelItemState.getUpdater())) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("更新者不能为空");
             return commonResponse;
         }
         //判断是否有标签状态为上线中
         String onlineTagName = labelItemMapper.findOnlineTagItemName(updateLabelItemState.getTag_ids());
-        if(!StringUtils.isEmpty(onlineTagName)){
+        if (!StringUtils.isEmpty(onlineTagName)) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage(onlineTagName+"--为上线状态,请先下线");
+            commonResponse.setMessage(onlineTagName + "--为上线状态,请先下线");
             return commonResponse;
         }
         //批量删除标签
-        if(labelItemMapper.batchDeleteTagItem(updateLabelItemState.getTag_ids(), updateLabelItemState.getUpdater())<1){
+        if (labelItemMapper.batchDeleteTagItem(updateLabelItemState.getTag_ids(), updateLabelItemState.getUpdater()) < 1) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("删除失败,请联系管理员或稍后再试!");
             return commonResponse;
@@ -365,6 +379,99 @@ public class LabelService {
     public CommonResponse queryLabelItem(int tag_object_id) {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(labelItemMapper.findTagItemByTagObjectId(tag_object_id));
+        return commonResponse;
+    }
+
+    public CommonResponse dataPreview(String tag_id) {
+        DataCommonResponse commonResponse = new DataCommonResponse();
+        //查询标签是否存在
+        TagItem tagItem = labelItemMapper.findTagItemByTagId(tag_id);
+        if (tagItem == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签不存在!");
+            return commonResponse;
+        }
+        //查询标签对象是否存在
+        TagObject tagObject = tagObjectMapper.queryTagObjectByTagCateId(tagItem.getTag_cate_id());
+        if (tagObject == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签对象不存在!");
+            return commonResponse;
+        }
+
+        String url = dataServiceUrl;
+        String tag_value_type_name = "string";
+        if (tagItem.getValue_type() != 1) {
+            tag_value_type_name = "int";
+        }
+        String querySql = "select tag_value,bitmapCardinality(oids) as cnt from tag.dis_" + tagObject.getCode() + "_tag_" + tag_value_type_name + " where tag_id like '" + tagItem.getTag_id() + "%'";
+        String bodyRequestTotal = "{\"[]\":{\"" + tagObject.getTable() + "\":{\"@sql\":\"select count(*) from tag.dis_" + tagObject.getTable() + "\"},\"query\":1},\"total@\":\"/[]/total\"}";
+        String bodyRequest = "{\"[]\":{\"" + tagObject.getTable() + "\":{\"@sql\":\"" + querySql + "\"},\"page\":0,\"count\":10000}}";
+        // 请求数据服务
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("token", "L0V91TZWH4K8YZPBBG3M");
+        // 将请求头部和参数合成一个请求查询数据分布情况
+        HttpEntity<String> requestEntity = new HttpEntity<>(bodyRequest, headers);
+        try {
+            ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, requestEntity, String.class);
+            if (!responseEntity.getStatusCode().is2xxSuccessful()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("对应的服务不可用,请联系管理员排查");
+                return commonResponse;
+            } else {
+                JSONObject result = JSONObject.parseObject(responseEntity.getBody().toString());
+                DataServiceResponse dataServiceResponse = JSONObject.toJavaObject(
+                        JSONObject.parseObject(responseEntity.getBody().toString()), DataServiceResponse.class);
+                commonResponse.setSuccess(dataServiceResponse.isOk());
+                commonResponse.setMessage(dataServiceResponse.getMsg());
+                if (dataServiceResponse.isOk()) {
+                    if (result.get("[]") != null) {
+                        List<JSONObject> list = JSONObject.parseArray(result.get("[]").toString(), JSONObject.class);
+                        if (list != null) {
+                            List<Object> data = new ArrayList<Object>();
+                            for (int i = 0; i < list.size(); i++) {
+                                data.add(list.get(i).get(tagObject.getTable()));
+                                commonResponse.setData(data);
+                            }
+                        }
+                    }
+                } else {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(dataServiceResponse.getMsg());
+                    return commonResponse;
+                }
+            }
+
+            // 将请求头部和参数合成一个请求查询数据总数情况
+            HttpEntity<String> requestEntityTotal = new HttpEntity<>(bodyRequestTotal, headers);
+            ResponseEntity<String> responseEntityTotal = restTemplate.postForEntity(url, requestEntityTotal, String.class);
+            if (!responseEntityTotal.getStatusCode().is2xxSuccessful()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("数据服务不可用,请联系管理员排查");
+                return commonResponse;
+            } else {
+                JSONObject result = JSONObject.parseObject(responseEntityTotal.getBody().toString());
+                DataServiceResponse dataServiceResponse = JSONObject.toJavaObject(
+                        JSONObject.parseObject(responseEntityTotal.getBody().toString()), DataServiceResponse.class);
+                commonResponse.setSuccess(dataServiceResponse.isOk());
+                commonResponse.setMessage(dataServiceResponse.getMsg());
+                if (dataServiceResponse.isOk()) {
+                    if (result.get("total") != null) {
+                        commonResponse.setTotal(dataServiceResponse.getTotal());
+                    }
+                } else {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(dataServiceResponse.getMsg());
+                    return commonResponse;
+                }
+            }
+        }catch (Exception e){
+            System.out.println(e);
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        }
         return commonResponse;
     }
 }
