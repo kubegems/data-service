@@ -84,8 +84,8 @@ public class APIJSONApplication {
 		APIJSONParser.APIJSON_CREATOR = creator;
 		APIJSONController.APIJSON_CREATOR = creator;
 		
-		APIJSONParser abstractParser = new APIJSONParser();
-		abstractParser.loadAliasConfig();
+		//APIJSONParser abstractParser = new APIJSONParser();
+		//abstractParser.loadAliasConfig();
 
 //		System.out.println("\n\n\n开始初始化: 权限校验配置 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 //		try {
@@ -131,8 +131,6 @@ public class APIJSONApplication {
 //			e.printStackTrace();
 //		}
 //		System.out.println("\n完成测试: Request 和 Response 的数据结构校验 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-
-		System.out.println("\n\n<<<<<<<<<<<<<<<<<<<<<<<<< APIJSON 启动完成，试试调用自动化 API 吧 ^_^ >>>>>>>>>>>>>>>>>>>>>>>>\n");
 	}
 
 }

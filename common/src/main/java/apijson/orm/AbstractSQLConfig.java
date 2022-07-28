@@ -1726,6 +1726,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			// 各种 JOIN 没办法统一用 & | ！连接，只能按优先级，和 @combine 一样?
 			for (Join j : joinList) {
 				String jt = j.getJoinType();
+				String globalString="";
+				if(!jt.equals("")&&jt.charAt(0)=='g'){
+					globalString = " global";
+					jt = jt.substring(1);
+				}
 
 				switch (jt) {
 				case "*": // CROSS JOIN
@@ -1881,7 +1886,9 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			keyType = 9;
 		} else if (key.endsWith("<")) {
 			keyType = 10;
-		} else { // else绝对不能省，避免再次踩坑！ keyType = 0; 写在for循环外面都没注意！
+		} else if (key.endsWith("{g}")) {
+			keyType = 11;
+		}else { // else绝对不能省，避免再次踩坑！ keyType = 0; 写在for循环外面都没注意！
 			keyType = 0;
 		}
 
@@ -1909,7 +1916,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 		case 3:
 			return getBetweenString(key, value, rawSQL);
 		case 4:
-			return getRangeString(key, value, rawSQL);
+			return getRangeString(key, value, rawSQL,false);
 		case 5:
 			return getExistsString(key, value, rawSQL);
 		case 6:
@@ -1922,6 +1929,8 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			return getCompareString(key, value, ">", rawSQL);
 		case 10:
 			return getCompareString(key, value, "<", rawSQL);
+		case 11:
+			return getRangeString(key, value, rawSQL,true);
 		default: // TODO MySQL JSON类型的字段对比 key='[]' 会无结果！ key LIKE '[1, 2, 3]' //TODO MySQL ,
 					// 后面有空格！
 			return getEqualString(key, value, rawSQL);
@@ -2289,7 +2298,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 	 * @throws Exception
 	 */
 	@JSONField(serialize = false)
-	public String getRangeString(String key, Object range, String rawSQL) throws Exception {
+	public String getRangeString(String key, Object range, String rawSQL,boolean isGlobal) throws Exception {
 		Log.i(TAG, "getRangeString key = " + key);
 		if (range == null) {// 依赖的对象都没有给出有效值，这个存在无意义。如果是客户端传的，那就能在客户端确定了。
 			throw new NotExistException(TAG + "getRangeString(" + key + ", " + range + ") range == null");
@@ -2388,6 +2397,9 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 			return getCondition(logic.isNot(), condition);
 		} else if (range instanceof Subquery) { // 如果在 Parser 解析成 SQL 字符串再引用，没法保证安全性，毕竟可以再通过远程函数等方式来拼接再替代，最后引用的字符串就能注入
+			if(isGlobal){
+				return getKey(k) + (logic.isNot() ? NOT : "") + " GLOBAL IN " + getSubqueryString((Subquery) range);
+			}
 			return getKey(k) + (logic.isNot() ? NOT : "") + " IN " + getSubqueryString((Subquery) range);
 		}
 
@@ -2840,7 +2852,6 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 
 	public String getJoinString() throws Exception {
 		String joinOns = "";
-
 		if (joinList != null) {
 			String quote = getQuote();
 			List<Object> pvl = new ArrayList<>();
@@ -2855,6 +2866,11 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 					continue;
 				}
 				String type = j.getJoinType();
+				String globalString="";
+				if(!type.equals("")&&type.charAt(0)=='g'){
+					globalString = " GLOBAL";
+					type = type.substring(1);
+				}
 
 				// LEFT JOIN sys.apijson_user AS User ON User.id = Moment.userId， 都是用 =
 				// ，通过relateType处理缓存
@@ -2881,7 +2897,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 				case "<": // LEFT JOIN
 				case ">": // RIGHT JOIN
 					jc.setMain(true).setKeyPrefix(false);
-					sql = ("<".equals(type) ? " LEFT" : (">".equals(type) ? " RIGHT" : " CROSS")) + " JOIN ( "
+					sql = globalString+("<".equals(type) ? " LEFT" : (">".equals(type) ? " RIGHT" : " CROSS")) + " JOIN ( "
 							+ jc.getSQL(isPrepared()) + " ) AS " + quote + jt + quote + " ON " + quote + jt + quote
 							+ "." + quote + j.getKey() + quote + " = " + quote + tn + quote + "." + quote
 							+ j.getTargetKey() + quote;
@@ -2898,7 +2914,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 				case "^": // SIDE JOIN: ! (A & B)
 				case "(": // ANTI JOIN: A & ! B
 				case ")": // FOREIGN JOIN: B & ! A
-					sql = " INNER JOIN " + jc.getTablePath() + " ON " + quote + jt + quote + "." + quote + j.getKey()
+					sql =globalString+ " INNER JOIN " + jc.getTablePath() + " ON " + quote + jt + quote + "." + quote + j.getKey()
 							+ quote + " = " + quote + tn + quote + "." + quote + j.getTargetKey() + quote;
 					break;
 				default:
@@ -3450,6 +3466,8 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			key = key.substring(0, key.length() - 1);
 		} else if (key.endsWith("{}")) {// 被包含 IN，或者说key对应值处于value的范围内。查询时处理
 			key = key.substring(0, key.length() - 2);
+		}else if (key.endsWith("{g}")) {// 被包含 IN，或者说key对应值处于value的范围内。查询时处理
+			key = key.substring(0, key.length() - 3);
 		} else if (key.endsWith("}{")) {// 被包含 EXISTS，或者说key对应值处于value的范围内。查询时处理
 			key = key.substring(0, key.length() - 2);
 		} else if (key.endsWith("<>")) {// 包含 json_contains，或者说value处于key对应值的范围内。查询时处理

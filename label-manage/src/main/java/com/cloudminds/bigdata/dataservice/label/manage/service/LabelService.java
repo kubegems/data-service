@@ -6,10 +6,7 @@ import com.cloudminds.bigdata.dataservice.label.manage.entity.TagEnumValue;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItem;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagObject;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.request.UpdateLabelItemState;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.response.CommonResponse;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.response.DataCommonResponse;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.response.DataServiceResponse;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.response.TagInfo;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.response.*;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.LabelItemMapper;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagCateMapper;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.TagObjectMapper;
@@ -376,9 +373,32 @@ public class LabelService {
         return commonResponse;
     }
 
-    public CommonResponse queryLabelItem(int tag_object_id) {
-        CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(labelItemMapper.findTagItemByTagObjectId(tag_object_id));
+    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size,String order_name,boolean desc) {
+        CommonQueryResponse commonResponse = new CommonQueryResponse();
+        String condition = "c.tag_object_id="+tag_object_id+" and i.deleted=0";
+        if (page < 1 || size < 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("page和size必须大于0!");
+            return commonResponse;
+        }
+        if(StringUtils.isEmpty(order_name)){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("排序的名字不能为空");
+            return commonResponse;
+        }
+        if(!StringUtils.isEmpty(tag_cate_id)){
+            condition = condition + " and i.tag_cate_id like '" + tag_cate_id + "%'";
+        }
+        condition = condition + " order by i."+order_name;
+        if(desc){
+            condition = condition + " desc";
+        }else{
+            condition = condition + " asc";
+        }
+        int startLine = (page - 1) * size;
+        commonResponse.setCurrentPage(page);
+        commonResponse.setData(labelItemMapper.findTagItem(condition, startLine, size));
+        commonResponse.setTotal(labelItemMapper.findTagItemCount(condition));
         return commonResponse;
     }
 
@@ -466,7 +486,7 @@ public class LabelService {
                     return commonResponse;
                 }
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             System.out.println(e);
             commonResponse.setSuccess(false);
             commonResponse.setMessage(e.getMessage());

@@ -52,4 +52,9 @@ public class TagControl {
         return tagService.queryTagCate(tag_object_id,pid);
     }
 
+    @RequestMapping(value = "queryTagCateById", method = RequestMethod.GET)
+    public CommonResponse queryTagCateById(String id){
+        return tagService.queryTagCateById(id);
+    }
+
 }

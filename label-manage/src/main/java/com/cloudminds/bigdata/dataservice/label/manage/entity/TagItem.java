@@ -20,6 +20,11 @@ public class TagItem extends BaseEntity{
     private boolean exclusive;
     private String source;
     private int update_cycle;
+    private String update_cycle_unit;
     private String updater;
     private String tag_rule;
+    private String tag_cate_one_id;
+    private String tag_cate_one_name;
+    private String tag_cate_two_id;
+    private String tag_cate_two_name;
 }

@@ -221,4 +221,10 @@ public class TagService {
         }
         return commonResponse;
     }
+
+    public CommonResponse queryTagCateById(String id) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tagCateMapper.queryTagCateById(id));
+        return commonResponse;
+    }
 }

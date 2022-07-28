@@ -23,8 +23,8 @@ public class NacosListener implements ApplicationListener<ActionConfigEvent> {
 		boolean dbChange=false;
 		Map<String, HashMap> change=event.getPropertyMap();
 		for (String key : change.keySet()) {
-			if(QuotoChatbotApplication.dbInfo.containsKey(key)) {
-				QuotoChatbotApplication.dbInfo.put(key, change.get(key).get("after").toString());
+			if(ConfigInit.dbInfo.containsKey(key)) {
+				ConfigInit.dbInfo.put(key, change.get(key).get("after").toString());
 				dbChange=true;
 			}
 			
@@ -33,7 +33,7 @@ public class NacosListener implements ApplicationListener<ActionConfigEvent> {
 	    	APIJSONApplication.DEFAULT_APIJSON_CREATOR = new APIJSONCreator() {
 				@Override
 				public SQLConfig createSQLConfig() {
-					return new DBSQLConfig(QuotoChatbotApplication.dbInfo.get("dbUrl"), QuotoChatbotApplication.dbInfo.get("dbAccount"),QuotoChatbotApplication.dbInfo.get("dbPassword"), QuotoChatbotApplication.dbInfo.get("configDbUrl"),QuotoChatbotApplication.dbInfo.get("configDbAccount"), QuotoChatbotApplication.dbInfo.get("configDbPassword"));
+					return new DBSQLConfig(ConfigInit.dbInfo.get("dbUrl"), ConfigInit.dbInfo.get("dbAccount"),ConfigInit.dbInfo.get("dbPassword"), ConfigInit.dbInfo.get("configDbUrl"),ConfigInit.dbInfo.get("configDbAccount"), ConfigInit.dbInfo.get("configDbPassword"));
 				}
 			};
 			try {

@@ -1,6 +1,8 @@
 package com.cloudminds.bigdata.dataservice.quoto.roc.controller;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -142,9 +144,13 @@ public class RobotQuotoUnforceControl extends APIJSONController {
         response.put("ok",false);
         response.put("code",401);
         //取表名
-        String tableName="";
+        List<String> tableNameList = new ArrayList<>();
         try {
-            tableName = JSON.parseObject(JSON.parseObject(request).get("[]")).keySet().iterator().next();
+            tableNameList = getTableNames(request);
+            if(tableNameList.isEmpty()){
+                response.put("msg","验证用户权限时解析表名出错,请检查请求参数是否合法!");
+                return response.toString();
+            }
         }catch (Exception e){
             response.put("msg","验证用户权限时解析表名出错,请检查请求参数是否合法!");
             return response.toString();
@@ -164,23 +170,26 @@ public class RobotQuotoUnforceControl extends APIJSONController {
                     Map.class);
             if(token_map!=null){
                 String tokenAccess=token_map.get(token);
-                boolean hasAccess = false;
                 if(tokenAccess==null){
                     response.put("msg","用户没有此表的访问权限,请联系管理员!");
                     return response.toString();
                 }
                 if (!tokenAccess.equals("ALL")) {
                     String[] tokenAccessList = tokenAccess.toString().split(",");
-                    for (String tokenAccessValue : tokenAccessList) {
-                        if (tokenAccessValue.equals(servicePath + "." + tableName)) {
-                            hasAccess = true;
-                            break;
+                    for(String tableName:tableNameList) {
+                        boolean hasAccess = false;
+                        for (String tokenAccessValue : tokenAccessList) {
+                            if (tokenAccessValue.equals(servicePath + "." + tableName)) {
+                                hasAccess = true;
+                                break;
+                            }
+                        }
+                        if (!hasAccess) {
+                            response.put("msg","用户没有"+tableName+"表的访问权限,请联系管理员!");
+                            return response.toString();
                         }
                     }
-                    if (!hasAccess) {
-                        response.put("msg","用户没有"+tableName+"表的访问权限,请联系管理员!");
-                        return response.toString();
-                    }
+
                 }
             }
         }
@@ -230,7 +239,7 @@ public class RobotQuotoUnforceControl extends APIJSONController {
         if (value != null) {
             String valueS = value.toString();
             if (!valueS.equals("")) {
-                accessHistory(token,servicePath,tableName,valueS,session);
+                accessHistory(token,servicePath,tableNameList.toString(),valueS,session);
                 JSONObject jsonResult=JSON.parseObject(valueS);
                 jsonResult.remove("execute_sql");
                 return jsonResult.toString();
@@ -238,7 +247,7 @@ public class RobotQuotoUnforceControl extends APIJSONController {
 
         }
         String result = get(request, session);
-        accessHistory(token,servicePath,tableName,result,session);
+        accessHistory(token,servicePath,tableNameList.toString(),result,session);
         if (redisExce) {
             JSONObject jsonResult=JSON.parseObject(result);
             jsonResult.remove("execute_sql");

@@ -32,18 +32,18 @@ import static apijson.framework.APIJSONConstant.VISITOR_ID;
 
 import java.lang.reflect.Method;
 import java.rmi.ServerException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import apijson.*;
 import com.alibaba.fastjson.JSONObject;
 
-import apijson.Log;
-import apijson.NotNull;
-import apijson.RequestMethod;
-import apijson.StringUtil;
 import apijson.orm.Parser;
 import apijson.orm.Visitor;
 import unitauto.MethodUtil;
@@ -80,6 +80,17 @@ public class APIJSONController {
 		return newParser(session, method).parse(request);
 	}
 
+	public List<String> getTableNames(String request){
+		List<String> tableName = new ArrayList<>();
+		for(String name:JSON.parseObject(JSON.parseObject(request).get("[]")).keySet()){
+			if(name.equals(JSONRequest.KEY_QUERY)||name.equals(JSONRequest.KEY_COUNT)||name.equals(JSONRequest.KEY_PAGE)||name.equals(JSONRequest.KEY_JOIN)||name.equals(JSONRequest.KEY_SUBQUERY_RANGE)||name.equals(JSONRequest.KEY_SUBQUERY_FROM)){
+				continue;
+			}else{
+				tableName.add(name);
+			}
+		}
+		return tableName;
+	}
 	//通用接口，非事务型操作 和 简单事务型操作 都可通过这些接口自动化实现<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 	/**获取

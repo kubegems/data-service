@@ -283,11 +283,12 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
 					// bugfix-修复非常规数据库字段，获取表名失败导致输出异常
 					if (config.isExplain() == false && hasJoin && viceColumnStart > length) {
 						List<String> column = config.getColumn();
-
+						String tableName = config.getSQLTable().replace("\"","");
+                        String datatableName=rsmd.getTableName(i).replace("\"","");
 						if (column != null && column.isEmpty() == false) {
 							viceColumnStart = column.size() + 1;
 						}
-						else if (config.getSQLTable().equalsIgnoreCase(rsmd.getTableName(i)) == false) {
+						else if (tableName.equalsIgnoreCase(datatableName) == false) {
 							viceColumnStart = i;
 						}
 					}
