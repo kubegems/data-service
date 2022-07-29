@@ -373,7 +373,7 @@ public class LabelService {
         return commonResponse;
     }
 
-    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size,String order_name,boolean desc) {
+    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size,String order_name,boolean desc,String tag_name) {
         CommonQueryResponse commonResponse = new CommonQueryResponse();
         String condition = "c.tag_object_id="+tag_object_id+" and i.deleted=0";
         if (page < 1 || size < 1) {
@@ -388,6 +388,10 @@ public class LabelService {
         }
         if(!StringUtils.isEmpty(tag_cate_id)){
             condition = condition + " and i.tag_cate_id like '" + tag_cate_id + "%'";
+        }
+
+        if(!StringUtils.isEmpty(tag_name)){
+            condition = condition + " and i.tag_name like '" + tag_name + "%'";
         }
         condition = condition + " order by i."+order_name;
         if(desc){

@@ -48,8 +48,8 @@ public class LabelControl {
 
     //查询标签
     @RequestMapping(value = "queryLabelItem", method = RequestMethod.GET)
-    public CommonResponse queryLabelItem(int tag_object_id,String tag_cate_id,int page,int size,String order_name,boolean desc) {
-        return labelService.queryLabelItem(tag_object_id,tag_cate_id,page,size,order_name,desc);
+    public CommonResponse queryLabelItem(int tag_object_id,String tag_cate_id,int page,int size,String order_name,boolean desc,String tag_name) {
+        return labelService.queryLabelItem(tag_object_id,tag_cate_id,page,size,order_name,desc,tag_name);
     }
 
     //查询标签
