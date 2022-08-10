@@ -63,7 +63,7 @@ public interface QuotoMapper {
 	@Select("select t.*,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id where t.deleted=0")
 	public List<Theme> queryAllTheme();
 
-	@Select("select count(*) from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id where ${condition}")
+	@Select("select count(*) from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id where ${condition}")
 	public int queryThemeTotal(String condition);
 
 	@Select("select * from theme where deleted=0 and id=#{id}")

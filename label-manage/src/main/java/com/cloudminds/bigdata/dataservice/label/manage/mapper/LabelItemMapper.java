@@ -40,8 +40,8 @@ public interface LabelItemMapper {
             "</foreach>", "</script>"})
     public int batchSaveTagEnumValue(List<TagEnumValue> enum_value, String tag_id, String creator);
 
-    @Update("<script><foreach collection = 'enum_value' item ='item' open='' close='' separator=';'>update tag_enum_value set tag_value =#{item.tag_value},updater=#{updater},descr=#{item.descr} where tag_enum_id =#{item.tag_enum_id}</foreach></script>")
-    public int batchUpdateTagEnumValue(List<TagEnumValue> enum_value, String updater);
+    @Update("update tag_enum_value set tag_value =#{tag_value},updater=#{updater},descr=#{descr} where tag_enum_id=#{tag_enum_id}")
+    public int updateTagEnumValue(TagEnumValue enum_value);
 
     @Update("update tag_enum_value set deleted=null where tag_id=#{tag_id}")
     public int deleteTagEnumValueByTagId(String tag_id);
@@ -86,4 +86,7 @@ public interface LabelItemMapper {
 
     @Select("select * from tag_enum_value where deleted=0 and tag_id=#{tag_id}")
     public List<TagEnumValue> findTagEnumValueByTagId(String tag_id);
+
+    @Select("select * from tag_enum_value where deleted=0 and tag_enum_id=#{tag_enum_id}")
+    public TagEnumValue findTagEnumValueByTagEnumId(String tag_enum_id);
 }

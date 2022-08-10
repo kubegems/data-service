@@ -172,7 +172,7 @@ public class LabelService {
                 while (tagEnumId.length() < 3) {
                     tagEnumId = "0" + tagEnumId;
                 }
-                tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagId + tagEnumId);
+                tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagId + "_" + tagEnumId);
             }
             if (name.size() < tagItem.getTagEnumValueList().size()) {
                 commonResponse.setSuccess(false);
@@ -227,6 +227,7 @@ public class LabelService {
             }
             Set<String> name = new HashSet<String>();
             for (int i = 0; i < tagItem.getTagEnumValueList().size(); i++) {
+                tagItem.getTagEnumValueList().get(i).setUpdater(tagItem.getUpdater());
                 if (StringUtils.isEmpty(tagItem.getTagEnumValueList().get(i).getTag_value())) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("枚举值名不能为空");
@@ -239,10 +240,25 @@ public class LabelService {
                     while (tagEnumId.length() < 3) {
                         tagEnumId = "0" + tagEnumId;
                     }
-                    tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagItem.getTag_id() + tagEnumId);
+                    tagItem.getTagEnumValueList().get(i).setTag_enum_id(tagItem.getTag_id() + "_" + tagEnumId);
                     tagEnumValuesInsert.add(tagItem.getTagEnumValueList().get(i));
                 } else {
-                    tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                    TagEnumValue oldTagEnumValue = labelItemMapper.findTagEnumValueByTagEnumId(tagItem.getTagEnumValueList().get(i).getTag_enum_id());
+                    if (!oldTagEnumValue.getTag_value().equals(tagItem.getTagEnumValueList().get(i).getTag_value())) {
+                        tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                    } else {
+                        if (oldTagEnumValue.getDescr() == null) {
+                            if (tagItem.getTagEnumValueList().get(i).getDescr() != null) {
+                                tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                            } else {
+                                if (tagItem.getTagEnumValueList().get(i).getDescr() == null) {
+                                    tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                                } else if (!tagItem.getTagEnumValueList().get(i).getDescr().equals(oldTagEnumValue.getDescr())) {
+                                    tagEnumValuesUpdate.add(tagItem.getTagEnumValueList().get(i));
+                                }
+                            }
+                        }
+                    }
                 }
 
             }
@@ -293,13 +309,17 @@ public class LabelService {
                     }
                     //更新枚举值
                     if (tagEnumValuesUpdate.size() > 0) {
-                        if (labelItemMapper.batchUpdateTagEnumValue(tagEnumValuesUpdate, tagItem.getUpdater()) < 0) {
-                            commonResponse.setSuccess(false);
-                            commonResponse.setMessage("枚举值更新失败,请联系管理员或者更新标签");
-                            if (insertFail) {
-                                commonResponse.setMessage("枚举值更新和插入都失败,请联系管理员");
+                        for (TagEnumValue tagEnumValue : tagEnumValuesUpdate) {
+                            if (labelItemMapper.updateTagEnumValue(tagEnumValue) < 0) {
+                                commonResponse.setSuccess(false);
+                                commonResponse.setMessage("枚举值更新失败,请联系管理员或者更新标签");
+                                if (insertFail) {
+                                    commonResponse.setMessage("枚举值更新和插入都失败,请联系管理员");
+                                }
+                                break;
                             }
                         }
+
                     }
                     //删除枚举值
                     labelItemMapper.deleteTagEnumValue(tagItem.getTagEnumValueList(), tagItem.getTag_id(), tagItem.getUpdater());
@@ -373,30 +393,30 @@ public class LabelService {
         return commonResponse;
     }
 
-    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size,String order_name,boolean desc,String tag_name) {
+    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size, String order_name, boolean desc, String tag_name) {
         CommonQueryResponse commonResponse = new CommonQueryResponse();
-        String condition = "c.tag_object_id="+tag_object_id+" and i.deleted=0";
+        String condition = "c.tag_object_id=" + tag_object_id + " and i.deleted=0";
         if (page < 1 || size < 1) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("page和size必须大于0!");
             return commonResponse;
         }
-        if(StringUtils.isEmpty(order_name)){
+        if (StringUtils.isEmpty(order_name)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("排序的名字不能为空");
             return commonResponse;
         }
-        if(!StringUtils.isEmpty(tag_cate_id)){
+        if (!StringUtils.isEmpty(tag_cate_id)) {
             condition = condition + " and i.tag_cate_id like '" + tag_cate_id + "%'";
         }
 
-        if(!StringUtils.isEmpty(tag_name)){
+        if (!StringUtils.isEmpty(tag_name)) {
             condition = condition + " and i.tag_name like '" + tag_name + "%'";
         }
-        condition = condition + " order by i."+order_name;
-        if(desc){
+        condition = condition + " order by i." + order_name;
+        if (desc) {
             condition = condition + " desc";
-        }else{
+        } else {
             condition = condition + " asc";
         }
         int startLine = (page - 1) * size;
