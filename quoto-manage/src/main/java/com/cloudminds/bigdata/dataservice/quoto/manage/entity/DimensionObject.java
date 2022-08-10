@@ -5,8 +5,9 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 @Data
-public class DataDomain extends BaseEntity {
-	private int id;
-	private int business_id;
-	private String name;
+public class DimensionObject extends BaseEntity{
+    private int id;
+    private String name;
+    private String code;
+    private int type;
 }

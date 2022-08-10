@@ -4,12 +4,9 @@ spring:
       discovery:
         server-addr: nacos.cloudminds.com
   datasource:
-    url: jdbc:mysql://bigdata-mysql:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=true
+    url: jdbc:mysql://bigdata-mysql:3306/bigdata_label?characterEncoding=utf8&useSSL=true
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
-  redis:
-    host: bigdata-redis
-    port: 6379
   application:
-    name: dataServer-quotoConfig
+    name: dataServer-labelManage-prod

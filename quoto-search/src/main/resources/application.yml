@@ -2,9 +2,7 @@ server:
   port: 8076
 spring:
   profiles:
-    active: test
-  application:
-    name: dataServer-quotoSearch
+    active: dev
   cloud:
     nacos:
       discovery:

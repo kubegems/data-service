@@ -8,8 +8,8 @@ import lombok.EqualsAndHashCode;
 public class TableExtendInfo extends BaseEntity{
     private int id;
     private int database_id;
-    private Integer data_domain_id;
-    private String data_domain_name;
+    private Integer theme_id;
+    private String theme_name;
     private String business_name;
     private String table_name;
     private String table_alias;

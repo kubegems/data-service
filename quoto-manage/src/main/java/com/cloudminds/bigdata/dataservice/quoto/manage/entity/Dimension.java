@@ -7,8 +7,8 @@ import lombok.EqualsAndHashCode;
 @Data
 public class Dimension extends BaseEntity {
 	private int id;
+	private int dimension_object_id;
 	private String name;
 	private String code;
-	private String alias;
-	private String column_alias;
+	private int value_type;
 }

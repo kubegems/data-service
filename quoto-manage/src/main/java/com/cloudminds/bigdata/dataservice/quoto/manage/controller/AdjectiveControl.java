@@ -1,5 +1,6 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.controller;
 
+import com.cloudminds.bigdata.dataservice.quoto.manage.service.DimensionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,12 +21,6 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.service.AdjectiveService;
 public class AdjectiveControl {
 	@Autowired
 	private AdjectiveService adjectiveService;
-
-	// 根据修饰词的所有类型
-	@RequestMapping(value = "queryAllType", method = RequestMethod.GET)
-	public CommonResponse queryAllType() {
-		return adjectiveService.queryAllType();
-	}
 
 	// 删除修饰词
 	@RequestMapping(value = "delete", method = RequestMethod.POST)

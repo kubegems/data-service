@@ -7,7 +7,6 @@ spring:
   cloud:
     nacos:
       config:
-        group: bigdata-service-gw.bj-fit-86
         prefix: gateway
         file-extension: yaml
         namespace: dataservice
@@ -25,6 +24,7 @@ spring:
   cloud:
     nacos:
       config:
+        group: bigdata-service-gw.bj-fit-86
         server-addr: localhost:8848
       discovery:
         server-addr: localhost:8848
@@ -35,6 +35,7 @@ spring:
   cloud:
     nacos:
       config:
+        group: bigdata-service-gw.bj-fit-86
         server-addr: 172.16.31.146:8848
       discovery:
         server-addr: 172.16.31.146:8848
@@ -46,6 +47,18 @@ spring:
   cloud:
     nacos:
       config:
+        group: bigdata-service-gw.bj-fit-86
+        server-addr: nacos.cloudminds.com
+      discovery:
+        server-addr: nacos.cloudminds.com
+---
+#线上环境配置
+spring:
+  profiles: prod
+  cloud:
+    nacos:
+      config:
+        group: bigdata-service-gw.bj-prod-232
         server-addr: nacos.cloudminds.com
       discovery:
         server-addr: nacos.cloudminds.com

@@ -1,10 +1,10 @@
 spring:
   application:
-    name: dataServer-quotoSearch-dev
+    name: dataServer-quotoSearch-prod
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.146:8848
+        server-addr: nacos.cloudminds.com
 elasticsearch:
   host: 172.16.23.2
   port: 9400

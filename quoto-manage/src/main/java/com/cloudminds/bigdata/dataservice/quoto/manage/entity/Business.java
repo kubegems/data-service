@@ -8,4 +8,6 @@ import lombok.EqualsAndHashCode;
 public class Business extends BaseEntity {
 	private int id;
 	private String name;
+	private int pid;
+	private String code;
 }

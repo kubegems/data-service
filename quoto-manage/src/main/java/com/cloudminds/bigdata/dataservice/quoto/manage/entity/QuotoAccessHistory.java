@@ -12,8 +12,7 @@ public class QuotoAccessHistory {
 	private int quoto_id;
 	private String quoto_name;
 	private String business;
-	private String domain;
-	private String process;
+	private String theme;
 	private int level;
 	private int type;
 	private boolean success;

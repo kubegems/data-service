@@ -7,9 +7,12 @@ import lombok.EqualsAndHashCode;
 public class TableInfo extends BaseEntity{
 	private int id;
 	private int database_id;
-	private Integer data_domain_id;
-	private String data_domain_id_name;
+	private Integer theme_id;
+	private String theme_name;
+	private int business_id;
 	private String business_name;
+	private int pid_business_id;
+	private int pid_business_name;
 	private String table_name;
 	private String table_alias;
 }

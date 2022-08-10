@@ -7,7 +7,6 @@ spring:
   cloud:
     nacos:
       config:
-        group: bigdata-quoto-chatbot.bj-fit-86
         prefix: chatbot
         file-extension: yaml
         namespace: dataservice
@@ -15,17 +14,18 @@ spring:
         group: bigdata
   profiles:
     active: test
-  application:
-    name: dataServer-quotoChatbot
 
 
 ---
 #测试环境配置
 spring:    
   profiles: test
+  application:
+    name: dataServer-quotoChatbot
   cloud:
     nacos:
       config:
+        group: bigdata-quoto-chatbot.bj-fit-86
         server-addr: 172.16.31.146:8848
       discovery:
         server-addr: 172.16.31.146:8848
@@ -34,9 +34,26 @@ spring:
 #线上环境配置
 spring:    
   profiles: online
+  application:
+    name: dataServer-quotoChatbot
   cloud:
     nacos:
       config:
+        group: bigdata-quoto-chatbot.bj-fit-86
+        server-addr: nacos.cloudminds.com
+      discovery:
+        server-addr: nacos.cloudminds.com
+
+---
+#线上环境配置
+spring:
+  profiles: prod
+  application:
+    name: dataServer-quotoChatbot-prod
+  cloud:
+    nacos:
+      config:
+        group: bigdata-quoto-chatbot.bj-prod-232
         server-addr: nacos.cloudminds.com
       discovery:
         server-addr: nacos.cloudminds.com

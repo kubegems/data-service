@@ -8,8 +8,6 @@ spring:
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
-  redis:
-    host: bigdata-redis
-    port: 6379
   application:
-    name: dataServer-quotoConfig
+    name: dataServer-quotoManage-prod
+dataServiceUrl: http://172.16.23.83:30515

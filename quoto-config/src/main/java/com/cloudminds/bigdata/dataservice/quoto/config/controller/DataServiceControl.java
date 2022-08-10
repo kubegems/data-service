@@ -136,9 +136,9 @@ public class DataServiceControl {
 		return dataServiceConfig.getAllTableInfo();
 	}
 
-	@RequestMapping(value = "getTableInfoByBusinessId", method = RequestMethod.GET)
-	public CommonResponse getTableInfoByBusinessId(int businessId){
-		return dataServiceConfig.getTableInfoByBusinessId(businessId);
+	@RequestMapping(value = "getTableInfoByThemeId", method = RequestMethod.GET)
+	public CommonResponse getTableInfoByThemeId(int themeId){
+		return dataServiceConfig.getTableInfoByThemeId(themeId);
 	}
 
 	@RequestMapping(value = "updateTableInfoStatus", method = RequestMethod.POST)

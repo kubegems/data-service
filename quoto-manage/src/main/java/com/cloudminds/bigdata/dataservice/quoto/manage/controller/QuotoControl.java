@@ -1,8 +1,8 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.controller;
 
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Business;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.DataDomain;
-import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.BusinessProcess;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Theme;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.BusinessProcess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,9 +35,9 @@ public class QuotoControl {
 	}
 
 	// 获取所有的业务线
-	@RequestMapping(value = "queryAllBusiness", method = RequestMethod.GET)
-	public CommonResponse queryAllBusiness() {
-		return quotoService.queryAllBusiness();
+	@RequestMapping(value = "queryBusiness", method = RequestMethod.GET)
+	public CommonResponse queryBusiness(int pid) {
+		return quotoService.queryAllBusiness(pid);
 	}
 
 	// 增加业务线
@@ -46,34 +46,22 @@ public class QuotoControl {
 		return quotoService.addBusiness(business);
 	}
 
+	// 增加业务线
+	@RequestMapping(value = "updateBusiness", method = RequestMethod.POST)
+	public CommonResponse updateBusiness(@RequestBody Business business) {
+		return quotoService.updateBusiness(business);
+	}
+
 	//删除业务线
 	@RequestMapping(value = "deleteBusiness", method = RequestMethod.POST)
 	public CommonResponse deleteBusiness(@RequestBody DeleteReq deleteReq) {
 		return quotoService.deleteBusiness(deleteReq);
 	}
 
-	// 获取所有的数据域
-	@RequestMapping(value = "queryAllDataDomain", method = RequestMethod.GET)
-	public CommonResponse queryAllDataDomain(int businessId) {
-		return quotoService.queryAllDataDomain(businessId);
-	}
-
-	// 增加数据域
-	@RequestMapping(value = "addDataDomain", method = RequestMethod.POST)
-	public CommonResponse addDataDomain(@RequestBody DataDomain dataDomain) {
-		return quotoService.addDataDomain(dataDomain);
-	}
-
-	//删除数据域
-	@RequestMapping(value = "deleteDataDomain", method = RequestMethod.POST)
-	public CommonResponse deleteDataDomain(@RequestBody DeleteReq deleteReq) {
-		return quotoService.deleteDataDomain(deleteReq);
-	}
-
 	// 获取所有的业务过程
 	@RequestMapping(value = "queryAllBusinessProcess", method = RequestMethod.GET)
-	public CommonResponse queryAllBusinessProcess(int dataDomainId) {
-		return quotoService.queryAllBusinessProcess(dataDomainId);
+	public CommonResponse queryAllBusinessProcess(int theme_id) {
+		return quotoService.queryAllBusinessProcess(theme_id);
 	}
 
 	// 增加业务过程
@@ -88,10 +76,53 @@ public class QuotoControl {
 		return quotoService.deleteBusinessProcess(deleteReq);
 	}
 
+
+	// 获取主题
+	@RequestMapping(value = "queryTheme", method = RequestMethod.GET)
+	public CommonResponse queryTheme(Integer business_id,String search_key,int page,int size,String order_name,boolean desc) {
+		return quotoService.queryTheme(business_id,search_key,page,size,order_name,desc);
+	}
+
+	// 获取主题
+	@RequestMapping(value = "queryAllTheme", method = RequestMethod.GET)
+	public CommonResponse queryAllTheme() {
+		return quotoService.queryAllTheme();
+	}
+
+	// 增加主题
+	@RequestMapping(value = "addTheme", method = RequestMethod.POST)
+	public CommonResponse addTheme(@RequestBody Theme theme) {
+		return quotoService.addTheme(theme);
+	}
+
+	// 更新主题
+	@RequestMapping(value = "updateTheme", method = RequestMethod.POST)
+	public CommonResponse updateTheme(@RequestBody Theme theme) {
+		return quotoService.updateTheme(theme);
+	}
+
+	//删除主题
+	@RequestMapping(value = "deleteTheme", method = RequestMethod.POST)
+	public CommonResponse deleteTheme(@RequestBody DeleteReq deleteReq) {
+		return quotoService.deleteTheme(deleteReq);
+	}
+
 	// 获取所有的数据服务
 	@RequestMapping(value = "queryAllDataService", method = RequestMethod.GET)
-	public CommonResponse queryAllDataService(Integer business_process_id) {
-		return quotoService.queryAllDataService(business_process_id);
+	public CommonResponse queryAllDataService(Integer themeId) {
+		return quotoService.queryAllDataService(themeId);
+	}
+
+	// 获取表下还没被使用的指标信息
+	@RequestMapping(value = "queryUsableQuotoInfoByTableId", method = RequestMethod.GET)
+	public CommonResponse queryUsableQuotoInfoByTableId(int tableId) {
+		return quotoService.queryUsableQuotoInfoByTableId(tableId);
+	}
+
+	// 根据tableId查询时间列
+	@RequestMapping(value = "queryTimeColunm", method = RequestMethod.GET)
+	public CommonResponse queryTimeColunm(int tableId) {
+		return quotoService.queryTimeColunm(tableId);
 	}
 
 	// 获取所有的计算周期
@@ -104,12 +135,6 @@ public class QuotoControl {
 	@RequestMapping(value = "queryQuotoById", method = RequestMethod.GET)
 	public CommonResponse queryQuotoById(int id) {
 		return quotoService.queryQuotoById(id);
-	}
-
-	// 获取所有的维度属性
-	@RequestMapping(value = "queryAllDimension", method = RequestMethod.GET)
-	public CommonResponse queryAllDimension(int tableId) {
-		return quotoService.queryAllDimension(tableId);
 	}
 
 	// 删除指标
@@ -134,6 +159,12 @@ public class QuotoControl {
 	@RequestMapping(value = "query", method = RequestMethod.POST)
 	public CommonQueryResponse queryQuoto(@RequestBody QuotoQuery quotoQuery) {
 		return quotoService.queryQuoto(quotoQuery);
+	}
+
+	// 查询指标
+	@RequestMapping(value = "queryQuotoNeedParm", method = RequestMethod.GET)
+	public CommonResponse queryQuotoNeedParm(int id) {
+		return quotoService.queryQuotoNeedParm(id);
 	}
 
 	// 查询指标
@@ -166,11 +197,27 @@ public class QuotoControl {
 		CommonResponse commonResponse = new CommonResponse();
 		DataCommonResponse dataCommonResponse = quotoService.queryQuotoData(quotoDataReq.getId(),
 				quotoDataReq.getName(), quotoDataReq.getField(), quotoDataReq.getPage(), quotoDataReq.getCount(),
-				quotoDataReq.getOrder(), quotoDataReq.getAcs());
+				quotoDataReq.getOrder(), quotoDataReq.getAcs(),quotoDataReq.getParm_value());
 		commonResponse.setData(dataCommonResponse.getData());
 		commonResponse.setMessage(dataCommonResponse.getMessage());
 		commonResponse.setSuccess(dataCommonResponse.isSuccess());
 		return commonResponse;
+	}
+
+	// 获取指标数据
+	@RequestMapping(value = "queryExtendQuotoData", method = RequestMethod.POST)
+	public DataCommonResponse queryExtendQuotoData(@RequestBody QuotoDataReq quotoDataReq) {
+		DataCommonResponse dataCommonResponse = quotoService.queryQuotoData(quotoDataReq.getId(),
+				quotoDataReq.getName(), quotoDataReq.getField(), quotoDataReq.getPage(), quotoDataReq.getCount(),
+				quotoDataReq.getOrder(), quotoDataReq.getAcs(),quotoDataReq.getParm_value());
+		return dataCommonResponse;
+	}
+
+	// 获取指标调用文档
+	@RequestMapping(value = "queryQuotoApiDoc", method = RequestMethod.GET)
+	public CommonResponse queryQuotoApiDoc(int id) {
+		CommonResponse CommonResponse = quotoService.queryQuotoApiDoc(id);
+		return CommonResponse;
 	}
 
 	// 获取express信息
@@ -185,7 +232,7 @@ public class QuotoControl {
 		}
 		express.setExpress(express.getExpress().replace(" ", ""));
 		try {
-			dataCommonResponse = quotoService.caculate(express.getExpress() + "#", 0, 2, null, null);
+			dataCommonResponse = quotoService.caculate(express.getExpress() + "#", 0, 2, null,  null,express.getParm_value());
 		} catch (Exception e) {
 			// TODO: handle exception
 			dataCommonResponse.setSuccess(false);
@@ -193,5 +240,6 @@ public class QuotoControl {
 		}
 		return dataCommonResponse;
 	}
+
 
 }

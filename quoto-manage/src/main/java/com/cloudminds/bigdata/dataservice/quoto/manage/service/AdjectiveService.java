@@ -1,7 +1,16 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.ColumnAlias;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Dimension;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.Field;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.AdjectiveExtend;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DimensionExtend;
+import com.cloudminds.bigdata.dataservice.quoto.manage.mapper.DimensionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,22 +23,16 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.request.DeleteReq;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonQueryResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.CommonResponse;
 import com.cloudminds.bigdata.dataservice.quoto.manage.mapper.AdjectiveMapper;
-import com.cloudminds.bigdata.dataservice.quoto.manage.mapper.AdjectiveTypeMapper;
 
 @Service
 public class AdjectiveService {
 	@Autowired
 	private AdjectiveMapper adjectiveMapper;
 	@Autowired
-	private AdjectiveTypeMapper adjectiveTypeMapper;
+	private DimensionMapper dimensionMapper;
 
-	public CommonResponse queryAllType() {
-		// TODO Auto-generated method stub
-		CommonResponse commonResponse = new CommonResponse();
-		commonResponse.setData(adjectiveTypeMapper.findAllAdjectiveType());
-		return commonResponse;
-	}
 
+	//删除修饰词
 	public CommonResponse deleteAdjective(DeleteReq deleteReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -54,6 +57,7 @@ public class AdjectiveService {
 		return commonResponse;
 	}
 
+	//批量删除修饰词
 	public CommonResponse batchDeleteAdjective(BatchDeleteReq batchDeleteReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -73,6 +77,7 @@ public class AdjectiveService {
 		return commonResponse;
 	}
 
+	//检测是否唯一
 	public CommonResponse checkUnique(CheckReq checkReq) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -87,8 +92,6 @@ public class AdjectiveService {
 			adjective = adjectiveMapper.findAdjectiveByName(checkReq.getCheckValue());
 		} else if (flag == 1) {
 			adjective = adjectiveMapper.findAdjectiveByCode(checkReq.getCheckValue());
-		} else if (flag == 2) {
-			adjective = adjectiveMapper.findAdjectiveByCodeName(checkReq.getCheckValue());
 		} else {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("不支持check的类型");
@@ -102,6 +105,7 @@ public class AdjectiveService {
 		return commonResponse;
 	}
 
+	//新增修饰词
 	public synchronized CommonResponse insertAdjective(Adjective adjective) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -118,12 +122,6 @@ public class AdjectiveService {
 			return commonResponse;
 		}
 
-		if (StringUtils.isEmpty(adjective.getCode_name())) {
-			commonResponse.setSuccess(false);
-			commonResponse.setMessage("编码简称不能为空");
-			return commonResponse;
-		}
-
 		if (adjectiveMapper.findAdjectiveByName(adjective.getName()) != null) {
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("名字已存在,请重新命名");
@@ -136,18 +134,61 @@ public class AdjectiveService {
 			return commonResponse;
 		}
 
-		if (adjectiveMapper.findAdjectiveByCodeName(adjective.getCode_name()) != null) {
-			commonResponse.setSuccess(false);
-			commonResponse.setMessage("编码简称已存在,请重新命名");
-			return commonResponse;
-		}
-		if (adjective.getType() != 1) {
-			if (StringUtils.isEmpty(adjective.getReq_parm())) {
+		if(adjective.getType()==1){
+			adjective.setDimension_id(0);
+			adjective.setColumn_name(null);
+			adjective.setReq_parm_type(2);
+			adjective.setReq_parm(null);
+		}else{
+			if(StringUtils.isEmpty(adjective.getReq_parm())){
 				commonResponse.setSuccess(false);
-				commonResponse.setMessage("非时间修饰词,数据服务的请求参数不能为空");
+				commonResponse.setMessage("数据服务参数不能为空");
 				return commonResponse;
 			}
+			if(adjective.getDimension_id()==0){
+				if(StringUtils.isEmpty(adjective.getColumn_name())){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("没有关联维度的修饰词,列名不能为空");
+					return commonResponse;
+				}
+			}else{
+				if(dimensionMapper.queryDimensionById(adjective.getDimension_id())==null){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("维度不存在");
+					return commonResponse;
+				}
+				adjective.setColumn_name(null);
+			}
+			if(adjective.getReq_parm_type()==1){
+				Set<String> parameters = com.cloudminds.bigdata.dataservice.quoto.manage.utils.StringUtils.getParameterNames(adjective.getReq_parm());
+				if(parameters.isEmpty()){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("值类型为变量的时候需要添加变量参数：${XXX}");
+					return commonResponse;
+				}
+				if(adjective.getFields()==null||adjective.getFields().size()!=parameters.size()){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("参数说明的个数需和可变参数的数量相等");
+					return commonResponse;
+				}
+				Set<String> fieldParameters = new HashSet<>();
+				for(Field field:adjective.getFields()){
+					fieldParameters.add(field.getName());
+					if(!parameters.contains(field.getName())){
+						commonResponse.setSuccess(false);
+						commonResponse.setMessage("参数说明里的"+field.getName()+"并没有在数据服务参数里面定义");
+						return commonResponse;
+					}
+					parameters.remove(field.getName());
+				}
+				if(parameters.size()!=0){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("这些可变参数"+parameters.toString()+"没有写参数说明");
+					return commonResponse;
+				}
+			}
 		}
+
 		// 插入数据库
 		try {
 			adjectiveMapper.insertAdjective(adjective);
@@ -159,8 +200,117 @@ public class AdjectiveService {
 			return commonResponse;
 		}
 		return commonResponse;
+
 	}
 
+	//更新修饰词
+	public CommonResponse updateAdjective(Adjective adjective) {
+		// TODO Auto-generated method stub
+		CommonResponse commonResponse = new CommonResponse();
+		Adjective oldAdjective = adjectiveMapper.findAdjectiveById(adjective.getId());
+		if(oldAdjective == null){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("修饰类型不存在");
+			return commonResponse;
+		}
+		// 基础校验
+		if (StringUtils.isEmpty(adjective.getName())) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("名字不能为空");
+			return commonResponse;
+		}
+
+		if (StringUtils.isEmpty(adjective.getCode())) {
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("编码不能为空");
+			return commonResponse;
+		}
+
+		if(!oldAdjective.getName().equals(adjective.getName())) {
+			if (adjectiveMapper.findAdjectiveByName(adjective.getName()) != null) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("名字已存在,请重新命名");
+				return commonResponse;
+			}
+		}
+
+		if(!oldAdjective.getCode().equals(adjective.getCode())) {
+			if (adjectiveMapper.findAdjectiveByCode(adjective.getCode()) != null) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("编码已存在,请重新命名");
+				return commonResponse;
+			}
+		}
+
+		if(adjective.getType()==1){
+			adjective.setDimension_id(0);
+			adjective.setColumn_name(null);
+			adjective.setReq_parm_type(2);
+			adjective.setReq_parm(null);
+		}else{
+			if(StringUtils.isEmpty(adjective.getReq_parm())){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("数据服务参数不能为空");
+				return commonResponse;
+			}
+			if(adjective.getDimension_id()==0){
+				if(StringUtils.isEmpty(adjective.getColumn_name())){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("没有关联维度的修饰词,列名不能为空");
+					return commonResponse;
+				}
+			}else{
+				if(dimensionMapper.queryDimensionById(adjective.getDimension_id())==null){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("维度不存在");
+					return commonResponse;
+				}
+				adjective.setColumn_name(null);
+			}
+			if(adjective.getReq_parm_type()==1){
+				Set<String> parameters = com.cloudminds.bigdata.dataservice.quoto.manage.utils.StringUtils.getParameterNames(adjective.getReq_parm());
+				if(parameters.isEmpty()){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("值类型为变量的时候需要添加变量参数：${XXX}");
+					return commonResponse;
+				}
+				if(adjective.getFields()==null||adjective.getFields().size()!=parameters.size()){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("参数说明的个数需和可变参数的数量相等");
+					return commonResponse;
+				}
+				Set<String> fieldParameters = new HashSet<>();
+				for(Field field:adjective.getFields()){
+					fieldParameters.add(field.getName());
+					if(!parameters.contains(field.getName())){
+						commonResponse.setSuccess(false);
+						commonResponse.setMessage("参数说明里的"+field.getName()+"并没有在数据服务参数里面定义");
+						return commonResponse;
+					}
+					parameters.remove(field.getName());
+				}
+				if(parameters.size()!=0){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("这些可变参数"+parameters.toString()+"没有写参数说明");
+					return commonResponse;
+				}
+			}
+		}
+
+		// 更新数据库
+		try {
+			adjectiveMapper.updateAdjective(adjective);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("数据更新失败,请稍后再试");
+			return commonResponse;
+		}
+		return commonResponse;
+	}
+
+	//查询修饰词
 	public CommonQueryResponse queryAdjective(AdjectiveQuery adjectiveQuery) {
 		// TODO Auto-generated method stub
 		CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
@@ -182,6 +332,7 @@ public class AdjectiveService {
 		return commonQueryResponse;
 	}
 
+	//查询所有的修饰词
 	public CommonResponse queryAllAdjective(AdjectiveQuery adjectiveQuery) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
@@ -194,34 +345,26 @@ public class AdjectiveService {
 		return commonResponse;
 	}
 
-	public CommonResponse updateAdjective(Adjective adjective) {
-		// TODO Auto-generated method stub
-		CommonResponse commonResponse = new CommonResponse();
-		if (adjective.getType() != 1) {
-			if (StringUtils.isEmpty(adjective.getReq_parm())) {
-				commonResponse.setSuccess(false);
-				commonResponse.setMessage("非时间修饰词,数据服务的请求参数不能为空");
-				return commonResponse;
-			}
-		}
-		try {
-			if (adjectiveMapper.updateAdjective(adjective) <= 0) {
-				commonResponse.setSuccess(false);
-				commonResponse.setMessage("编辑修饰词失败，请稍后再试！");
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			commonResponse.setSuccess(false);
-			commonResponse.setMessage("编辑修饰词失败，请稍后再试！");
-		}
-		return commonResponse;
-	}
-
+	//查询支持的修饰词
 	public CommonResponse querySupportAdjective(int tableId) {
 		// TODO Auto-generated method stub
 		CommonResponse commonResponse = new CommonResponse();
-		commonResponse.setData(adjectiveMapper.querySupportAdjective(tableId));
+		//查询支持的非时间的修饰词
+		List<AdjectiveExtend> supportAdjective = new ArrayList<>();
+		List<AdjectiveExtend> notTimeAdjective = adjectiveMapper.querySupportAdjective(tableId);
+		if (notTimeAdjective != null && notTimeAdjective.size() > 0) {
+			supportAdjective.addAll(notTimeAdjective);
+		}
+
+		//查询支持的时间修饰词
+		List<ColumnAlias> timeColumnAlias = dimensionMapper.queryTimeColumnByTableId(tableId);
+		if(timeColumnAlias!=null && timeColumnAlias.size()>0){
+			List<AdjectiveExtend> timeAdjective = adjectiveMapper.queryTimeAdjective();
+			if(timeAdjective!=null && timeAdjective.size()>0){
+				supportAdjective.addAll(timeAdjective);
+			}
+		}
+		commonResponse.setData(supportAdjective);
 		return commonResponse;
 	}
 

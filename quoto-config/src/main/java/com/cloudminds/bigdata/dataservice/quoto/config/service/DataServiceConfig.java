@@ -415,7 +415,7 @@ public class DataServiceConfig {
             } else {
                 tableInfoOld.setTable_alias(tableInfo.getTable_alias());
                 tableInfoOld.setDes(tableInfo.getDes());
-                tableInfoOld.setData_domain_id(tableInfo.getData_domain_id());
+                tableInfoOld.setTheme_id(tableInfo.getTheme_id());
                 if (tableInfoMapper.updateTableInfo(tableInfoOld) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
@@ -998,9 +998,9 @@ public class DataServiceConfig {
         return commonResponse;
     }
 
-    public CommonResponse getTableInfoByBusinessId(int businessId) {
+    public CommonResponse getTableInfoByThemeId(int themeId) {
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(tableInfoMapper.getTableInfoByBusinessId(businessId));
+        commonResponse.setData(tableInfoMapper.getTableInfoByThemeId(themeId));
         return commonResponse;
     }
 

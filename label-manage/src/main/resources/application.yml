@@ -3,8 +3,6 @@ server:
 spring:
   profiles:
     active: dev
-  application:
-    name: dataServer-labelManage
   cloud:
     nacos:
       discovery:
