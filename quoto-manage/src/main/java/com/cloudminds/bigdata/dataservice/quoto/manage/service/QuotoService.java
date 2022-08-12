@@ -953,7 +953,14 @@ public class QuotoService {
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
         String condition = "q.deleted=0";
         if (quotoQuery.getType() != -1) {
-            condition = condition + " and q.type=" + quotoQuery.getType();
+            if (quotoQuery.getType() == 3) {
+                condition = condition + " and q.type!=0";
+            }else {
+                condition = condition + " and q.type=" + quotoQuery.getType();
+            }
+        }
+        if(quotoQuery.getQuoto_level()!=-1){
+            condition = condition + " and q.quoto_level="+quotoQuery.getQuoto_level();
         }
 
         if (quotoQuery.getName() != null && (!quotoQuery.getName().equals(""))) {

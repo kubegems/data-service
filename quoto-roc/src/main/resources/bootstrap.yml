@@ -4,6 +4,8 @@ server:
 #   测试环境：java -jar my-spring-boot.jar --spring.profiles.active=test
 #   生产环境：java -jar my-spring-boot.jar --spring.profiles.active=prod
 spring:
+  application:
+    name: dataServer-quotoRoc
   cloud:
     nacos:
       config:
@@ -20,8 +22,6 @@ spring:
 #测试环境配置
 spring:    
   profiles: test
-  application:
-    name: dataServer-quotoRoc
   cloud:
     nacos:
       config:
@@ -34,8 +34,6 @@ spring:
 #线上环境配置
 spring:    
   profiles: online
-  application:
-    name: dataServer-quotoRoc
   cloud:
     nacos:
       config:
@@ -48,8 +46,6 @@ spring:
 #线上环境配置
 spring:
   profiles: prod
-  application:
-    name: dataServer-quotoRoc-prod
   cloud:
     nacos:
       config:

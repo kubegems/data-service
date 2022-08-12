@@ -14,7 +14,7 @@ import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
 @Mapper
 public interface TableInfoMapper {
-	@Select("SELECT * FROM Table_info t LEFT JOIN (select d.id, d.name as theme_name,bb.id as business_id,bb.name as business_name,bu.id as pid_business_id,bu.`name` as pid_business_name from theme d LEFT JOIN business bb on d.business_id=bb.id left join business bu on bb.pid=bu.id) as tt on t.theme_id=tt.id WHERE t.is_delete=0 AND database_id=#{dataBaseId}")
+	@Select("SELECT * FROM Table_info t LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on t.theme_id=tt.id WHERE t.is_delete=0 AND database_id=#{dataBaseId}")
 	public List<TableInfo> getTableInfoByDataBaseId(int dataBaseId);
 
 	@Update("update Table_info set state=#{state} where id=#{id}")

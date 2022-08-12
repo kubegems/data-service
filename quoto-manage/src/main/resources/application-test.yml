@@ -8,6 +8,4 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
-  application:
-    name: dataServer-quotoManage
 dataServiceUrl: http://172.16.23.83:30515

@@ -1,6 +1,8 @@
 server:
   port: 8077
 spring:
+  application:
+    name: dataServer-labelManage
   profiles:
     active: dev
   cloud:
@@ -13,4 +15,3 @@ spring:
 metaJdbcConnet: jdbc:clickhouse://clickhouse.cloudminds.com:9090
 metaJdbcUser: distributed-read
 metaJdbcPassword: cloudminds123
-dataServiceUrl: http://172.16.23.83:30515/roc/quoto/tag

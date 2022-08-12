@@ -1,6 +1,8 @@
 server:
   port: 8073
 spring:
+  application:
+    name: dataServer-standardManage
   profiles:
     active: dev
   cloud:

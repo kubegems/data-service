@@ -8,6 +8,7 @@ public class QuotoQuery {
 	private int businessId=-1;
 	private int business_process_id=-1;
 	private int theme_id=-1;
+	private int quoto_level=-1;
 	private int state=-1;
 	private String name;
 	private String field;

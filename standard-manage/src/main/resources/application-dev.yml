@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: dataServer-standardManage-dev
   cloud:
     nacos:
       discovery:

@@ -8,5 +8,4 @@ spring:
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
-  application:
-    name: dataServer-labelManage-prod
+dataServiceUrl: http://bigdata-quoto-roc:8070/roc/quoto/tag

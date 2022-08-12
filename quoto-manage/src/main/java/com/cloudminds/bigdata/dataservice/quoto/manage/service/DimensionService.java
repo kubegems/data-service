@@ -301,7 +301,7 @@ public class DimensionService {
             return commonResponse;
         }
         if (!haveTime) {
-            condition = condition + " code!='time'";
+            condition = condition + " and code!='time'";
         }
         condition = condition + " order by " + order_name;
         if (desc) {

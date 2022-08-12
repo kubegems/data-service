@@ -1,6 +1,8 @@
 server:
   port: 8074
 spring:
+  application:
+    name: dataServer-quotoManage
   profiles:
     active: dev
   cloud:
