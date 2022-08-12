@@ -1,6 +1,8 @@
 server:
   port: 8076
 spring:
+  application:
+    name: dataServer-quotoSearch
   profiles:
     active: dev
   cloud:

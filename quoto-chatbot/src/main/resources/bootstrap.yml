@@ -34,8 +34,6 @@ spring:
 #线上环境配置
 spring:    
   profiles: online
-  application:
-    name: dataServer-quotoChatbot
   cloud:
     nacos:
       config:

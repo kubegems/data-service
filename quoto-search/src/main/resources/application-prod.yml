@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: dataServer-quotoSearch-prod
   cloud:
     nacos:
       discovery:
