@@ -29,7 +29,10 @@ public interface QuotoMapper {
 	public List<String> findQuotoNameByOriginQuoto(int originQuotoId);
 
 	@Select("select * from business where deleted=0 and pid=#{pid}")
-	public List<Business> queryAllBusiness(int pid);
+	public List<Business> queryAllBusinessByPid(int pid);
+
+	@Select("select * from business where deleted=0")
+	public List<Business> queryAllBusiness();
 
 	@Select("select * from business where deleted=0 and name=#{name} and pid=#{pid} limit 1")
 	public Business queryBusiness(String name,int pid);

@@ -32,13 +32,16 @@ public interface LabelItemMapper {
             "values(#{tag_id},#{tag_name},#{tag_cate_id},#{value_type},#{value_scope},#{source},#{tag_type},#{tag_rule},#{exclusive},#{update_cycle},#{update_cycle_unit},#{creator},#{creator},#{descr})")
     public int insertTagItem(TagItem tagItem);
 
-    @Update("update tag_item set tag_name=#{tag_name},value_type=#{value_type},value_scope=#{value_scope},source=#{source},tag_rule=#{tag_rule},update_cycle=#{update_cycle},update_cycle_unit=#{update_cycle_unit},updater=#{updater},descr=#{descr} where tag_id=#{tag_id}")
-    public int updateTagItem(TagItem tagItem);
+    @Update("update tag_item set tag_id=#{new_tag_id},tag_cate_id=#{tagItem.tag_cate_id},tag_name=#{tagItem.tag_name},value_type=#{tagItem.value_type},value_scope=#{tagItem.value_scope},source=#{tagItem.source},tag_type=#{tagItem.tag_type},tag_rule=#{tagItem.tag_rule},exclusive=#{tagItem.exclusive},update_cycle=#{tagItem.update_cycle},update_cycle_unit=#{tagItem.update_cycle_unit},updater=#{tagItem.updater},descr=#{tagItem.descr} where tag_id=#{tagItem.tag_id}")
+    public int updateTagItem(TagItem tagItem,String new_tag_id);
 
     @Insert({"<script>", "insert into tag_enum_value(tag_enum_id,tag_value, tag_id,creator,updater,descr) values ",
             "<foreach collection='enum_value' item='item' index='index' separator=','>", "(#{item.tag_enum_id}, #{item.tag_value},#{tag_id},#{creator},#{creator},#{item.descr})",
             "</foreach>", "</script>"})
     public int batchSaveTagEnumValue(List<TagEnumValue> enum_value, String tag_id, String creator);
+
+    @Update("update tag_enum_value set tag_enum_id=concat(tag_id,right(tag_enum_id,4)) where tag_id=#{tag_id} and deleted=0")
+    public int updateTagEnumId(String tag_id);
 
     @Update("update tag_enum_value set tag_value =#{tag_value},updater=#{updater},descr=#{descr} where tag_enum_id=#{tag_enum_id}")
     public int updateTagEnumValue(TagEnumValue enum_value);

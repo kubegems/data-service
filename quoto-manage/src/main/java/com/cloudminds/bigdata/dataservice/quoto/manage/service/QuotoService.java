@@ -85,7 +85,11 @@ public class QuotoService {
     public CommonResponse queryAllBusiness(int pid) {
         // TODO Auto-generated method stub
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(quotoMapper.queryAllBusiness(pid));
+        if(pid==-1){
+            commonResponse.setData(quotoMapper.queryAllBusiness());
+        }else {
+            commonResponse.setData(quotoMapper.queryAllBusinessByPid(pid));
+        }
         return commonResponse;
     }
 
@@ -1847,7 +1851,8 @@ public class QuotoService {
         extendFieldOrder.setName("order");
         extendFieldOrder.setType("String[]");
         extendFieldOrder.setAllowBlank(true);
-        extendFieldOrder.setSample("[XXX,XXX]");
+        String[] orders={"XXX","XXX"};
+        extendFieldOrder.setSample(orders);
         extendFieldOrder.setDesc("排序的参数组合");
         extendFields.add(extendFieldOrder);
 
@@ -1863,7 +1868,7 @@ public class QuotoService {
         extendFieldPage.setName("page");
         extendFieldPage.setType("int");
         extendFieldPage.setAllowBlank(true);
-        extendFieldPage.setSample(0 + "");
+        extendFieldPage.setSample(0);
         extendFieldPage.setDesc("页码从0开始,默认值为0");
         extendFields.add(extendFieldPage);
 
@@ -1871,7 +1876,7 @@ public class QuotoService {
         extendFieldCount.setName("count");
         extendFieldCount.setType("int");
         extendFieldCount.setAllowBlank(true);
-        extendFieldCount.setSample(1000 + "");
+        extendFieldCount.setSample(1000);
         extendFieldCount.setDesc("每页的数量,默认值为1000");
         extendFields.add(extendFieldCount);
         quotoApiDoc.setRequestParament(extendFields);
