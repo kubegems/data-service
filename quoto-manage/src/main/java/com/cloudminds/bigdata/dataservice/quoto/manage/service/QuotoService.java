@@ -85,9 +85,9 @@ public class QuotoService {
     public CommonResponse queryAllBusiness(int pid) {
         // TODO Auto-generated method stub
         CommonResponse commonResponse = new CommonResponse();
-        if(pid==-1){
+        if (pid == -1) {
             commonResponse.setData(quotoMapper.queryAllBusiness());
-        }else {
+        } else {
             commonResponse.setData(quotoMapper.queryAllBusinessByPid(pid));
         }
         return commonResponse;
@@ -959,12 +959,12 @@ public class QuotoService {
         if (quotoQuery.getType() != -1) {
             if (quotoQuery.getType() == 3) {
                 condition = condition + " and q.type!=0";
-            }else {
+            } else {
                 condition = condition + " and q.type=" + quotoQuery.getType();
             }
         }
-        if(quotoQuery.getQuoto_level()!=-1){
-            condition = condition + " and q.quoto_level="+quotoQuery.getQuoto_level();
+        if (quotoQuery.getQuoto_level() != -1) {
+            condition = condition + " and q.quoto_level=" + quotoQuery.getQuoto_level();
         }
 
         if (quotoQuery.getName() != null && (!quotoQuery.getName().equals(""))) {
@@ -1412,7 +1412,7 @@ public class QuotoService {
         if (orders != null && orders.size() > 0) {
             boolean isOrder = true;
             for (String order : orders) {
-                if (!commonResponse.getFields().contains(order) && !commonResponse.getDimensions().contains(order)) {
+                if ((commonResponse.getFields() == null || (!commonResponse.getFields().contains(order))) && (commonResponse.getDimensions() == null || (!commonResponse.getDimensions().contains(order)))) {
                     isOrder = false;
                     break;
                 }
@@ -1806,7 +1806,7 @@ public class QuotoService {
             List<Field> fields = new ArrayList<>();
             for (Adjective adjective : adjectives) {
                 if (adjective.getReq_parm_type() == 1) {
-                    if(adjective.getFields()!=null&&adjective.getFields().size()>0) {
+                    if (adjective.getFields() != null && adjective.getFields().size() > 0) {
                         fields.addAll(adjective.getFields());
                     }
                 }
@@ -1817,27 +1817,27 @@ public class QuotoService {
                 extendFieldParmValue.setType("json");
                 extendFieldParmValue.setAllowBlank(false);
                 Map<String, Object> parm_value = new HashMap<>();
-                String desc ="";
-                for (int i=0;i<fields.size();i++) {
-                    JSONObject jsonObject = (JSONObject)JSONObject.toJSON(fields.get(i));
-                    if(jsonObject.get("type").equals("string")){
-                        parm_value.put(jsonObject.get("name").toString(),"XXXX");
-                    }else if(jsonObject.get("type").equals("string")){
-                        String[] sample = {"XXX","XXX"};
-                        parm_value.put(jsonObject.get("name").toString(),sample);
-                    }else if(jsonObject.get("type").equals("int")){
-                        parm_value.put(jsonObject.get("name").toString(),10);
-                    }else if(jsonObject.get("type").equals("int[]")){
-                        int[] sample = {1,2};
-                        parm_value.put(jsonObject.get("name").toString(),sample);
-                    }else{
-                        parm_value.put(jsonObject.get("name").toString(),null);
+                String desc = "";
+                for (int i = 0; i < fields.size(); i++) {
+                    JSONObject jsonObject = (JSONObject) JSONObject.toJSON(fields.get(i));
+                    if (jsonObject.get("type").equals("string")) {
+                        parm_value.put(jsonObject.get("name").toString(), "XXXX");
+                    } else if (jsonObject.get("type").equals("string")) {
+                        String[] sample = {"XXX", "XXX"};
+                        parm_value.put(jsonObject.get("name").toString(), sample);
+                    } else if (jsonObject.get("type").equals("int")) {
+                        parm_value.put(jsonObject.get("name").toString(), 10);
+                    } else if (jsonObject.get("type").equals("int[]")) {
+                        int[] sample = {1, 2};
+                        parm_value.put(jsonObject.get("name").toString(), sample);
+                    } else {
+                        parm_value.put(jsonObject.get("name").toString(), null);
                     }
 
-                    if(!StringUtils.isEmpty(jsonObject.get("desc").toString())){
-                        desc=desc+jsonObject.get("name").toString()+":"+jsonObject.get("desc").toString();
-                        if(i<fields.size()-1){
-                            desc=desc+"\n";
+                    if (!StringUtils.isEmpty(jsonObject.get("desc").toString())) {
+                        desc = desc + jsonObject.get("name").toString() + ":" + jsonObject.get("desc").toString();
+                        if (i < fields.size() - 1) {
+                            desc = desc + "\n";
                         }
                     }
                 }
@@ -1851,9 +1851,20 @@ public class QuotoService {
         extendFieldOrder.setName("order");
         extendFieldOrder.setType("String[]");
         extendFieldOrder.setAllowBlank(true);
-        String[] orders={"XXX","XXX"};
+        String[] orders = {"XXX", "XXX"};
         extendFieldOrder.setSample(orders);
         extendFieldOrder.setDesc("排序的参数组合");
+        if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
+            Quoto originQuoto = quotoMapper.queryQuotoById(quoto.getOrigin_quoto());
+            String desc = "可排序的参数名：" + originQuoto.getField();
+            List<DimensionExtend> dimensionInfo = quotoMapper.queryDimensionByQuotoId(quoto.getId());
+            if (dimensionInfo != null && dimensionInfo.size() > 0) {
+                for (DimensionExtend dimensionExtend : dimensionInfo){
+                    desc = desc +","+dimensionExtend.getCode();
+                }
+            }
+            extendFieldOrder.setDesc(desc);
+        }
         extendFields.add(extendFieldOrder);
 
         ExtendField extendFieldAcs = new ExtendField();
