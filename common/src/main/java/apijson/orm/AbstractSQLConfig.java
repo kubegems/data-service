@@ -2726,9 +2726,55 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			Log.i(TAG, "getSQL  config == null >> return null;");
 			return null;
 		}
-
 		if(config.getSql()!=null && !config.getSql().isEmpty()){
-            return config.getSql();
+			String sqlLower = config.getSql().toLowerCase().trim();
+			if(sqlLower.contains(" limit ")) {
+				int limitLocation = sqlLower.indexOf(" limit ");
+				sqlLower = sqlLower.substring(limitLocation+7);
+				while(true){
+					if(sqlLower.startsWith(" ")){
+						sqlLower=sqlLower.substring(1);
+					}else{
+						break;
+					}
+				}
+				String limitNumStr = sqlLower;
+				if(sqlLower.indexOf(" ")>0) {
+					limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
+				}
+				try {
+					int limitNum = Integer.parseInt(limitNumStr);
+					if(limitNum<=0||limitNum>Parser.MAX_QUERY_COUNT){
+						throw new IllegalArgumentException("@sql limit的数据量在1到"+Parser.MAX_QUERY_COUNT);
+					}
+				}catch (Exception e){
+					throw new IllegalArgumentException("@sql limit后要接数字");
+				}
+				return config.getSql();
+			}else {
+				int fromLocation =sqlLower.indexOf(" from");
+				if(fromLocation<0){
+					throw new IllegalArgumentException("@sql里的值没有from");
+				}
+				sqlLower = sqlLower.substring(0,fromLocation);
+				if(!sqlLower.startsWith("select ")){
+					throw new IllegalArgumentException("@sql 里的sql不以select 开头");
+				}else{
+					sqlLower = sqlLower.substring(6).replace(" ","");
+					for(String columnName: sqlLower.split(",")){
+						int parenthesesLocation =columnName.indexOf("(");
+						if(parenthesesLocation<0){
+							throw new IllegalArgumentException("@sql 里的sql需要limit做数据限制");
+						}
+						String functionName=columnName.substring(0,parenthesesLocation);
+						if(!(functionName.equals("count")||functionName.equals("sum")||functionName.equals("avg")||functionName.equals("max")||functionName.equals("min")||functionName.equals("count_big")||functionName.equals("grouping")
+								||functionName.equals("binary_checksum")||functionName.equals("checksum_agg")||functionName.equals("checksum")||functionName.equals("stdev")||functionName.equals("stdevp")||functionName.equals("var")||functionName.equals("varp"))){
+							throw new IllegalArgumentException("@sql 里的sql需要limit做数据限制");
+						}
+					}
+					return config.getSql();
+				}
+			}
 		}
 
 		// TODO procedure 改为 List<Procedure> procedureList; behind : true; function:

@@ -637,6 +637,13 @@ public class QuotoService {
             return commonResponse;
         }
 
+        if(!StringUtils.isEmpty(quoto.getSql())){
+            CommonResponse checkCommonResponse = checkSql(quoto.getSql());
+            if(!checkCommonResponse.isSuccess()){
+                return checkCommonResponse;
+            }
+        }
+
         if (quotoMapper.findQuotoByField(quoto.getField()) != null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("字段已存在,请重新命名");
@@ -777,6 +784,76 @@ public class QuotoService {
         return commonResponse;
     }
 
+    /**
+     * 校验sql是否合法
+     * @param sql
+     * @return
+     */
+    public CommonResponse checkSql(String sql){
+        CommonResponse commonResponse = new CommonResponse();
+        int MAX_QUERY_COUNT = 100000;
+        String sqlLower = sql.toLowerCase().trim();
+        if(sqlLower.contains(" limit ")) {
+            int limitLocation = sqlLower.indexOf(" limit ");
+            sqlLower = sqlLower.substring(limitLocation+7);
+            while(true){
+                if(sqlLower.startsWith(" ")){
+                    sqlLower=sqlLower.substring(1);
+                }else{
+                    break;
+                }
+            }
+            String limitNumStr = sqlLower;
+            if(sqlLower.indexOf(" ")>0) {
+                limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
+            }
+            try {
+                int limitNum = Integer.parseInt(limitNumStr);
+                if(limitNum<=0||limitNum>MAX_QUERY_COUNT){
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("指标sql limit的数据量在1到"+MAX_QUERY_COUNT);
+                    return commonResponse;
+                }
+            }catch (Exception e){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql limit后要接数字");
+                return commonResponse;
+            }
+            return commonResponse;
+        }else {
+            int fromLocation =sqlLower.indexOf(" from");
+            if(fromLocation<0){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql没有from");
+                return commonResponse;
+            }
+            sqlLower = sqlLower.substring(0,fromLocation);
+            if(!sqlLower.startsWith("select ")){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql不以select 开头");
+                return commonResponse;
+            }else{
+                sqlLower = sqlLower.substring(6).replace(" ","");
+                for(String columnName: sqlLower.split(",")){
+                    int parenthesesLocation =columnName.indexOf("(");
+                    if(parenthesesLocation<0){
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("指标sql需要limit做数据限制");
+                        return commonResponse;
+                    }
+                    String functionName=columnName.substring(0,parenthesesLocation);
+                    if(!(functionName.equals("count")||functionName.equals("sum")||functionName.equals("avg")||functionName.equals("max")||functionName.equals("min")||functionName.equals("count_big")||functionName.equals("grouping")
+                            ||functionName.equals("binary_checksum")||functionName.equals("checksum_agg")||functionName.equals("checksum")||functionName.equals("stdev")||functionName.equals("stdevp")||functionName.equals("var")||functionName.equals("varp"))){
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("指标sql需要limit做数据限制");
+                        return commonResponse;
+                    }
+                }
+                return commonResponse;
+            }
+        }
+    }
+
     //更新指标
     @SuppressWarnings("deprecation")
     public CommonResponse updateQuoto(Quoto quoto) {
@@ -810,6 +887,15 @@ public class QuotoService {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("名字已存在,请重新命名");
                 return commonResponse;
+            }
+        }
+
+        if(!StringUtils.isEmpty(quoto.getSql())){
+            if(StringUtils.isEmpty(oldQuoto.getSql())||(!quoto.getSql().equals(oldQuoto.getSql()))){
+                CommonResponse checkCommonResponse = checkSql(quoto.getSql());
+                if(!checkCommonResponse.isSuccess()){
+                    return checkCommonResponse;
+                }
             }
         }
 

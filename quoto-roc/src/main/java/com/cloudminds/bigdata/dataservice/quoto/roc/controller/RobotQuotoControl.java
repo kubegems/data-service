@@ -321,13 +321,15 @@ public class RobotQuotoControl extends APIJSONController {
             sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3),bitmap4))))";
         }
         if(!queryCount){
-            if(requestJson.containsKey("count")&&requestJson.containsKey("page")){
-                page = requestJson.getString("page");
+            if(requestJson.containsKey("count")&&Integer.parseInt(requestJson.getString("count"))>0){
                 count = requestJson.getString("count");
-                sql=sql+" order by oid LIMIT "+requestJson.getString("count");
-                if(requestJson.getObject("page",Integer.class)>0){
-                    sql=sql + " offset "+requestJson.getObject("count",Integer.class)*requestJson.getObject("page",Integer.class);
-                }
+            }
+            if(requestJson.containsKey("page")){
+                page = requestJson.getString("page");
+            }
+            sql=sql+" order by oid LIMIT "+count;
+            if(Integer.parseInt(page)>0){
+                sql=sql + " offset "+Integer.parseInt(count)*Integer.parseInt(page);
             }
         }
         request = "{\"@schema\":\"tag\",\"[]\":{\""+requestJson.getString("table_name")+"\": {\"@sql\":\""+sql+"\"},\"page\":"+page+",\"count\":"+count+"}}";
