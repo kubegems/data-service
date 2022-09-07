@@ -500,6 +500,7 @@ public class LabelService {
         if (tagItem.getValue_type() != 1) {
             tag_value_type_name = "int";
         }
+        //限制limit条数
         String querySql = "select tag_value,bitmapCardinality(oids) as cnt from tag.dis_" + tagObject.getCode() + "_tag_" + tag_value_type_name + " where tag_id like '" + tagItem.getTag_id() + "%' limit 10000";
         String bodyRequestTotal = "{\"[]\":{\"" + tagObject.getTable() + "\":{\"@sql\":\"select count(*) from tag.dis_" + tagObject.getTable() + "\"},\"query\":1},\"total@\":\"/[]/total\"}";
         String bodyRequest = "{\"[]\":{\"" + tagObject.getTable() + "\":{\"@sql\":\"" + querySql + "\"},\"page\":0,\"count\":10000}}";
