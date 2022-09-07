@@ -2727,6 +2727,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
 			return null;
 		}
 		if(config.getSql()!=null && !config.getSql().isEmpty()){
+			//做sql校验
 			String sqlLower = config.getSql().toLowerCase().trim();
 			if(sqlLower.contains(" limit ")) {
 				int limitLocation = sqlLower.indexOf(" limit ");
