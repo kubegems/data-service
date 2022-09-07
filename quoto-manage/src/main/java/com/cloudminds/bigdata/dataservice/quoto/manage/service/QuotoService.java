@@ -637,7 +637,6 @@ public class QuotoService {
             return commonResponse;
         }
 
-        //做sql校验
         if(!StringUtils.isEmpty(quoto.getSql())){
             CommonResponse checkCommonResponse = checkSql(quoto.getSql());
             if(!checkCommonResponse.isSuccess()){
