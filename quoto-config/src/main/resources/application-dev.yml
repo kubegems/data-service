@@ -11,3 +11,4 @@ spring:
   redis:
     host: 172.16.24.231
     port: 6379
+dataServiceUrl: http://localhost:8070

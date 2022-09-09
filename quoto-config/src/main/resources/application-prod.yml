@@ -11,3 +11,4 @@ spring:
   redis:
     host: bigdata-redis
     port: 6379
+dataServiceUrl: http://bigdata-service-gw:8001

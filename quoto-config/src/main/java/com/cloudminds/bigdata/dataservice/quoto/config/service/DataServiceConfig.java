@@ -30,10 +30,13 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.utils.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class DataServiceConfig {
@@ -51,6 +54,10 @@ public class DataServiceConfig {
     private UserTokenMapper userTokenMapper;
     @Autowired
     private RedisUtil redisUtil;
+    @Autowired
+    RestTemplate restTemplate;
+    @Value("${dataServiceUrl}")
+    private String dataServiceUrl;
 
     // columnAlias
     public CommonResponse getColumnAlias(int tableId) {
@@ -61,19 +68,35 @@ public class DataServiceConfig {
 
     public CommonResponse updateColumnAliasStatus(int id, int status) {
         CommonResponse commonResponse = new CommonResponse();
+        ColumnAlias columnAlias = columnAliasMapper.getColumnAliasById(id);
+        if(columnAlias == null){
+            commonResponse.setMessage("列不存在");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         if (columnAliasMapper.updateColumnAliasStatus(id, status) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(columnAlias.getTable_id());
         return commonResponse;
     }
 
     public CommonResponse deleteColumnAlias(int id) {
         CommonResponse commonResponse = new CommonResponse();
+        ColumnAlias columnAlias = columnAliasMapper.getColumnAliasById(id);
+        if(columnAlias == null){
+            commonResponse.setMessage("列不存在");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         if (columnAliasMapper.updateColumnAliasDelete(id, 1) != 1) {
             commonResponse.setMessage("删除失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(columnAlias.getTable_id());
         return commonResponse;
     }
 
@@ -103,7 +126,9 @@ public class DataServiceConfig {
             if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             }
+            refreshDataService(columnAlias.getTable_id());
         }
         return commonResponse;
     }
@@ -134,7 +159,9 @@ public class DataServiceConfig {
         if (columnAliasMapper.updateColumnAlias(columnAlias) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(oldColumnAlias.getTable_id());
         return commonResponse;
     }
 
@@ -230,7 +257,9 @@ public class DataServiceConfig {
         if (quotoInfoMapper.updateQuotoInfoStatus(id, status) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(quotoInfo.getTable_id());
         return commonResponse;
     }
 
@@ -254,7 +283,9 @@ public class DataServiceConfig {
         if (quotoInfoMapper.updateQuotoInfoDelete(id, 1) != 1) {
             commonResponse.setMessage("删除失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(quotoInfo.getTable_id());
         return commonResponse;
     }
 
@@ -310,7 +341,9 @@ public class DataServiceConfig {
             if (quotoInfoMapper.insertQuotoInfo(quotoInfo) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             }
+            refreshDataService(quotoInfo.getTable_id());
         }
         return commonResponse;
     }
@@ -345,7 +378,9 @@ public class DataServiceConfig {
         if (quotoInfoMapper.updateQuotoInfo(quotoInfo) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(oldQuotoInfo.getTable_id());
         return commonResponse;
     }
 
@@ -367,7 +402,9 @@ public class DataServiceConfig {
         if (tableInfoMapper.updateTableInfoStatus(id, status) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(id);
         return commonResponse;
     }
 
@@ -401,7 +438,9 @@ public class DataServiceConfig {
         if (tableInfoMapper.updateTableInfoDelete(id, 1) != 1) {
             commonResponse.setMessage("删除失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(id);
         return commonResponse;
     }
 
@@ -429,6 +468,7 @@ public class DataServiceConfig {
         }
         if (commonResponse.isSuccess()) {
             insertColumnAlias(tableInfo.getId());
+            refreshDataService(tableInfo.getId());
         }
         return commonResponse;
     }
@@ -458,6 +498,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         insertColumnAlias(tableInfo.getId());
+        refreshDataService(id);
         return commonResponse;
     }
 
@@ -466,7 +507,9 @@ public class DataServiceConfig {
         if (tableInfoMapper.updateTableInfo(tableInfo) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
+            return commonResponse;
         }
+        refreshDataService(tableInfo.getId());
         return commonResponse;
     }
 
@@ -1020,5 +1063,28 @@ public class DataServiceConfig {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(tableInfoMapper.getApiAccessTop(startDate,endDate,top));
         return commonResponse;
+    }
+
+    public void refreshDataService(int tableId){
+        //查询数据服务刷新地址
+        String servicePath = tableInfoMapper.getDataServicePathByTableId(tableId);
+        if(org.apache.commons.lang.StringUtils.isEmpty(servicePath)){
+            return;
+        }
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                String url = dataServiceUrl+servicePath+"refreshConfig";
+                //请求刷新地址
+                ResponseEntity<String> responseEntity = restTemplate.getForEntity(url,String.class);
+                if (!responseEntity.getStatusCode().is2xxSuccessful()) {
+                    System.out.println(url+"服务不可用");
+                    return;
+                }
+                System.out.println("服务222");
+            }
+        };
+        t.start();
+        System.out.println("执行完毕111");
     }
 }
