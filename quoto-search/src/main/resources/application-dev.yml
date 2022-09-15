@@ -3,6 +3,13 @@ spring:
     nacos:
       discovery:
         server-addr: 172.16.31.146:8848
+  datasource:
+    url: jdbc:mysql://172.16.31.145:3306/bigdata_label?characterEncoding=utf8&useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.jdbc.Driver
 elasticsearch:
   host: 172.16.23.2
   port: 9400
+hbase:
+  quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181

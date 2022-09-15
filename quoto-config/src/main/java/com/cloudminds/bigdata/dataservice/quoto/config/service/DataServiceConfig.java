@@ -459,6 +459,7 @@ public class DataServiceConfig {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
                 }
+                tableInfo.setId(tableInfoOld.getId());
             }
         } else {
             if (tableInfoMapper.insertTableInfo(tableInfo) != 1) {
