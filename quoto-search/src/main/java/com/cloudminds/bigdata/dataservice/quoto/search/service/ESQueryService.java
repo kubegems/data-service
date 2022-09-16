@@ -2,12 +2,8 @@ package com.cloudminds.bigdata.dataservice.quoto.search.service;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.cloudminds.bigdata.dataservice.quoto.search.entity.ColumnAlias;
-import com.cloudminds.bigdata.dataservice.quoto.search.entity.CommonQueryResponse;
-import com.cloudminds.bigdata.dataservice.quoto.search.entity.CommonResponse;
-import com.cloudminds.bigdata.dataservice.quoto.search.entity.TagObject;
+import com.cloudminds.bigdata.dataservice.quoto.search.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.search.mapper.SearchMapper;
-import org.apache.avro.data.Json;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
@@ -256,10 +252,12 @@ public class ESQueryService {
         return commonResponse;
     }
 
-    public CommonQueryResponse queryDataInfo(String request) {
-        CommonQueryResponse commonResponse = new CommonQueryResponse();
+    public CommonResponse queryDataInfo(String request) {
+        CommonResponse commonResponse = new CommonResponse();
         int count = 10;
         int page = 1;
+        boolean scroll_search = true;
+        String scroll_id = "";
         //校验参数
         if (StringUtils.isEmpty(request)) {
             commonResponse.setSuccess(false);
@@ -277,6 +275,19 @@ public class ESQueryService {
             if (count > 1000) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("count不能超过1000");
+                return commonResponse;
+            }
+        }
+
+        if (jsonObjectRequest.get("scroll_search") == null || jsonObjectRequest.getBoolean("scroll_search")) {
+            if (jsonObjectRequest.get("scroll_id") != null) {
+                scroll_id = jsonObjectRequest.getString("scroll_id");
+            }
+        } else {
+            scroll_search = false;
+            if ((page * count + count) > 10000) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("最多不能超过10000条数据");
                 return commonResponse;
             }
         }
@@ -305,10 +316,10 @@ public class ESQueryService {
             commonResponse.setMessage(tagObject.getCode() + " 对应的标签对象没有设置es索引,请联系管理员");
             return commonResponse;
         }
-        List<ColumnAlias> columnAliases = searchMapper.queryTagObjectColunmAttribute(tagObject.getDatabase(),tagObject.getTable());
-        if(columnAliases==null||columnAliases.size()==0){
+        List<ColumnAlias> columnAliases = searchMapper.queryTagObjectColunmAttribute(tagObject.getDatabase(), tagObject.getTable());
+        if (columnAliases == null || columnAliases.size() == 0) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage(tagObject.getDatabase() + "."+tagObject.getTable()+" 对应的表没在数据服务里配置,请联系管理员");
+            commonResponse.setMessage(tagObject.getDatabase() + "." + tagObject.getTable() + " 对应的表没在数据服务里配置,请联系管理员");
             return commonResponse;
         }
         //2. 构建查询请求对象，指定查询的索引名称
@@ -345,7 +356,7 @@ public class ESQueryService {
                 if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
                     finalInOp = false;
                 }
-                ArrayList<String> tagValues = finalJsonObject.getObject("tag_values", ArrayList.class);
+                List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
                 if (tagValues == null || tagValues.isEmpty()) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("tag_values必须有值");
@@ -369,9 +380,17 @@ public class ESQueryService {
         sourceBuilder.query(boolQuery);
 
         //6.添加查询条件构建器
-        searchRequest.source(sourceBuilder);
+        if (scroll_search) {
+            sourceBuilder.sort("rowkey");
+            if (!StringUtils.isEmpty(scroll_id)) {
+                sourceBuilder.searchAfter(new Object[]{scroll_id});
+            }
+        } else {
+            sourceBuilder.from((page - 1) * count);
+        }
         sourceBuilder.size(count);
-        sourceBuilder.from((page - 1) * count);
+        searchRequest.source(sourceBuilder);
+
         //1. 查询,获取查询结果
         try {
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -381,29 +400,33 @@ public class ESQueryService {
             //8.2获取hits数据 数组
             SearchHit[] hits1 = hits.getHits();
             //获取json字符串格式的数据
-//            List<String> rowKeys = new ArrayList<String>();
-//            for (SearchHit searchHit : hits1) {
-//                rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
-//            }
-//            Map<String,String> columnAttribute = new HashMap<>();
-//            for(ColumnAlias columnAlias:columnAliases){
-//                columnAttribute.put(columnAlias.getColumn_name(),columnAlias.getData_type());
-//            }
-//            List<Map<String, Object>> hbaseResult = getDataBatch("bigdata:"+tagObject.getTable(),rowKeys,columnAttribute);
-
-            List<Map<String, Object>> rowKeystest = new ArrayList<>();
+            List<String> rowKeys = new ArrayList<String>();
             for (SearchHit searchHit : hits1) {
-                rowKeystest.add(searchHit.getSourceAsMap());
+                rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
             }
-            commonResponse.setCurrentPage(page);
-            commonResponse.setTotal(hits.getTotalHits().value);
-            commonResponse.setData(rowKeystest);
+            Map<String, String> columnAttribute = new HashMap<>();
+            for (ColumnAlias columnAlias : columnAliases) {
+                columnAttribute.put(columnAlias.getColumn_name(), columnAlias.getData_type());
+            }
+            List<Map<String, Object>> hbaseResult = getDataBatch("bigdata:" + tagObject.getTable(), rowKeys, columnAttribute);
+            if (scroll_search) {
+                CommonScrollResponse commonScrollResponse = new CommonScrollResponse();
+                commonScrollResponse.setTotal(hits.getTotalHits().value);
+                commonScrollResponse.setScroll_id(hits1[hits1.length - 1].getSortValues()[0].toString());
+                commonScrollResponse.setData(hbaseResult);
+                return commonScrollResponse;
+            } else {
+                CommonPageResponse commonPageResponse = new CommonPageResponse();
+                commonPageResponse.setCurrentPage(page);
+                commonPageResponse.setTotal(hits.getTotalHits().value);
+                commonPageResponse.setData(hbaseResult);
+                return commonPageResponse;
+            }
         } catch (Exception e) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage(e.getMessage());
             return commonResponse;
         }
-        return commonResponse;
     }
 
     public List<Map<String, Object>> getDataBatch(String tableName, List<String> rowKeys, Map<String, String> columnAttribute) {
@@ -423,25 +446,25 @@ public class ESQueryService {
                 Map<String, Object> data = new HashMap<>();
                 Arrays.stream(result.rawCells()).forEach(cell -> {
                     String qualifier = Bytes.toString(CellUtil.cloneQualifier(cell));
-                    if(columnAttribute!=null&&(!StringUtils.isEmpty(columnAttribute.get(qualifier)))){
+                    if (columnAttribute != null && (!StringUtils.isEmpty(columnAttribute.get(qualifier)))) {
                         String type = columnAttribute.get(qualifier).toLowerCase();
-                        if(type.contains("int")){
-                            data.put(qualifier, Bytes.toInt(CellUtil.cloneValue(cell)));
-                        }else if(type.contains("float")){
-                            data.put(qualifier, Bytes.toFloat(CellUtil.cloneValue(cell)));
-                        }else{
+                        if (type.contains("int")) {
+                            data.put(qualifier, Integer.parseInt(Bytes.toString(CellUtil.cloneValue(cell))));
+                        } else if (type.contains("float")) {
+                            data.put(qualifier, Float.parseFloat(Bytes.toString(CellUtil.cloneValue(cell))));
+                        } else {
                             String value = Bytes.toString(CellUtil.cloneValue(cell));
-                            if(value.startsWith("{")&&value.endsWith("}")){
+                            if (value.startsWith("{") && value.endsWith("}")) {
                                 data.put(qualifier, JSONObject.parseObject(value));
-                            }else{
+                            } else {
                                 data.put(qualifier, value);
                             }
                         }
-                    }else{
+                    } else {
                         String value = Bytes.toString(CellUtil.cloneValue(cell));
-                        if(value.startsWith("{")&&value.endsWith("}")){
+                        if (value.startsWith("{") && value.endsWith("}")) {
                             data.put(qualifier, JSONObject.parseObject(value));
-                        }else{
+                        } else {
                             data.put(qualifier, value);
                         }
                     }

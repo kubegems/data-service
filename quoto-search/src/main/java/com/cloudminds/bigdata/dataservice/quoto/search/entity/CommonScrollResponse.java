@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = false)
 @Data
-public class CommonQueryResponse extends CommonResponse{
-	private int currentPage;
+public class CommonScrollResponse extends CommonResponse{
+	private String scroll_id;
 	private long total;
 }
