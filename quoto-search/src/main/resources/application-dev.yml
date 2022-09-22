@@ -9,7 +9,7 @@ spring:
     password: root
     driver-class-name: com.mysql.jdbc.Driver
 elasticsearch:
-  host: 172.16.23.2
+  host: 10.51.202.2
   port: 9400
 hbase:
   quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181

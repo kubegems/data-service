@@ -16,12 +16,17 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
@@ -34,6 +39,12 @@ public class ESQueryService {
     private SearchMapper searchMapper;
     @Autowired
     private Connection hbaseConnection;
+    @Autowired
+    RestTemplate restTemplate;
+    @Value("${elasticsearch.host}")
+    private String esHost;
+    @Value("${elasticsearch.port}")
+    private String esPort;
 
     /**
      * 查询所有
@@ -256,7 +267,9 @@ public class ESQueryService {
         CommonResponse commonResponse = new CommonResponse();
         int count = 10;
         int page = 1;
+        int query = 2;
         boolean scroll_search = true;
+        boolean original_req = false;
         String scroll_id = "";
         //校验参数
         if (StringUtils.isEmpty(request)) {
@@ -279,23 +292,33 @@ public class ESQueryService {
             }
         }
 
-        if (jsonObjectRequest.get("scroll_search") == null || jsonObjectRequest.getBoolean("scroll_search")) {
-            if (jsonObjectRequest.get("scroll_id") != null) {
-                scroll_id = jsonObjectRequest.getString("scroll_id");
-            }
-        } else {
-            scroll_search = false;
-            if ((page * count + count) > 10000) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("最多不能超过10000条数据");
-                return commonResponse;
-            }
+        if (jsonObjectRequest.get("query") != null) {
+            query = jsonObjectRequest.getIntValue("query");
         }
 
         if (jsonObjectRequest.get("page") != null) {
             page = jsonObjectRequest.getIntValue("page");
             if (page < 1) {
                 page = 1;
+            }
+        }
+
+        if (jsonObjectRequest.get("original_req") != null && jsonObjectRequest.getBoolean("original_req")) {
+            original_req = true;
+        } else {
+            if (query != 1) {
+                if (jsonObjectRequest.get("scroll_search") == null || jsonObjectRequest.getBoolean("scroll_search")) {
+                    if (jsonObjectRequest.get("scroll_id") != null) {
+                        scroll_id = jsonObjectRequest.getString("scroll_id");
+                    }
+                } else {
+                    scroll_search = false;
+                    if ((page * count + count) > 10000) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("最多不能超过10000条数据");
+                        return commonResponse;
+                    }
+                }
             }
         }
 
@@ -316,115 +339,210 @@ public class ESQueryService {
             commonResponse.setMessage(tagObject.getCode() + " 对应的标签对象没有设置es索引,请联系管理员");
             return commonResponse;
         }
+
+        Map<String, String> columnAttribute = new HashMap<>();
         List<ColumnAlias> columnAliases = searchMapper.queryTagObjectColunmAttribute(tagObject.getDatabase(), tagObject.getTable());
         if (columnAliases == null || columnAliases.size() == 0) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage(tagObject.getDatabase() + "." + tagObject.getTable() + " 对应的表没在数据服务里配置,请联系管理员");
             return commonResponse;
+        } else {
+            Map<String, String> columnAttributeTmp = new HashMap<>();
+            for (ColumnAlias columnAlias : columnAliases) {
+                columnAttributeTmp.put(columnAlias.getColumn_name(), columnAlias.getData_type());
+            }
+            if (jsonObjectRequest.get("column") == null || StringUtils.isEmpty(jsonObjectRequest.getString("column"))) {
+                columnAttribute = columnAttributeTmp;
+            } else {
+                String columns = jsonObjectRequest.getString("column");
+                for (String colunm : columns.split(",")) {
+                    if (columnAttributeTmp.containsKey(colunm)) {
+                        columnAttribute.put(colunm, columnAttributeTmp.get(colunm));
+                    } else {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("标签对象不存在" + colunm + "属性");
+                        return commonResponse;
+                    }
+                }
+            }
         }
-        //2. 构建查询请求对象，指定查询的索引名称
-        SearchRequest searchRequest = new SearchRequest(tagObject.getEs_index());
 
-        //3. 创建查询条件构建器SearchSourceBuilder
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
-        //boolQuery：对多个查询条件连接。
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        //支持and或者or
-        Boolean fatherAndOp = true;
-        if (jsonObjectRequest.get("op") != null && jsonObjectRequest.get("op").toString().toLowerCase().equals("or")) {
-            fatherAndOp = false;
-        }
-        JSONArray jsonArray = jsonObjectRequest.getJSONArray("filter");
-        if (jsonArray == null || jsonArray.isEmpty()) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("filter必须有值");
-            return commonResponse;
-        }
-        for (int i = 0; i < jsonArray.size(); i++) {
-            JSONObject subJsonObjectRequest = jsonArray.getJSONObject(i);
-            JSONArray subJsonArray = subJsonObjectRequest.getJSONArray("filter");
-            if (subJsonArray == null || subJsonArray.isEmpty()) {
+        Object scroll_id_result = null;
+        List<String> rowKeys = new ArrayList<String>();
+        //去es请求
+        if (original_req) {
+            String esReq = jsonObjectRequest.getString("filter");
+            if (StringUtils.isEmpty(esReq)) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("嵌套里的filter必须有值");
+                commonResponse.setMessage("filter必须有值");
                 return commonResponse;
             }
-            BoolQueryBuilder subBoolQuery = QueryBuilders.boolQuery();
-            for (int j = 0; j < subJsonArray.size(); j++) {
-                JSONObject finalJsonObject = subJsonArray.getJSONObject(j);
-                Boolean finalInOp = true;
-                if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
-                    finalInOp = false;
-                }
-                List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
-                if (tagValues == null || tagValues.isEmpty()) {
-                    commonResponse.setSuccess(false);
-                    commonResponse.setMessage("tag_values必须有值");
-                    return commonResponse;
-                }
-                if (finalInOp) {
-                    subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
-                } else {
-                    subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
-                }
-            }
-            if (fatherAndOp) {
-                boolQuery.must(subBoolQuery);
+            String url = "http://" + esHost + ":" + esPort + "/" + tagObject.getEs_index();
+            if (query == 1) {
+                url = url + "/_count";
             } else {
-                boolQuery.should(subBoolQuery);
+                url = url + "/_search";
             }
-
-        }
-
-        //5.指定查询条件
-        sourceBuilder.query(boolQuery);
-
-        //6.添加查询条件构建器
-        if (scroll_search) {
-            sourceBuilder.sort("rowkey");
-            if (!StringUtils.isEmpty(scroll_id)) {
-                sourceBuilder.searchAfter(new Object[]{scroll_id});
+            try {
+                ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity(jsonObjectRequest.getJSONObject("filter"), null), String.class);
+                if (!responseEntity.getStatusCode().is2xxSuccessful()) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("es服务不可用,请联系管理员");
+                    return commonResponse;
+                } else {
+                    JSONObject esResponse = JSONObject.parseObject(responseEntity.getBody());
+                    if (esResponse == null) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("es响应错误,请联系管理员");
+                        return commonResponse;
+                    }
+                    if (esResponse.containsKey("error")) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage(esResponse.getString("error"));
+                        return commonResponse;
+                    }
+                    if (query == 1) {
+                        commonResponse.setData(esResponse.getLong("count"));
+                        return commonResponse;
+                    }
+                    JSONObject hitResult = esResponse.getJSONObject("hits");
+                    scroll_id_result = hitResult.getJSONObject("total").getLong("value");
+                    JSONArray hitJsonArray = hitResult.getJSONArray("hits");
+                    if (hitJsonArray != null && hitJsonArray.size() > 0) {
+                        for (int i = 0; i < hitJsonArray.size(); i++) {
+                            rowKeys.add(hitJsonArray.getJSONObject(i).getJSONObject("_source").getString("rowkey"));
+                            if (i == hitJsonArray.size() - 1 && hitJsonArray.getJSONObject(i).containsKey("sort")) {
+                                JSONArray sortResult = hitJsonArray.getJSONObject(i).getJSONArray("sort");
+                                if (sortResult != null) {
+                                    scroll_id_result = sortResult;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
             }
         } else {
-            sourceBuilder.from((page - 1) * count);
-        }
-        sourceBuilder.size(count);
-        searchRequest.source(sourceBuilder);
-
-        //1. 查询,获取查询结果
-        try {
-            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-
-            //8.获取命中对象
-            SearchHits hits = searchResponse.getHits();
-            //8.2获取hits数据 数组
-            SearchHit[] hits1 = hits.getHits();
-            //获取json字符串格式的数据
-            List<String> rowKeys = new ArrayList<String>();
-            for (SearchHit searchHit : hits1) {
-                rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
+            //boolQuery：对多个查询条件连接。
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            //支持and或者or
+            Boolean fatherAndOp = true;
+            if (jsonObjectRequest.get("op") != null && jsonObjectRequest.get("op").toString().toLowerCase().equals("or")) {
+                fatherAndOp = false;
             }
-            Map<String, String> columnAttribute = new HashMap<>();
-            for (ColumnAlias columnAlias : columnAliases) {
-                columnAttribute.put(columnAlias.getColumn_name(), columnAlias.getData_type());
+            JSONArray jsonArray = jsonObjectRequest.getJSONArray("filter");
+            if (jsonArray == null || jsonArray.isEmpty()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("filter必须有值");
+                return commonResponse;
             }
-            List<Map<String, Object>> hbaseResult = getDataBatch("bigdata:" + tagObject.getTable(), rowKeys, columnAttribute);
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JSONObject subJsonObjectRequest = jsonArray.getJSONObject(i);
+                JSONArray subJsonArray = subJsonObjectRequest.getJSONArray("filter");
+                if (subJsonArray == null || subJsonArray.isEmpty()) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("嵌套里的filter必须有值");
+                    return commonResponse;
+                }
+                BoolQueryBuilder subBoolQuery = QueryBuilders.boolQuery();
+                for (int j = 0; j < subJsonArray.size(); j++) {
+                    JSONObject finalJsonObject = subJsonArray.getJSONObject(j);
+                    Boolean finalInOp = true;
+                    if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
+                        finalInOp = false;
+                    }
+                    List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
+                    if (tagValues == null || tagValues.isEmpty()) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("tag_values必须有值");
+                        return commonResponse;
+                    }
+                    if (finalInOp) {
+                        subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                    } else {
+                        subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                    }
+                }
+                if (fatherAndOp) {
+                    boolQuery.must(subBoolQuery);
+                } else {
+                    boolQuery.should(subBoolQuery);
+                }
+
+            }
+            //查询总数
+            if (query == 1) {
+                CountRequest countRequest = new CountRequest();
+                // 绑定索引名
+                countRequest.indices(tagObject.getEs_index());
+                countRequest.query(boolQuery);
+                try {
+                    CountResponse response = client.count(countRequest, RequestOptions.DEFAULT);
+                    commonResponse.setData(response.getCount());
+                    return commonResponse;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(e.getMessage());
+                    return commonResponse;
+                }
+            }
+
+            //2. 构建查询请求对象，指定查询的索引名称
+            SearchRequest searchRequest = new SearchRequest(tagObject.getEs_index());
+
+            //3. 创建查询条件构建器SearchSourceBuilder
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+            //5.指定查询条件
+            sourceBuilder.query(boolQuery);
+
+            //6.添加查询条件构建器
             if (scroll_search) {
-                CommonScrollResponse commonScrollResponse = new CommonScrollResponse();
-                commonScrollResponse.setTotal(hits.getTotalHits().value);
-                commonScrollResponse.setScroll_id(hits1[hits1.length - 1].getSortValues()[0].toString());
-                commonScrollResponse.setData(hbaseResult);
-                return commonScrollResponse;
+                sourceBuilder.sort("rowkey");
+                if (!StringUtils.isEmpty(scroll_id)) {
+                    sourceBuilder.searchAfter(new Object[]{scroll_id});
+                }
             } else {
-                CommonPageResponse commonPageResponse = new CommonPageResponse();
-                commonPageResponse.setCurrentPage(page);
-                commonPageResponse.setTotal(hits.getTotalHits().value);
-                commonPageResponse.setData(hbaseResult);
-                return commonPageResponse;
+                sourceBuilder.from((page - 1) * count);
             }
-        } catch (Exception e) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage(e.getMessage());
+            sourceBuilder.size(count);
+            searchRequest.source(sourceBuilder);
+
+            //1. 查询,获取查询结果
+            try {
+                SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+                //8.获取命中对象
+                SearchHits hits = searchResponse.getHits();
+                //8.2获取hits数据 数组
+                SearchHit[] hits1 = hits.getHits();
+                //获取json字符串格式的数据
+                for (SearchHit searchHit : hits1) {
+                    rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
+                }
+                if (scroll_search) {
+                    scroll_id_result = hits1[hits1.length - 1].getSortValues()[0].toString();
+                }
+            } catch (Exception e) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(e.getMessage());
+                return commonResponse;
+            }
+        }
+
+        List<Map<String, Object>> hbaseResult = getDataBatch("bigdata:" + tagObject.getTable(), rowKeys, columnAttribute);
+        if (original_req || scroll_search) {
+            CommonScrollResponse commonScrollResponse = new CommonScrollResponse();
+            commonScrollResponse.setScroll_id(scroll_id_result);
+            commonScrollResponse.setData(hbaseResult);
+            return commonScrollResponse;
+        } else {
+            commonResponse.setData(hbaseResult);
             return commonResponse;
         }
     }
@@ -459,13 +577,6 @@ public class ESQueryService {
                             } else {
                                 data.put(qualifier, value);
                             }
-                        }
-                    } else {
-                        String value = Bytes.toString(CellUtil.cloneValue(cell));
-                        if (value.startsWith("{") && value.endsWith("}")) {
-                            data.put(qualifier, JSONObject.parseObject(value));
-                        } else {
-                            data.put(qualifier, value);
                         }
                     }
                 });

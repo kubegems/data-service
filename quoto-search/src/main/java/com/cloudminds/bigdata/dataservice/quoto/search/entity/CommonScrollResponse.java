@@ -6,6 +6,5 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class CommonScrollResponse extends CommonResponse{
-	private String scroll_id;
-	private long total;
+	private Object scroll_id;
 }

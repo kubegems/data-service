@@ -1,5 +1,6 @@
 package com.cloudminds.bigdata.dataservice.label.manage.service;
 
+import com.cloudminds.bigdata.dataservice.label.manage.entity.ColumnAlias;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagCate;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagObject;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.CommonResponse;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,37 +52,22 @@ public class TagService {
             commonResponse.setMessage("对象属性不存在!");
             return commonResponse;
         }
-        Connection conn = null;
-        // 与数据库的连接
-        PreparedStatement pStemt = null;
-        try {
-            conn = DriverManager.getConnection(metaJdbcConnet, metaJdbcUser, metaJdbcPassword);
-            pStemt = conn.prepareStatement("SELECT name,type,comment FROM system.columns where database='"
-                    + tagObject.getDatabase() + "' and table='" + tagObject.getTable() + "'");
-            ResultSet set = pStemt.executeQuery();
-            List<Map<String, String>> data = new ArrayList<>();
-            while (set.next()) {
+        List<Map<String, String>> data = new ArrayList<>();
+        List<ColumnAlias> columnAliases = tagObjectMapper.queryTagObjectColunmAttribute(tagObject.getDatabase(), tagObject.getTable());
+        if (columnAliases == null || columnAliases.size() == 0) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(tagObject.getDatabase() + "." + tagObject.getTable() + " 对应的表没在数据服务里配置,请联系管理员");
+            return commonResponse;
+        } else {
+            for (ColumnAlias columnAlias : columnAliases) {
                 Map<String, String> dataMap = new HashMap<>();
-                dataMap.put("name", set.getString("name"));
-                dataMap.put("type", set.getString("type"));
-                dataMap.put("comment", set.getString("comment"));
+                dataMap.put("name", columnAlias.getColumn_name());
+                dataMap.put("type", columnAlias.getData_type());
+                dataMap.put("comment", columnAlias.getDescr());
                 data.add(dataMap);
             }
-            commonResponse.setData(data);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage(e.getMessage());
-            return commonResponse;
-        } finally {
-            if (pStemt != null) {
-                try {
-                    pStemt.close();
-                    conn.close();
-                } catch (SQLException e) {
-                }
-            }
         }
+        commonResponse.setData(data);
         return commonResponse;
     }
 
