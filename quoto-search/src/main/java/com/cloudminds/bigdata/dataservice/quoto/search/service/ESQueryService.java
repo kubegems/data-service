@@ -444,10 +444,13 @@ public class ESQueryService {
             for (int i = 0; i < jsonArray.size(); i++) {
                 JSONObject subJsonObjectRequest = jsonArray.getJSONObject(i);
                 JSONArray subJsonArray = subJsonObjectRequest.getJSONArray("filter");
-                if (subJsonArray == null || subJsonArray.isEmpty()) {
+                if (subJsonArray == null) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("嵌套里的filter必须有值");
                     return commonResponse;
+                }
+                if(subJsonArray.isEmpty()){
+                    continue;
                 }
                 BoolQueryBuilder subBoolQuery = QueryBuilders.boolQuery();
                 for (int j = 0; j < subJsonArray.size(); j++) {
