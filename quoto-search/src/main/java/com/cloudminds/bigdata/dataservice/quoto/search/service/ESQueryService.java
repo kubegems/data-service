@@ -562,15 +562,28 @@ public class ESQueryService {
             Result[] results = table.get(getList);
             Arrays.stream(results).forEach(result -> {
                 Map<String, Object> data = new HashMap<>();
+                if(columnAttribute.containsKey("rowkey")) {
+                    data.put("rowkey", new StringBuffer(Bytes.toString(result.getRow())).reverse().toString());
+                }
                 Arrays.stream(result.rawCells()).forEach(cell -> {
                     String qualifier = Bytes.toString(CellUtil.cloneQualifier(cell));
                     if (columnAttribute != null && (!StringUtils.isEmpty(columnAttribute.get(qualifier)))) {
                         String type = columnAttribute.get(qualifier).toLowerCase();
-                        if (type.contains("int")) {
-                            data.put(qualifier, Integer.parseInt(Bytes.toString(CellUtil.cloneValue(cell))));
-                        } else if (type.contains("float")) {
-                            data.put(qualifier, Float.parseFloat(Bytes.toString(CellUtil.cloneValue(cell))));
-                        } else {
+                        try {
+                            if (type.contains("int")) {
+                                data.put(qualifier, Integer.parseInt(Bytes.toString(CellUtil.cloneValue(cell))));
+                            } else if (type.contains("float")) {
+                                data.put(qualifier, Float.parseFloat(Bytes.toString(CellUtil.cloneValue(cell))));
+                            } else {
+                                String value = Bytes.toString(CellUtil.cloneValue(cell));
+                                if (value.startsWith("{") && value.endsWith("}")) {
+                                    data.put(qualifier, JSONObject.parseObject(value));
+                                } else {
+                                    data.put(qualifier, value);
+                                }
+                            }
+                        }catch (Exception e){
+                            e.printStackTrace();
                             String value = Bytes.toString(CellUtil.cloneValue(cell));
                             if (value.startsWith("{") && value.endsWith("}")) {
                                 data.put(qualifier, JSONObject.parseObject(value));
