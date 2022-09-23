@@ -571,9 +571,9 @@ public class ESQueryService {
                         String type = columnAttribute.get(qualifier).toLowerCase();
                         try {
                             if (type.contains("int")) {
-                                data.put(qualifier, Integer.parseInt(Bytes.toString(CellUtil.cloneValue(cell))));
+                                data.put(qualifier, Bytes.toInt(CellUtil.cloneValue(cell)));
                             } else if (type.contains("float")) {
-                                data.put(qualifier, Float.parseFloat(Bytes.toString(CellUtil.cloneValue(cell))));
+                                data.put(qualifier, Bytes.toFloat(CellUtil.cloneValue(cell)));
                             } else {
                                 String value = Bytes.toString(CellUtil.cloneValue(cell));
                                 if (value.startsWith("{") && value.endsWith("}")) {
