@@ -436,7 +436,7 @@ public class ESQueryService {
                 fatherAndOp = false;
             }
             JSONArray jsonArray = jsonObjectRequest.getJSONArray("filter");
-            if (jsonArray == null || jsonArray.isEmpty()) {
+            if (jsonArray == null) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("filter必须有值");
                 return commonResponse;
