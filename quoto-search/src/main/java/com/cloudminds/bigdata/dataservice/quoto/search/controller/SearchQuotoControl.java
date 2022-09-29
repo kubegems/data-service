@@ -31,4 +31,10 @@ public class SearchQuotoControl {
     public CommonResponse queryDataInfo(@RequestBody String request) {
         return eSQueryService.queryDataInfo(request);
     }
+
+    //根据标签对象查询文档
+    @RequestMapping(value = "queryApiDoc", method = RequestMethod.GET)
+    public CommonResponse queryApiDoc(String object_code){
+        return eSQueryService.queryApiDoc(object_code);
+    }
 }

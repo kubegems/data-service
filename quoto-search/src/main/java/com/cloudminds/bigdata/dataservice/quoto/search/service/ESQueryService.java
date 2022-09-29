@@ -60,77 +60,10 @@ public class ESQueryService {
         //3. 创建查询条件构建器SearchSourceBuilder
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
-        //  查询条件 match_all查询
-        /*        MatchAllQueryBuilder query = QueryBuilders.matchAllQuery();*/
-
-
-        /*//term Query为精确查询，在搜索时会整体匹配关键字，不再将关键字分词。
-        QueryBuilder query = QueryBuilders.termQuery("title", "华为");*/
-
 
         //match Query即全文检索，它的搜索方式是先将搜索字符串分词，再使用各各词条从索引中搜索。
         MatchQueryBuilder query = QueryBuilders.matchQuery("name", searchKey);
         //query.operator(Operator.AND);//求交集
-
-        /*//模糊查询 wildcard：会对查询条件进行分词
-        WildcardQueryBuilder query = QueryBuilders.wildcardQuery("title", "华*");//华后多个字符
-        //正则查询
-        RegexpQueryBuilder query = QueryBuilders.regexpQuery("title", "\\w+(.)*");
-        //前缀查询
-        PrefixQueryBuilder query = QueryBuilders.prefixQuery("brandName", "三");*/
-
-
-        /*//范围查询 以price 价格为条件
-        RangeQueryBuilder query = QueryBuilders.rangeQuery("price");
-        //指定下限
-        query.gte(2000);
-        //指定上限
-        query.lte(3000);*/
-
-
-        /*//queryString
-        QueryStringQueryBuilder query =
-                QueryBuilders.queryStringQuery("华为手机")
-                        .field("title").field("categoryName").field("brandName")
-                        .defaultOperator(Operator.AND);*/
-
-
-        /*//boolQuery：对多个查询条件连接。
-        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-        //2.构建各个查询条件
-        //2.1 查询品牌名称为:华为
-        TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("brandName", "华为");
-        boolQuery.must(termQueryBuilder);
-
-        //2.2. 查询标题包含：手机
-        MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("title", "手机");
-        boolQuery.filter(matchQuery);
-
-        //2.3 查询价格在：2000-3000
-        RangeQueryBuilder rangeQuery = QueryBuilders.rangeQuery("price");
-        rangeQuery.gte(2000);
-        rangeQuery.lte(3000);
-        boolQuery.filter(rangeQuery);*/
-
-
-
-        /*//高亮查询
-        // 1. 查询title包含手机的数据
-        MatchQueryBuilder query = QueryBuilders.matchQuery("title", "手机");
-
-        sourceBulider.query(query);
-
-        //设置高亮
-        HighlightBuilder highlighter = new HighlightBuilder();
-        //设置三要素
-        highlighter.field("title");
-        //设置前后缀标签
-        highlighter.preTags("<font color='red'>");
-        highlighter.postTags("</font>");
-
-        //加载已经设置好的高亮配置
-        sourceBulider.highlighter(highlighter);*/
-
 
         //5.指定查询条件
         sourceBuilder.query(query);
@@ -152,11 +85,6 @@ public class ESQueryService {
             for (SearchHit searchHit : hits1) {
                 String goodName = searchHit.getSourceAsMap().get("name").toString();
                 goodsList.add(goodName);
-        /*    String sourceAsString = searchHit.getSourceAsString();
-            //转为java对象
-
-            Goods goods = JSON.parseObject(sourceAsString, Goods.class);
-            goodsList.add(goods);*/
             }
             commonResponse.setData(goodsList);
         } catch (Exception e) {
@@ -175,31 +103,6 @@ public class ESQueryService {
         //3. 创建查询条件构建器SearchSourceBuilder
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 
-
-
-        /*//模糊查询 wildcard：会对查询条件进行分词
-        WildcardQueryBuilder query = QueryBuilders.wildcardQuery("title", "华*");//华后多个字符
-        //正则查询
-        RegexpQueryBuilder query = QueryBuilders.regexpQuery("title", "\\w+(.)*");
-        //前缀查询
-        PrefixQueryBuilder query = QueryBuilders.prefixQuery("brandName", "三");*/
-
-
-        /*//范围查询 以price 价格为条件
-        RangeQueryBuilder query = QueryBuilders.rangeQuery("price");
-        //指定下限
-        query.gte(2000);
-        //指定上限
-        query.lte(3000);*/
-
-
-        /*//queryString
-        QueryStringQueryBuilder query =
-                QueryBuilders.queryStringQuery("华为手机")
-                        .field("title").field("categoryName").field("brandName")
-                        .defaultOperator(Operator.AND);*/
-
-
         //boolQuery：对多个查询条件连接。
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("name", key);
@@ -207,26 +110,6 @@ public class ESQueryService {
 
         RegexpQueryBuilder query = QueryBuilders.regexpQuery("barcode", ".*" + key + ".*");
         boolQuery.should(query);
-
-
-
-        /*//高亮查询
-        // 1. 查询title包含手机的数据
-        MatchQueryBuilder query = QueryBuilders.matchQuery("title", "手机");
-
-        sourceBulider.query(query);
-
-        //设置高亮
-        HighlightBuilder highlighter = new HighlightBuilder();
-        //设置三要素
-        highlighter.field("title");
-        //设置前后缀标签
-        highlighter.preTags("<font color='red'>");
-        highlighter.postTags("</font>");
-
-        //加载已经设置好的高亮配置
-        sourceBulider.highlighter(highlighter);*/
-
 
         //5.指定查询条件
         sourceBuilder.query(boolQuery);
@@ -248,11 +131,6 @@ public class ESQueryService {
             for (SearchHit searchHit : hits1) {
                 String goodName = searchHit.getSourceAsMap().get("name").toString();
                 goodsList.add(goodName);
-        /*    String sourceAsString = searchHit.getSourceAsString();
-            //转为java对象
-
-            Goods goods = JSON.parseObject(sourceAsString, Goods.class);
-            goodsList.add(goods);*/
             }
             commonResponse.setData(goodsList);
         } catch (Exception e) {
@@ -528,7 +406,7 @@ public class ESQueryService {
                 for (SearchHit searchHit : hits1) {
                     rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
                 }
-                if (scroll_search) {
+                if (scroll_search&&(!rowKeys.isEmpty())) {
                     scroll_id_result = hits1[hits1.length - 1].getSortValues()[0].toString();
                 }
             } catch (Exception e) {
@@ -550,6 +428,13 @@ public class ESQueryService {
         }
     }
 
+    /**
+     *
+     * @param tableName hbase表名
+     * @param rowKeys 表的rowkey数组
+     * @param columnAttribute 过滤的列属性
+     * @return
+     */
     public List<Map<String, Object>> getDataBatch(String tableName, List<String> rowKeys, Map<String, String> columnAttribute) {
         List<Map<String, Object>> dataResult = new ArrayList<Map<String, Object>>();
         if (rowKeys == null || rowKeys.size() == 0) {
@@ -603,5 +488,70 @@ public class ESQueryService {
             return dataResult;
         }
         return dataResult;
+    }
+
+    public CommonResponse queryApiDoc(String object_code) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(StringUtils.isEmpty(object_code)){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("object_code必传");
+            return commonResponse;
+        }
+        TagObject tagObject = searchMapper.queryTagObjectByCode(object_code);
+        if (tagObject == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("object_code对应的标签对象不存在");
+            return commonResponse;
+        }
+        List<ExtendField> extendFields = new ArrayList<>();
+        ExtendField extendFieldQuery = new ExtendField();
+        extendFieldQuery.setName("query");
+        extendFieldQuery.setType("int");
+        extendFieldQuery.setAllowBlank(true);
+        extendFieldQuery.setSample(2);
+        extendFieldQuery.setDesc("默认值为2查询数据明细,1查询总条数");
+        extendFields.add(extendFieldQuery);
+
+        ExtendField extendFieldScroll = new ExtendField();
+        extendFieldScroll.setName("scroll_id");
+        extendFieldScroll.setType("String");
+        extendFieldQuery.setAllowBlank(true);
+        extendFieldScroll.setSample("");
+        extendFieldScroll.setDesc("首次查询不传或传空串,后面查询传入前一次查询结果里的scroll_id值");
+        extendFields.add(extendFieldScroll);
+
+        ExtendField extendFieldObject = new ExtendField();
+        extendFieldObject.setName("object_code");
+        extendFieldObject.setType("String");
+        extendFieldObject.setAllowBlank(true);
+        extendFieldObject.setSample(object_code);
+        extendFieldObject.setDesc("标签对象编码");
+        extendFields.add(extendFieldObject);
+
+        ExtendField extendFieldColumn = new ExtendField();
+        extendFieldColumn.setName("column");
+        extendFieldColumn.setType("String");
+        extendFieldColumn.setAllowBlank(true);
+        extendFieldColumn.setSample("");
+        extendFieldColumn.setDesc("不传或传空串返回所有的列,指定列请用逗号隔开：XXX,XXX");
+        extendFields.add(extendFieldColumn);
+
+        ExtendField extendFieldOp = new ExtendField();
+        extendFieldOp.setName("op");
+        extendFieldOp.setType("String");
+        extendFieldOp.setAllowBlank(true);
+        extendFieldOp.setSample("and");
+        extendFieldOp.setDesc("默认值为and,filter的数组之间且操作;or filter的数组之间或操作");
+        extendFields.add(extendFieldOp);
+
+        ExtendField extendFieldFilter = new ExtendField();
+        extendFieldFilter.setName("filter");
+        extendFieldFilter.setType("Array");
+        extendFieldFilter.setAllowBlank(false);
+        extendFieldFilter.setSample("[{\"filter\":[{\"op\":\"in\",\"tag_values\":[\"svr1001005001_001\",\"svr1003002001_016\"]},{\"op\":\"not in\",\"tag_values\":[\"svr1001005001_001\",\"svr1001005001_001\"]}]},{\"filter\":[{\"op\":\"not in\",\"tag_values\":[\"svr1001001003_001\"]}]}]");
+        extendFieldFilter.setDesc("1：空的数组[]查询所有的数据 2：最外层数组之间的逻辑由外层的op控制,最里层的filter数组都是且操作 3：op为in表示被打上tag_values里的任意一个标签,not in表示没被打上tag_values里的任意一个标签");
+        extendFields.add(extendFieldFilter);
+        commonResponse.setData(extendFields);
+        return commonResponse;
     }
 }
