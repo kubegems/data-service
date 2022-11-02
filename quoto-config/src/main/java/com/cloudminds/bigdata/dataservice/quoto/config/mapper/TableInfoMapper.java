@@ -32,6 +32,9 @@ public interface TableInfoMapper {
 	@Select("SELECT * FROM Table_info WHERE table_name=#{table_name} AND database_id=#{database_id} ")
 	public TableInfo getTableInfo(TableInfo tableInfo);
 
+	@Select("SELECT * FROM Table_info WHERE table_alias=#{table_alias} AND database_id=#{database_id} ")
+	public TableInfo getTableInfoByTableAlias(TableInfo tableInfo);
+
 	@Select("SELECT * FROM Table_info WHERE is_delete=0 and id=#{tableId}")
 	public TableInfo getTableInfoById(int tableId);
 

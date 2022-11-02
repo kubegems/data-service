@@ -169,6 +169,7 @@ public class QuotoCaculateUtils {
 									}
 								}
 							}
+							a.setData(alist);
 							a.getFields().addAll(b.getFields());
 							return a;
 						} else {

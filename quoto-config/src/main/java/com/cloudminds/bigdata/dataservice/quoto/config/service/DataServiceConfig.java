@@ -69,7 +69,7 @@ public class DataServiceConfig {
     public CommonResponse updateColumnAliasStatus(int id, int status) {
         CommonResponse commonResponse = new CommonResponse();
         ColumnAlias columnAlias = columnAliasMapper.getColumnAliasById(id);
-        if(columnAlias == null){
+        if (columnAlias == null) {
             commonResponse.setMessage("列不存在");
             commonResponse.setSuccess(false);
             return commonResponse;
@@ -86,7 +86,7 @@ public class DataServiceConfig {
     public CommonResponse deleteColumnAlias(int id) {
         CommonResponse commonResponse = new CommonResponse();
         ColumnAlias columnAlias = columnAliasMapper.getColumnAliasById(id);
-        if(columnAlias == null){
+        if (columnAlias == null) {
             commonResponse.setMessage("列不存在");
             commonResponse.setSuccess(false);
             return commonResponse;
@@ -446,10 +446,16 @@ public class DataServiceConfig {
 
     public CommonResponse insertTableInfo(TableInfo tableInfo) {
         CommonResponse commonResponse = new CommonResponse();
+        TableInfo existTable = tableInfoMapper.getTableInfoByTableAlias(tableInfo);
+        if (existTable != null && existTable.getIs_delete() == 0) {
+            commonResponse.setMessage("此别名已存在,请重新命名！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         TableInfo tableInfoOld = tableInfoMapper.getTableInfo(tableInfo);
         if (tableInfoOld != null) {
             if (tableInfoOld.getIs_delete() == 0) {
-                commonResponse.setMessage("数据已存在,请不要重复新增！");
+                commonResponse.setMessage("表名已经存在,请不要重复新增！");
                 commonResponse.setSuccess(false);
             } else {
                 tableInfoOld.setTable_alias(tableInfo.getTable_alias());
@@ -505,6 +511,28 @@ public class DataServiceConfig {
 
     public CommonResponse updateTableInfo(TableInfo tableInfo) {
         CommonResponse commonResponse = new CommonResponse();
+        TableInfo oldTableInfo = tableInfoMapper.getTableInfoById(tableInfo.getId());
+        if (oldTableInfo == null) {
+            commonResponse.setMessage("原始表不存在！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        if (!tableInfo.getTable_alias().equals(oldTableInfo.getTable_alias())) {
+            TableInfo existTable = tableInfoMapper.getTableInfoByTableAlias(tableInfo);
+            if (existTable != null && existTable.getIs_delete() == 0) {
+                commonResponse.setMessage("此别名已存在,请重新命名！");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+        }
+        if (!tableInfo.getTable_name().equals(oldTableInfo.getTable_name())) {
+            TableInfo existTable = tableInfoMapper.getTableInfo(tableInfo);
+            if (existTable != null && existTable.getIs_delete() == 0) {
+                commonResponse.setMessage("此表已经存在了,请不要重复添加！");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+        }
         if (tableInfoMapper.updateTableInfo(tableInfo) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
@@ -952,7 +980,7 @@ public class DataServiceConfig {
 
     public CommonResponse insertDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()|| dbInfo.getService_name().isEmpty()) {
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
@@ -981,18 +1009,18 @@ public class DataServiceConfig {
 
     public CommonResponse updateDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty()|| dbInfo.getService_name().isEmpty()) {
+        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
         }
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
-        if(dbInfoOld == null){
+        if (dbInfoOld == null) {
             commonResponse.setMessage("原始数据不存在,请刷新后再操作");
             commonResponse.setSuccess(false);
             return commonResponse;
         }
-        if (databaseInfoMapper.updateDbInfo(dbInfo)<1){
+        if (databaseInfoMapper.updateDbInfo(dbInfo) < 1) {
             commonResponse.setMessage("更新失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
@@ -1004,12 +1032,12 @@ public class DataServiceConfig {
     public CommonResponse deleteDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
-        if(dbInfoOld == null){
+        if (dbInfoOld == null) {
             commonResponse.setMessage("原始数据不存在,请刷新后再操作");
             commonResponse.setSuccess(false);
             return commonResponse;
         }
-        if(databaseInfoMapper.updateDbInfoDelete(dbInfo.getId(),1)<1){
+        if (databaseInfoMapper.updateDbInfoDelete(dbInfo.getId(), 1) < 1) {
             commonResponse.setMessage("删除失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
@@ -1021,7 +1049,7 @@ public class DataServiceConfig {
     public CommonResponse getDbInfoById(int id) {
         CommonResponse commonResponse = new CommonResponse();
         DbInfo dbInfo = databaseInfoMapper.getDbInfoById(id);
-        if(dbInfo == null){
+        if (dbInfo == null) {
             commonResponse.setMessage("数据不存在!");
             commonResponse.setSuccess(false);
             return commonResponse;
@@ -1056,30 +1084,30 @@ public class DataServiceConfig {
 
     public CommonResponse getApiAccessTotalGroupByDay(String startDate, String endDate) {
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(tableInfoMapper.getApiAccessTotalGroupByDay(startDate,endDate));
+        commonResponse.setData(tableInfoMapper.getApiAccessTotalGroupByDay(startDate, endDate));
         return commonResponse;
     }
 
     public CommonResponse getApiAccessTop(String startDate, String endDate, int top) {
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(tableInfoMapper.getApiAccessTop(startDate,endDate,top));
+        commonResponse.setData(tableInfoMapper.getApiAccessTop(startDate, endDate, top));
         return commonResponse;
     }
 
-    public void refreshDataService(int tableId){
+    public void refreshDataService(int tableId) {
         //查询数据服务刷新地址
         String servicePath = tableInfoMapper.getDataServicePathByTableId(tableId);
-        if(org.apache.commons.lang.StringUtils.isEmpty(servicePath)){
+        if (org.apache.commons.lang.StringUtils.isEmpty(servicePath)) {
             return;
         }
         Thread t = new Thread() {
             @Override
             public void run() {
-                String url = dataServiceUrl+servicePath+"refreshConfig";
+                String url = dataServiceUrl + servicePath + "refreshConfig";
                 //请求刷新地址
-                ResponseEntity<String> responseEntity = restTemplate.getForEntity(url,String.class);
+                ResponseEntity<String> responseEntity = restTemplate.getForEntity(url, String.class);
                 if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-                    System.out.println(url+"服务不可用");
+                    System.out.println(url + "服务不可用");
                     return;
                 }
                 System.out.println("服务222");

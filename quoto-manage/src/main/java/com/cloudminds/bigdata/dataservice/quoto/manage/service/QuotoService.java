@@ -746,7 +746,7 @@ public class QuotoService {
             }
             String expression = quoto.getExpression();
             expression = expression.replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
-                    .replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
+                    .replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ").replaceAll("[&]", " ");
             String[] expressions = expression.split(" ");
             List<Integer> quotos = new ArrayList<Integer>();
             for (int i = 0; i < expressions.length; i++) {
@@ -931,7 +931,7 @@ public class QuotoService {
                 }
                 String expression = quoto.getExpression();
                 expression = expression.replaceAll(" ", "").replaceAll("[(]", "").replaceAll("[)]", "")
-                        .replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ");
+                        .replaceAll("[+]", " ").replaceAll("[-]", " ").replaceAll("[*]", " ").replaceAll("[/]", " ").replaceAll("[&]", " ");
                 String[] expressions = expression.split(" ");
                 List<Integer> quotos = new ArrayList<Integer>();
                 for (int i = 0; i < expressions.length; i++) {
