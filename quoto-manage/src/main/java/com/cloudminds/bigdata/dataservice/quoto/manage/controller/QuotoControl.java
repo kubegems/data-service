@@ -173,6 +173,12 @@ public class QuotoControl {
 		return quotoService.queryAllQuoto(quotoQuery);
 	}
 
+	//查询指标的历史记录
+	@RequestMapping(value = "queryQuotoUpdateHistory", method = RequestMethod.GET)
+	public CommonResponse queryQuotoUpdateHistory(int id) {
+		return quotoService.queryQuotoUpdateHistory(id);
+	}
+
 	// 编辑指标
 	@RequestMapping(value = "update", method = RequestMethod.POST)
 	public CommonResponse updateQuoto(@RequestBody Quoto quoto) {

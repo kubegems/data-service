@@ -97,10 +97,10 @@ public interface DimensionMapper {
     @Select("select * from dimension_object where ${condition}")
     public List<DimensionObject> queryAllDimensionObject(String condition);
 
-    @Select("select * from Column_alias where is_delete=0 and table_id=${tableId} and data_type like 'DateTime%'")
+    @Select("select * from Column_alias where is_delete=0 and table_id=${tableId} and data_type like 'Date%'")
     public List<ColumnAlias> queryTimeColumnByTableId(int tableId);
 
-    @Select("select * from Column_alias where is_delete=0 and table_id=${tableId} and id=${id} and data_type like 'DateTime%'")
+    @Select("select * from Column_alias where is_delete=0 and table_id=${tableId} and id=${id} and data_type like 'Date%'")
     public ColumnAlias queryTimeColumnById(int tableId,int id);
 
     @Select({

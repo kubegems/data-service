@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.*;
@@ -303,9 +305,9 @@ public class DataServiceConfig {
                         || quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
                         || quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
                         || quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
-                        || quotoInfo.getQuoto_name().contains("&")) {
+                        || quotoInfo.getQuoto_name().contains("&") || isContainChinese(quotoInfo.getQuoto_name())) {
                     commonResponse.setSuccess(false);
-                    commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+                    commonResponse.setMessage("指标名不能是数、中文、或者含有()+-*/&#特殊符号");
                     return commonResponse;
                 }
                 // 判断是否有同名的指标
@@ -327,9 +329,9 @@ public class DataServiceConfig {
                     || quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
                     || quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
                     || quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
-                    || quotoInfo.getQuoto_name().contains("&")) {
+                    || quotoInfo.getQuoto_name().contains("&") || isContainChinese(quotoInfo.getQuoto_name())) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+                commonResponse.setMessage("指标名不能是数、中文或者含有()+-*/&#特殊符号");
                 return commonResponse;
             }
             // 判断是否有同名的指标
@@ -364,9 +366,9 @@ public class DataServiceConfig {
                     || quotoInfo.getQuoto_name().contains(")") || quotoInfo.getQuoto_name().contains("+")
                     || quotoInfo.getQuoto_name().contains("-") || quotoInfo.getQuoto_name().contains("*")
                     || quotoInfo.getQuoto_name().contains("/") || quotoInfo.getQuoto_name().contains("#")
-                    || quotoInfo.getQuoto_name().contains("&")) {
+                    || quotoInfo.getQuoto_name().contains("&") || isContainChinese(quotoInfo.getQuoto_name())) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("指标名不能是数或者含有()+-*/&#特殊符号");
+                commonResponse.setMessage("指标名不能是数、中文或者含有()+-*/&#特殊符号");
                 return commonResponse;
             }
             if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name()) != null) {
@@ -1110,10 +1112,17 @@ public class DataServiceConfig {
                     System.out.println(url + "服务不可用");
                     return;
                 }
-                System.out.println("服务222");
             }
         };
         t.start();
-        System.out.println("执行完毕111");
+    }
+
+    public boolean isContainChinese(String str) {
+        Pattern p = Pattern.compile("[\u4E00-\u9FA5|\\！|\\，|\\。|\\（|\\）|\\《|\\》|\\“|\\”|\\？|\\：|\\；|\\【|\\】]");
+        Matcher m = p.matcher(str);
+        if (m.find()) {
+            return true;
+        }
+        return false;
     }
 }

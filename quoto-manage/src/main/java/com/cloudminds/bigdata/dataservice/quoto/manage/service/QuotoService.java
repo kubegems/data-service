@@ -1028,12 +1028,18 @@ public class QuotoService {
             if (quotoMapper.updateQuoto(quoto) <= 0) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("编辑指标失败，请稍后再试！");
+                return commonResponse;
             }
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
             commonResponse.setSuccess(false);
             commonResponse.setMessage("编辑指标失败，请稍后再试！");
+            return commonResponse;
+        }
+        //插入历史记录
+        if(commonResponse.isSuccess()){
+            quotoMapper.insertQuotoUpdateHistory(oldQuoto);
         }
         return commonResponse;
     }
@@ -1101,6 +1107,18 @@ public class QuotoService {
         commonQueryResponse.setCurrentPage(quotoQuery.getPage());
         commonQueryResponse.setTotal(quotoMapper.queryQuotoCount(condition));
         return commonQueryResponse;
+    }
+
+    public CommonResponse queryQuotoUpdateHistory(int id){
+        CommonResponse commonResponse = new CommonResponse();
+        Quoto quoto = quotoMapper.queryQuotoById(id);
+        if (quoto == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("指标不存在,请核实id值是否正确");
+            return commonResponse;
+        }
+        commonResponse.setData(quotoMapper.queryQuotoUpdateHistoryById(id));
+        return commonResponse;
     }
 
     public CommonResponse queryAllQuoto(QuotoQuery quotoQuery) {
@@ -1440,6 +1458,7 @@ public class QuotoService {
                                 return commonResponse;
                             }
                             adjectives.get(i).setColumn_name(columnAlias.getColumn_alias());
+                            adjectives.get(i).setDescr(columnAlias.getData_type());
                         } else {
                             //带变量的修饰词
                             if (adjectives.get(i).getReq_parm_type() == 1) {
@@ -1564,120 +1583,124 @@ public class QuotoService {
     public String getAdjectiveReq(AdjectiveExtend adjective) {
         // 1为时间修饰词
         if (adjective.getType() == 1) {
+            int timeType = 1;//1代表正常的yyyy-MM-dd hh:mm:ss 2代表日期yyyy-MM-dd
+            if(!StringUtils.isEmpty(adjective.getDescr())&&adjective.getDescr().toLowerCase().equals("date")){
+                timeType = 2;
+            }
             String result = "'" + adjective.getColumn_name();
             if (adjective.getCode().equals("last1HOUR")) {
-                result = result + ">=':'" + DateTimeUtils.getlast1HOUR() + "'";
+                result = result + ">=':'" + DateTimeUtils.getlast1HOUR(timeType) + "'";
             } else if (adjective.getCode().equals("last1DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(0) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(0,timeType) + "'";
             } else if (adjective.getCode().equals("last2DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-1) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-1,timeType) + "'";
             } else if (adjective.getCode().equals("last3DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-2) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-2,timeType) + "'";
             } else if (adjective.getCode().equals("last7DAY") || adjective.getCode().equals("last1WEEK")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-6) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-6,timeType) + "'";
             } else if (adjective.getCode().equals("last14DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-13) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-13,timeType) + "'";
             } else if (adjective.getCode().equals("last15DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-15) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-15,timeType) + "'";
             } else if (adjective.getCode().equals("last30DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-30) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-30,timeType) + "'";
             } else if (adjective.getCode().equals("last60DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-60) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-60,timeType) + "'";
             } else if (adjective.getCode().equals("last90DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-90) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-90,timeType) + "'";
             } else if (adjective.getCode().equals("last180DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-180) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-180,timeType) + "'";
             } else if (adjective.getCode().equals("last360DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-360) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-360,timeType) + "'";
             } else if (adjective.getCode().equals("last365DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-365) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-365,timeType) + "'";
             } else if (adjective.getCode().equals("last1MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-1) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-1,timeType) + "'";
             } else if (adjective.getCode().equals("last2MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-2) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-2,timeType) + "'";
             } else if (adjective.getCode().equals("last3MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-3) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-3,timeType) + "'";
             } else if (adjective.getCode().equals("last6MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-6) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-6,timeType) + "'";
             } else if (adjective.getCode().equals("last7MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-7) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-7,timeType) + "'";
             } else if (adjective.getCode().equals("last8MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-8) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-8,timeType) + "'";
             } else if (adjective.getCode().equals("last1YEAR")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-1) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-1,timeType) + "'";
             } else if (adjective.getCode().equals("last2YEAR")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-2) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-2,timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(w)")) {
-                result = result + ">=':'" + DateTimeUtils.ftDateWeek() + "'";
+                result = result + ">=':'" + DateTimeUtils.ftDateWeek(timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(m)")) {
-                result = result + ">=':'" + DateTimeUtils.ftDateMonth() + "'";
+                result = result + ">=':'" + DateTimeUtils.ftDateMonth(timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(q)")) {
-                result = result + ">=':'" + DateTimeUtils.ftDateQuarter() + "'";
+                result = result + ">=':'" + DateTimeUtils.ftDateQuarter(timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(y)")) {
-                result = result + ">=':'" + DateTimeUtils.ftDateYear() + "'";
+                result = result + ">=':'" + DateTimeUtils.ftDateYear(timeType) + "'";
             } else if (adjective.getCode().equals("pre1MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre2MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre3MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre4MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre5MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre6MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre12MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre24MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre2DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre3DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre7DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre14DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre15DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre30DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre60DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre90DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre180DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre360DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre365DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1YEAR")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByYear(-1) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByYear(0) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByYear(-1,timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByYear(0,timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1QUARTER")) {
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 Calendar cal = Calendar.getInstance();
@@ -1692,9 +1715,13 @@ public class QuotoService {
                     cal.set(Calendar.MONTH, 9);
                 }
                 cal.set(Calendar.DATE, 1);
-                String end = format.format(cal.getTime()) + " 00:00:00";
+                String end = format.format(cal.getTime());
                 cal.add(Calendar.MONTH, -3);
-                String start = format.format(cal.getTime()) + " 00:00:00";
+                String start = format.format(cal.getTime());
+                if(timeType==1){
+                    end = end + " 00:00:00";
+                    start = start + " 00:00:00";
+                }
                 result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
             }
             return result;

@@ -155,6 +155,10 @@ public interface QuotoMapper {
 			+ "values(#{name},#{time_column_id},#{sql},#{use_sql}, #{field}, #{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr}, #{expression})")
 	public int insertQuoto(Quoto quoto);
 
+	@Insert("insert into quoto_update_history(id,name,time_column_id,`sql`,use_sql,field,theme_id,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr,expression) "
+			+ "values(#{id},#{name},#{time_column_id},#{sql},#{use_sql}, #{field}, #{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},#{create_time},#{update_time}, #{creator}, #{descr}, #{expression})")
+	public int insertQuotoUpdateHistory(Quoto quoto);
+
 	@Update("update quoto set name=#{name},business_process_id=#{business_process_id},time_column_id=#{time_column_id},`sql`=#{sql},use_sql=#{use_sql}, field=#{field},theme_id=#{theme_id},quoto_level=#{quoto_level},data_type=#{data_type},data_unit=#{data_unit},table_id=#{table_id},accumulation=#{accumulation},origin_quoto=#{origin_quoto},cycle=#{cycle},"
 			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},quotos=#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},type=#{type},descr=#{descr},expression=#{expression} where id=#{id}")
 	public int updateQuoto(Quoto quoto);
@@ -166,6 +170,11 @@ public interface QuotoMapper {
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoById(int id);
+
+	@Select("SELECT * from quoto_update_history q LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where q.deleted=0 and q.id=#{id} order by q.update_time desc")
+	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	public List<Quoto> queryQuotoUpdateHistoryById(int id);
 
 	@Select("SELECT * from quoto q LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where q.deleted=0 and q.name=#{name}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
