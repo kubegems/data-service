@@ -1,5 +1,8 @@
 package com.cloudminds.bigdata.dataservice.standard.manage.service;
 
+import com.cloudminds.bigdata.dataservice.standard.manage.entity.Classify;
+import com.cloudminds.bigdata.dataservice.standard.manage.mapper.ClassifyMapper;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +19,35 @@ import com.cloudminds.bigdata.dataservice.standard.manage.mapper.TermMapper;
 public class TermService {
 	@Autowired
 	private TermMapper termMapper;
-
+	@Autowired
+	private ClassifyMapper classifyMapper;
 	// 添加术语
 	public CommonResponse insertTerm(Term term) {
 		CommonResponse commonResponse = new CommonResponse();
+		if(term==null || StringUtils.isEmpty(term.getZh_name()) || StringUtils.isEmpty(term.getTerm_field())|| StringUtils.isEmpty(term.getEn_name())){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("中文名 英文名 编码不能为空");
+			return commonResponse;
+		}
+		//校验分类
+		Classify classify = classifyMapper.findClassifyById(term.getClassify_id());
+		if(classify==null || classify.getType()!=1){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("分类不存在");
+			return commonResponse;
+		}
+		if(classify.getPid()==0){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("只能挂在三级分类下");
+			return commonResponse;
+		}
+		Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
+		if(pidClassify.getPid()==0){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("只能挂在三级分类下");
+			return commonResponse;
+		}
+
 		try {
 			if (termMapper.insertTerm(term) <= 0) {
 				commonResponse.setSuccess(false);
@@ -90,6 +118,32 @@ public class TermService {
 	// 编辑术语
 	public CommonResponse updateTerm(Term term) {
 		CommonResponse commonResponse = new CommonResponse();
+		Term oldTerm = termMapper.findTermById(term.getId());
+		if(oldTerm==null){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("术语不存在");
+			return commonResponse;
+		}
+		//校验分类
+		if(term.getClassify_id()!=oldTerm.getClassify_id()) {
+			Classify classify = classifyMapper.findClassifyById(term.getClassify_id());
+			if (classify == null || classify.getType() != 1) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("分类不存在");
+				return commonResponse;
+			}
+			if (classify.getPid() == 0) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("只能挂在三级分类下");
+				return commonResponse;
+			}
+			Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
+			if (pidClassify.getPid() == 0) {
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("只能挂在三级分类下");
+				return commonResponse;
+			}
+		}
 		try {
 			if (termMapper.updateTerm(term) <=0) {
 				commonResponse.setSuccess(false);
@@ -109,13 +163,16 @@ public class TermService {
 		CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
 		String condition = "";
 		if (termQuery.getTerm_field() != null && (!termQuery.getTerm_field().equals(""))) {
-			condition="and term_field like '"+termQuery.getTerm_field()+"%'";
+			condition="and t.term_field like '"+termQuery.getTerm_field()+"%'";
 		}
 		if(termQuery.getZh_name() != null && (!termQuery.getZh_name().equals(""))){
 			if(!condition.equals("")) {
 				condition=condition+" ";
 			}
-			condition=condition+"and zh_name like '"+termQuery.getZh_name()+"%'";
+			condition=condition+"and t.zh_name like '"+termQuery.getZh_name()+"%'";
+		}
+		if(termQuery.getClassify_id()>0){
+			condition=condition+" and (one.id="+termQuery.getClassify_id()+" or two.id="+termQuery.getClassify_id()+" or three.id="+termQuery.getClassify_id()+")";
 		}
 		int page = termQuery.getPage();
 		int size = termQuery.getSize();

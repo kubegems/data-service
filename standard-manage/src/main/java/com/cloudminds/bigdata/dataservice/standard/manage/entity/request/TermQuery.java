@@ -8,4 +8,5 @@ public class TermQuery {
 	private String zh_name;
 	private int page;
 	private int size;
+	private int classify_id;
 }

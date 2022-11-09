@@ -11,5 +11,5 @@ public class Term extends BaseEntity{
 	private String zh_name;
 	private String en_name;
 	private String term_field;
-
+	private int classify_id;
 }

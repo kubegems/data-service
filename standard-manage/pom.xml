@@ -47,6 +47,11 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
+	  <dependency>
+		  <groupId>com.opencsv</groupId>
+		  <artifactId>opencsv</artifactId>
+		  <version>5.7.1</version>
+	  </dependency>
   </dependencies>
   	<build>
 		<finalName>${project.artifactId}</finalName>
