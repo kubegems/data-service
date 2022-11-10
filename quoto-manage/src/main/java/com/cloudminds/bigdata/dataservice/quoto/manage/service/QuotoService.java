@@ -1,6 +1,5 @@
 package com.cloudminds.bigdata.dataservice.quoto.manage.service;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.enums.StateEnum;
@@ -1047,6 +1046,11 @@ public class QuotoService {
     public CommonQueryResponse queryQuoto(QuotoQuery quotoQuery) {
         // TODO Auto-generated method stub
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
+        if(StringUtils.isEmpty(quotoQuery.getCreator())){
+            commonQueryResponse.setSuccess(false);
+            commonQueryResponse.setMessage("creator不能为空!");
+            return commonQueryResponse;
+        }
         String condition = "q.deleted=0";
         if (quotoQuery.getType() != -1) {
             if (quotoQuery.getType() == 3) {
@@ -1098,12 +1102,16 @@ public class QuotoService {
         if (quotoQuery.getState() != -1) {
             condition = condition + " and q.state=" + quotoQuery.getState();
         }
+        if(quotoQuery.getTags()!=null&&quotoQuery.getTags().length>0){
+            condition = condition + " and q.id in (select distinct quoto_id from quoto_tag where deleted=0 and creator='"+quotoQuery.getCreator()+"' and tag_id in "+Arrays.toString(quotoQuery.getTags()).replace("[", "(").replace("]", ")")+")";
+        }
+
 
         condition = condition + " order by q.update_time desc";
         int page = quotoQuery.getPage();
         int size = quotoQuery.getSize();
         int startLine = (page - 1) * size;
-        commonQueryResponse.setData(quotoMapper.queryQuoto(condition, startLine, size));
+        commonQueryResponse.setData(quotoMapper.queryQuoto(condition, startLine, size,quotoQuery.getCreator()));
         commonQueryResponse.setCurrentPage(quotoQuery.getPage());
         commonQueryResponse.setTotal(quotoMapper.queryQuotoCount(condition));
         return commonQueryResponse;

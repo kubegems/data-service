@@ -126,10 +126,14 @@ public interface QuotoMapper {
 			"<script> update quoto set deleted=null where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>" })
 	public int batchDeleteQuoto(int[] id);
 
-	@Select("SELECT q.*,tt.*,p.name as business_process_name from quoto q left join business_process p on q.business_process_id=p.id LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where ${condition} limit #{startLine},#{size}")
-	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
-	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
-	public List<Quoto> queryQuoto(String condition, int startLine, int size);
+	@Select("SELECT q.*,tt.*,p.name as business_process_name,#{creator} as query_creator from quoto q left join business_process p on q.business_process_id=p.id LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where ${condition} limit #{startLine},#{size}")
+	@Results({
+			@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class),
+			@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class),
+			@Result(property = "id", column = "id"),
+			@Result(property = "tags", column = "{quoto_id=id,creator=query_creator}", javaType = List.class,
+					many = @Many(select = "com.cloudminds.bigdata.dataservice.quoto.manage.mapper.TagMapper.findTagByQuotoIdAndCreator"))})
+	public List<Quoto> queryQuoto(String condition, int startLine, int size,String creator);
 
 	@Select("SELECT count(*) from quoto q left join business_process p on q.business_process_id=p.id LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where ${condition}")
 	public int queryQuotoCount(String condition);

@@ -10,8 +10,10 @@ public class QuotoQuery {
 	private int theme_id=-1;
 	private int quoto_level=-1;
 	private int state=-1;
+	private int[] tags;
 	private String name;
 	private String field;
+	private String creator;
 	private int page;
 	private int size;
 }

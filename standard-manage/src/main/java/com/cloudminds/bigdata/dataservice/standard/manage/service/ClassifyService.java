@@ -58,6 +58,7 @@ public class ClassifyService {
             commonResponse.setMessage("增加分类失败,请稍后再试或者联系管理员");
             return commonResponse;
         }
+        commonResponse.setData(classify.getId());
         return commonResponse;
     }
 

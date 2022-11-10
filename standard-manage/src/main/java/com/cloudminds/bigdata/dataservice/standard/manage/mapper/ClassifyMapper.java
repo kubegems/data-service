@@ -1,10 +1,7 @@
 package com.cloudminds.bigdata.dataservice.standard.manage.mapper;
 
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.Classify;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -12,6 +9,7 @@ import java.util.List;
 public interface ClassifyMapper {
     @Insert("insert into classify(pid,name,type,creator,create_time,update_time) "
             + "values(#{pid}, #{name}, #{type}, #{creator},now(),now())")
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     public int insertClassify(Classify classify);
 
     @Update("update classify set name=#{name} where id=#{id}")

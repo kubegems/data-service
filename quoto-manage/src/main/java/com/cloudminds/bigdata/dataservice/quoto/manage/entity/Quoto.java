@@ -3,6 +3,8 @@ package com.cloudminds.bigdata.dataservice.quoto.manage.entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class Quoto extends BaseEntity {
@@ -37,4 +39,5 @@ public class Quoto extends BaseEntity {
 	private String business_name_two_level;
 	private int business_id_one_level;
 	private String business_name_one_level;
+	private List<Tag> tags;
 }
