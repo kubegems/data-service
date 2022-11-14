@@ -636,9 +636,9 @@ public class QuotoService {
             return commonResponse;
         }
 
-        if(!StringUtils.isEmpty(quoto.getSql())){
+        if (!StringUtils.isEmpty(quoto.getSql())) {
             CommonResponse checkCommonResponse = checkSql(quoto.getSql());
-            if(!checkCommonResponse.isSuccess()){
+            if (!checkCommonResponse.isSuccess()) {
                 return checkCommonResponse;
             }
         }
@@ -785,64 +785,65 @@ public class QuotoService {
 
     /**
      * 校验sql是否合法
+     *
      * @param sql
      * @return
      */
-    public CommonResponse checkSql(String sql){
+    public CommonResponse checkSql(String sql) {
         CommonResponse commonResponse = new CommonResponse();
         int MAX_QUERY_COUNT = 100000;
         String sqlLower = sql.toLowerCase().trim();
-        if(sqlLower.contains(" limit ")) {
+        if (sqlLower.contains(" limit ")) {
             int limitLocation = sqlLower.indexOf(" limit ");
-            sqlLower = sqlLower.substring(limitLocation+7);
-            while(true){
-                if(sqlLower.startsWith(" ")){
-                    sqlLower=sqlLower.substring(1);
-                }else{
+            sqlLower = sqlLower.substring(limitLocation + 7);
+            while (true) {
+                if (sqlLower.startsWith(" ")) {
+                    sqlLower = sqlLower.substring(1);
+                } else {
                     break;
                 }
             }
             String limitNumStr = sqlLower;
-            if(sqlLower.indexOf(" ")>0) {
+            if (sqlLower.indexOf(" ") > 0) {
                 limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
             }
             try {
                 int limitNum = Integer.parseInt(limitNumStr);
-                if(limitNum<=0||limitNum>MAX_QUERY_COUNT){
+                if (limitNum <= 0 || limitNum > MAX_QUERY_COUNT) {
                     commonResponse.setSuccess(false);
-                    commonResponse.setMessage("指标sql limit的数据量在1到"+MAX_QUERY_COUNT);
+                    commonResponse.setMessage("指标sql limit的数据量在1到" + MAX_QUERY_COUNT);
                     return commonResponse;
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("指标sql limit后要接数字");
                 return commonResponse;
             }
             return commonResponse;
-        }else {
-            int fromLocation =sqlLower.indexOf(" from");
-            if(fromLocation<0){
+        } else {
+            int fromLocation = sqlLower.indexOf(" from");
+            if (fromLocation < 0) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("指标sql没有from");
                 return commonResponse;
             }
-            sqlLower = sqlLower.substring(0,fromLocation);
-            if(!sqlLower.startsWith("select ")){
+            sqlLower = sqlLower.substring(0, fromLocation);
+            if (!sqlLower.startsWith("select ")) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("指标sql不以select 开头");
                 return commonResponse;
-            }else{
-                sqlLower = sqlLower.substring(6).replace(" ","");
-                for(String columnName: sqlLower.split(",")){
-                    int parenthesesLocation =columnName.indexOf("(");
-                    if(parenthesesLocation<0){
+            } else {
+                sqlLower = sqlLower.substring(6).replace(" ", "");
+                for (String columnName : sqlLower.split(",")) {
+                    int parenthesesLocation = columnName.indexOf("(");
+                    if (parenthesesLocation < 0) {
                         commonResponse.setSuccess(false);
                         commonResponse.setMessage("指标sql需要limit做数据限制");
                         return commonResponse;
                     }
-                    String functionName=columnName.substring(0,parenthesesLocation);
-                    if(!(functionName.equals("count")||functionName.equals("sum")||functionName.equals("avg")||functionName.equals("max")||functionName.equals("min")||functionName.equals("count_big")||functionName.equals("grouping")
-                            ||functionName.equals("binary_checksum")||functionName.equals("checksum_agg")||functionName.equals("checksum")||functionName.equals("stdev")||functionName.equals("stdevp")||functionName.equals("var")||functionName.equals("varp"))){
+                    String functionName = columnName.substring(0, parenthesesLocation);
+                    if (!(functionName.equals("count") || functionName.equals("sum") || functionName.equals("avg") || functionName.equals("max") || functionName.equals("min") || functionName.equals("count_big") || functionName.equals("grouping")
+                            || functionName.equals("binary_checksum") || functionName.equals("checksum_agg") || functionName.equals("checksum") || functionName.equals("stdev") || functionName.equals("stdevp") || functionName.equals("var") || functionName.equals("varp"))) {
                         commonResponse.setSuccess(false);
                         commonResponse.setMessage("指标sql需要limit做数据限制");
                         return commonResponse;
@@ -889,10 +890,10 @@ public class QuotoService {
             }
         }
 
-        if(!StringUtils.isEmpty(quoto.getSql())){
-            if(StringUtils.isEmpty(oldQuoto.getSql())||(!quoto.getSql().equals(oldQuoto.getSql()))){
+        if (!StringUtils.isEmpty(quoto.getSql())) {
+            if (StringUtils.isEmpty(oldQuoto.getSql()) || (!quoto.getSql().equals(oldQuoto.getSql()))) {
                 CommonResponse checkCommonResponse = checkSql(quoto.getSql());
-                if(!checkCommonResponse.isSuccess()){
+                if (!checkCommonResponse.isSuccess()) {
                     return checkCommonResponse;
                 }
             }
@@ -1037,7 +1038,7 @@ public class QuotoService {
             return commonResponse;
         }
         //插入历史记录
-        if(commonResponse.isSuccess()){
+        if (commonResponse.isSuccess()) {
             quotoMapper.insertQuotoUpdateHistory(oldQuoto);
         }
         return commonResponse;
@@ -1046,7 +1047,7 @@ public class QuotoService {
     public CommonQueryResponse queryQuoto(QuotoQuery quotoQuery) {
         // TODO Auto-generated method stub
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
-        if(StringUtils.isEmpty(quotoQuery.getCreator())){
+        if (StringUtils.isEmpty(quotoQuery.getCreator())) {
             commonQueryResponse.setSuccess(false);
             commonQueryResponse.setMessage("creator不能为空!");
             return commonQueryResponse;
@@ -1102,8 +1103,8 @@ public class QuotoService {
         if (quotoQuery.getState() != -1) {
             condition = condition + " and q.state=" + quotoQuery.getState();
         }
-        if(quotoQuery.getTags()!=null&&quotoQuery.getTags().length>0){
-            condition = condition + " and q.id in (select distinct quoto_id from quoto_tag where deleted=0 and creator='"+quotoQuery.getCreator()+"' and tag_id in "+Arrays.toString(quotoQuery.getTags()).replace("[", "(").replace("]", ")")+")";
+        if (quotoQuery.getTags() != null && quotoQuery.getTags().length > 0) {
+            condition = condition + " and q.id in (select distinct quoto_id from quoto_tag where deleted=0 and creator='" + quotoQuery.getCreator() + "' and tag_id in " + Arrays.toString(quotoQuery.getTags()).replace("[", "(").replace("]", ")") + ")";
         }
 
 
@@ -1111,13 +1112,13 @@ public class QuotoService {
         int page = quotoQuery.getPage();
         int size = quotoQuery.getSize();
         int startLine = (page - 1) * size;
-        commonQueryResponse.setData(quotoMapper.queryQuoto(condition, startLine, size,quotoQuery.getCreator()));
+        commonQueryResponse.setData(quotoMapper.queryQuoto(condition, startLine, size, quotoQuery.getCreator()));
         commonQueryResponse.setCurrentPage(quotoQuery.getPage());
         commonQueryResponse.setTotal(quotoMapper.queryQuotoCount(condition));
         return commonQueryResponse;
     }
 
-    public CommonResponse queryQuotoUpdateHistory(int id){
+    public CommonResponse queryQuotoUpdateHistory(int id) {
         CommonResponse commonResponse = new CommonResponse();
         Quoto quoto = quotoMapper.queryQuotoById(id);
         if (quoto == null) {
@@ -1579,6 +1580,50 @@ public class QuotoService {
                 }
             }
         }
+        if (quoto.getType() == TypeEnum.derive_quoto.getCode() && quoto.isUse_sql()) {
+            String sql = quoto.getSql().toLowerCase();
+            Set<String> columns = new HashSet<>();
+            Set<String> groups = new HashSet<>();
+            if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
+                String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
+                for (String column : select.split(",")) {
+                    column = column.trim();
+                    if (column.contains(" as ")) {
+                        column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
+                    } else if (column.equals("*") || StringUtils.isEmpty(column)) {
+                        continue;
+                    } else if (column.contains(".")) {
+                        column = column.substring(column.indexOf(".") + 1);
+                    }
+                    columns.add(column);
+                }
+
+            }
+            if (sql.lastIndexOf(" group by ") != -1) {
+                String group = sql.substring(sql.lastIndexOf(" group by ") + 10).trim();
+                int index = group.indexOf(" having");
+                if (index == -1) {
+                    index = group.indexOf(" order ");
+                    if (index == -1) {
+                        index = group.indexOf(" limit ");
+                    }
+                }
+                if (index != -1) {
+                    group = group.substring(0, index).trim();
+                }
+                for (String groupValue : group.split(",")) {
+                    groups.add(groupValue);
+                }
+            }
+            groups.retainAll(columns);
+            columns.removeAll(groups);
+            if (!columns.isEmpty()) {
+                commonResponse.setFields(columns);
+            }
+            if (!groups.isEmpty()) {
+                commonResponse.setDimensions(groups);
+            }
+        }
         return commonResponse;
     }
 
@@ -1592,52 +1637,52 @@ public class QuotoService {
         // 1为时间修饰词
         if (adjective.getType() == 1) {
             int timeType = 1;//1代表正常的yyyy-MM-dd hh:mm:ss 2代表日期yyyy-MM-dd
-            if(!StringUtils.isEmpty(adjective.getDescr())&&adjective.getDescr().toLowerCase().equals("date")){
+            if (!StringUtils.isEmpty(adjective.getDescr()) && adjective.getDescr().toLowerCase().equals("date")) {
                 timeType = 2;
             }
             String result = "'" + adjective.getColumn_name();
             if (adjective.getCode().equals("last1HOUR")) {
                 result = result + ">=':'" + DateTimeUtils.getlast1HOUR(timeType) + "'";
             } else if (adjective.getCode().equals("last1DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(0,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(0, timeType) + "'";
             } else if (adjective.getCode().equals("last2DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-1,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-1, timeType) + "'";
             } else if (adjective.getCode().equals("last3DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-2,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-2, timeType) + "'";
             } else if (adjective.getCode().equals("last7DAY") || adjective.getCode().equals("last1WEEK")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-6,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-6, timeType) + "'";
             } else if (adjective.getCode().equals("last14DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-13,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-13, timeType) + "'";
             } else if (adjective.getCode().equals("last15DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-15,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-15, timeType) + "'";
             } else if (adjective.getCode().equals("last30DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-30,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-30, timeType) + "'";
             } else if (adjective.getCode().equals("last60DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-60,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-60, timeType) + "'";
             } else if (adjective.getCode().equals("last90DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-90,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-90, timeType) + "'";
             } else if (adjective.getCode().equals("last180DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-180,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-180, timeType) + "'";
             } else if (adjective.getCode().equals("last360DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-360,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-360, timeType) + "'";
             } else if (adjective.getCode().equals("last365DAY")) {
-                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-365,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getLastDateByDay(-365, timeType) + "'";
             } else if (adjective.getCode().equals("last1MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-1,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-1, timeType) + "'";
             } else if (adjective.getCode().equals("last2MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-2,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-2, timeType) + "'";
             } else if (adjective.getCode().equals("last3MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-3,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-3, timeType) + "'";
             } else if (adjective.getCode().equals("last6MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-6,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-6, timeType) + "'";
             } else if (adjective.getCode().equals("last7MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-7,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-7, timeType) + "'";
             } else if (adjective.getCode().equals("last8MONTH")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-8,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByMonth(-8, timeType) + "'";
             } else if (adjective.getCode().equals("last1YEAR")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-1,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-1, timeType) + "'";
             } else if (adjective.getCode().equals("last2YEAR")) {
-                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-2,timeType) + "'";
+                result = result + ">=':'" + DateTimeUtils.getlastDateByYear(-2, timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(w)")) {
                 result = result + ">=':'" + DateTimeUtils.ftDateWeek(timeType) + "'";
             } else if (adjective.getCode().equals("ftDate(m)")) {
@@ -1647,68 +1692,68 @@ public class QuotoService {
             } else if (adjective.getCode().equals("ftDate(y)")) {
                 result = result + ">=':'" + DateTimeUtils.ftDateYear(timeType) + "'";
             } else if (adjective.getCode().equals("pre1MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-1, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre2MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-2, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre3MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-3, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre4MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-4, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre5MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-5, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre6MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-6, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre12MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-12, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre24MONTH")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByMonth(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByMonth(-24, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByMonth(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-1, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre2DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-2, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre3DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-3, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre7DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-7, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre14DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-14, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre15DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-15, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre30DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-30, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre60DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-60, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre90DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-90, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre180DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-180, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre360DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-360, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre365DAY")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getLastDateByDay(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getLastDateByDay(-365, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getLastDateByDay(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1YEAR")) {
-                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByYear(-1,timeType) + "\\',<\\'"
-                        + DateTimeUtils.getPreDateByYear(0,timeType) + "\\''";
+                result = result + "&{}':'>=\\'" + DateTimeUtils.getPreDateByYear(-1, timeType) + "\\',<\\'"
+                        + DateTimeUtils.getPreDateByYear(0, timeType) + "\\''";
             } else if (adjective.getCode().equals("pre1QUARTER")) {
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
                 Calendar cal = Calendar.getInstance();
@@ -1726,7 +1771,7 @@ public class QuotoService {
                 String end = format.format(cal.getTime());
                 cal.add(Calendar.MONTH, -3);
                 String start = format.format(cal.getTime());
-                if(timeType==1){
+                if (timeType == 1) {
                     end = end + " 00:00:00";
                     start = start + " 00:00:00";
                 }
@@ -1980,8 +2025,8 @@ public class QuotoService {
             String desc = "可排序的参数名：" + originQuoto.getField();
             List<DimensionExtend> dimensionInfo = quotoMapper.queryDimensionByQuotoId(quoto.getId());
             if (dimensionInfo != null && dimensionInfo.size() > 0) {
-                for (DimensionExtend dimensionExtend : dimensionInfo){
-                    desc = desc +","+dimensionExtend.getCode();
+                for (DimensionExtend dimensionExtend : dimensionInfo) {
+                    desc = desc + "," + dimensionExtend.getCode();
                 }
             }
             extendFieldOrder.setDesc(desc);
