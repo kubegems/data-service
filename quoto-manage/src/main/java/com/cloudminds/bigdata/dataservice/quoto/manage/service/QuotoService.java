@@ -1581,47 +1581,12 @@ public class QuotoService {
             }
         }
         if (quoto.getType() == TypeEnum.derive_quoto.getCode() && quoto.isUse_sql()) {
-            String sql = quoto.getSql().toLowerCase();
-            Set<String> columns = new HashSet<>();
-            Set<String> groups = new HashSet<>();
-            if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
-                String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
-                for (String column : select.split(",")) {
-                    column = column.trim();
-                    if (column.contains(" as ")) {
-                        column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
-                    } else if (column.equals("*") || StringUtils.isEmpty(column)) {
-                        continue;
-                    } else if (column.contains(".")) {
-                        column = column.substring(column.indexOf(".") + 1);
-                    }
-                    columns.add(column);
-                }
-
+            Map<String,Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
+            if (!columnAndGroup.get("column").isEmpty()) {
+                commonResponse.setFields(columnAndGroup.get("column"));
             }
-            if (sql.lastIndexOf(" group by ") != -1) {
-                String group = sql.substring(sql.lastIndexOf(" group by ") + 10).trim();
-                int index = group.indexOf(" having");
-                if (index == -1) {
-                    index = group.indexOf(" order ");
-                    if (index == -1) {
-                        index = group.indexOf(" limit ");
-                    }
-                }
-                if (index != -1) {
-                    group = group.substring(0, index).trim();
-                }
-                for (String groupValue : group.split(",")) {
-                    groups.add(groupValue);
-                }
-            }
-            groups.retainAll(columns);
-            columns.removeAll(groups);
-            if (!columns.isEmpty()) {
-                commonResponse.setFields(columns);
-            }
-            if (!groups.isEmpty()) {
-                commonResponse.setDimensions(groups);
+            if (!columnAndGroup.get("group").isEmpty()) {
+                commonResponse.setDimensions(columnAndGroup.get("group"));
             }
         }
         return commonResponse;
@@ -2021,12 +1986,31 @@ public class QuotoService {
         extendFieldOrder.setSample(orders);
         extendFieldOrder.setDesc("排序的参数组合");
         if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
-            Quoto originQuoto = quotoMapper.queryQuotoById(quoto.getOrigin_quoto());
-            String desc = "可排序的参数名：" + originQuoto.getField();
-            List<DimensionExtend> dimensionInfo = quotoMapper.queryDimensionByQuotoId(quoto.getId());
-            if (dimensionInfo != null && dimensionInfo.size() > 0) {
-                for (DimensionExtend dimensionExtend : dimensionInfo) {
-                    desc = desc + "," + dimensionExtend.getCode();
+            String desc = "可排序的参数名：";
+            if(quoto.isUse_sql()){
+                Map<String,Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
+                if (!columnAndGroup.get("column").isEmpty()) {
+                    for(String cl: columnAndGroup.get("column")){
+                        desc = desc+cl+",";
+                    }
+                }
+                if (!columnAndGroup.get("group").isEmpty()) {
+                    for(String cl: columnAndGroup.get("group")){
+                        desc = desc+cl+",";
+                    }
+                }
+                if(desc.charAt(desc.length()-1)==','){
+                    desc=desc.substring(0,desc.length()-1);
+                }
+            }else {
+                Quoto originQuoto = quotoMapper.queryQuotoById(quoto.getOrigin_quoto());
+                List<DimensionExtend> dimensionInfo = quotoMapper.queryDimensionByQuotoId(quoto.getId());
+                desc = "可排序的参数名：" + originQuoto.getField();
+
+                if (dimensionInfo != null && dimensionInfo.size() > 0) {
+                    for (DimensionExtend dimensionExtend : dimensionInfo) {
+                        desc = desc + "," + dimensionExtend.getCode();
+                    }
                 }
             }
             extendFieldOrder.setDesc(desc);
@@ -2059,5 +2043,48 @@ public class QuotoService {
         quotoApiDoc.setRequestParament(extendFields);
         commonResponse.setData(quotoApiDoc);
         return commonResponse;
+    }
+
+    public Map<String,Set<String>> getColumnAndGroup(String sql){
+        sql = sql.toLowerCase();
+        Map<String,Set<String>> result = new HashMap<>();
+        Set<String> columns = new HashSet<>();
+        Set<String> groups = new HashSet<>();
+        if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
+            String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
+            for (String column : select.split(",")) {
+                column = column.trim();
+                if (column.contains(" as ")) {
+                    column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
+                } else if (column.equals("*") || StringUtils.isEmpty(column)) {
+                    continue;
+                } else if (column.contains(".")) {
+                    column = column.substring(column.indexOf(".") + 1);
+                }
+                columns.add(column);
+            }
+
+        }
+        if (sql.lastIndexOf(" group by ") != -1) {
+            String group = sql.substring(sql.lastIndexOf(" group by ") + 10).trim();
+            int index = group.indexOf(" having");
+            if (index == -1) {
+                index = group.indexOf(" order ");
+                if (index == -1) {
+                    index = group.indexOf(" limit ");
+                }
+            }
+            if (index != -1) {
+                group = group.substring(0, index).trim();
+            }
+            for (String groupValue : group.split(",")) {
+                groups.add(groupValue);
+            }
+        }
+        groups.retainAll(columns);
+        columns.removeAll(groups);
+        result.put("group",groups);
+        result.put("column",columns);
+        return result;
     }
 }
