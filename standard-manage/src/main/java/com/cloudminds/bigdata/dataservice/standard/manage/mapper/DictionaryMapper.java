@@ -37,10 +37,10 @@ public interface DictionaryMapper {
     @Insert("insert into dictionary(zh_name, classify_id,en_name,code,fields,create_time,update_time, creator,descr,state) values(#{zh_name},#{classify_id}, #{en_name}, #{code}, #{fields,typeHandler=com.cloudminds.bigdata.dataservice.standard.manage.handler.JsonListTypeHandler},now(),now(), #{creator}, #{descr}, #{state})")
     public int insertDictionary(Dictionary dictionary);
 
-    @Select("select d.*,three.id as classify_id_three,three.name as classify_name_three,two.id as classify_id_two,two.name as classify_name_two,one.id as classify_id_one,one.name as classify_name_one from dictionary d left join classify three on d.classify_id=three.id left join classify two on three.pid=two.id left join classify one on two.pid=one.id where d.deleted=0 ${condition} order by d.update_time desc limit #{startLine},#{size}")
+    @Select("select d.*,three.id as classify_id,three.name as classify_name from dictionary d left join classify three on d.classify_id=three.id  where d.deleted=0 ${condition} order by d.update_time desc limit #{startLine},#{size}")
     @Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
     public List<DictionaryExtendInfo> queryDictionary(String condition, int startLine, int size);
 
-    @Select("select count(*) from dictionary d left join classify three on d.classify_id=three.id left join classify two on three.pid=two.id left join classify one on two.pid=one.id where d.deleted=0 ${condition}")
+    @Select("select count(*) from dictionary d left join classify three on d.classify_id=three.id where d.deleted=0 ${condition}")
     public int queryDictionaryCount(String condition);
 }

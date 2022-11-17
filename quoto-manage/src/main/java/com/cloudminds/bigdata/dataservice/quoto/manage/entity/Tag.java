@@ -8,4 +8,5 @@ import lombok.EqualsAndHashCode;
 public class Tag extends BaseEntity{
     private int id;
     private String name;
+    private String color;
 }

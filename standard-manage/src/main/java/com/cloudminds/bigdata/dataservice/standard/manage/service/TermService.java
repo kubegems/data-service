@@ -31,20 +31,9 @@ public class TermService {
 		}
 		//校验分类
 		Classify classify = classifyMapper.findClassifyById(term.getClassify_id());
-		if(classify==null || classify.getType()!=1){
+		if(classify==null){
 			commonResponse.setSuccess(false);
 			commonResponse.setMessage("分类不存在");
-			return commonResponse;
-		}
-		if(classify.getPid()==0){
-			commonResponse.setSuccess(false);
-			commonResponse.setMessage("只能挂在三级分类下");
-			return commonResponse;
-		}
-		Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
-		if(pidClassify.getPid()==0){
-			commonResponse.setSuccess(false);
-			commonResponse.setMessage("只能挂在三级分类下");
 			return commonResponse;
 		}
 
@@ -127,20 +116,9 @@ public class TermService {
 		//校验分类
 		if(term.getClassify_id()!=oldTerm.getClassify_id()) {
 			Classify classify = classifyMapper.findClassifyById(term.getClassify_id());
-			if (classify == null || classify.getType() != 1) {
+			if (classify == null) {
 				commonResponse.setSuccess(false);
 				commonResponse.setMessage("分类不存在");
-				return commonResponse;
-			}
-			if (classify.getPid() == 0) {
-				commonResponse.setSuccess(false);
-				commonResponse.setMessage("只能挂在三级分类下");
-				return commonResponse;
-			}
-			Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
-			if (pidClassify.getPid() == 0) {
-				commonResponse.setSuccess(false);
-				commonResponse.setMessage("只能挂在三级分类下");
 				return commonResponse;
 			}
 		}
@@ -172,7 +150,7 @@ public class TermService {
 			condition=condition+"and t.zh_name like '"+termQuery.getZh_name()+"%'";
 		}
 		if(termQuery.getClassify_id()>0){
-			condition=condition+" and (one.id="+termQuery.getClassify_id()+" or two.id="+termQuery.getClassify_id()+" or three.id="+termQuery.getClassify_id()+")";
+			condition=condition+" and three.id="+termQuery.getClassify_id();
 		}
 		int page = termQuery.getPage();
 		int size = termQuery.getSize();

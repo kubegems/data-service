@@ -19,11 +19,11 @@ public interface TagMapper {
     @Select("select * from tag where deleted=0 and id=#{id}")
     Tag findTayById(int id);
 
-    @Insert("insert into tag(name,descr,creator,create_time,update_time) "
-            + "values(#{name},#{descr},#{creator},now(),now())")
+    @Insert("insert into tag(name,color,descr,creator,create_time,update_time) "
+            + "values(#{name},#{color},#{descr},#{creator},now(),now())")
     int insertTag(Tag tag);
 
-    @Update("update tag set name=#{name},descr=#{descr} where id=#{id}")
+    @Update("update tag set name=#{name},color=#{color},descr=#{descr} where id=#{id}")
     int updateTag(Tag tag);
 
     @Update("update tag set deleted=null where id=#{id}")

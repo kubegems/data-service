@@ -65,20 +65,9 @@ public class DictionaryService {
 
         //校验分类
        Classify classify = classifyMapper.findClassifyById(dictionary.getClassify_id());
-        if(classify==null || classify.getType()!=2){
+        if(classify==null){
             commonResponse.setSuccess(false);
             commonResponse.setMessage("分类不存在");
-            return commonResponse;
-        }
-        if(classify.getPid()==0){
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("只能挂在三级分类下");
-            return commonResponse;
-        }
-        Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
-        if(pidClassify.getPid()==0){
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("只能挂在三级分类下");
             return commonResponse;
         }
 
@@ -171,20 +160,9 @@ public class DictionaryService {
         if(dictionary.getClassify_id()!=oldDictionary.getClassify_id()){
             //校验分类
             Classify classify = classifyMapper.findClassifyById(dictionary.getClassify_id());
-            if(classify==null || classify.getType()!=2){
+            if(classify==null){
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("分类不存在");
-                return commonResponse;
-            }
-            if(classify.getPid()==0){
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("只能挂在三级分类下");
-                return commonResponse;
-            }
-            Classify pidClassify = classifyMapper.findClassifyById(classify.getPid());
-            if(pidClassify.getPid()==0){
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("只能挂在三级分类下");
                 return commonResponse;
             }
         }
@@ -258,7 +236,7 @@ public class DictionaryService {
             condition=condition+"and d.zh_name like '"+dictionaryQuery.getZh_name()+"%'";
         }
         if(dictionaryQuery.getClassify_id()>0){
-            condition=condition+" and (one.id="+dictionaryQuery.getClassify_id()+" or two.id="+dictionaryQuery.getClassify_id()+" or three.id="+dictionaryQuery.getClassify_id()+")";
+            condition=condition+" and three.id="+dictionaryQuery.getClassify_id();
         }
         int page = dictionaryQuery.getPage();
         int size = dictionaryQuery.getSize();

@@ -7,10 +7,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class DictionaryExtendInfo extends Dictionary {
-    private int classify_id_three;
-    private String classify_name_three;
-    private int classify_id_two;
-    private String classify_name_two;
-    private int classify_id_one;
-    private String classify_name_one;
+    private int classify_id;
+    private String classify_name;
 }

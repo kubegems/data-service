@@ -16,9 +16,9 @@ public class TagService {
     public CommonResponse insertTag(Tag tag) {
         CommonResponse commonResponse = new CommonResponse();
         //校验参数
-        if (tag == null || StringUtils.isEmpty(tag.getName()) || StringUtils.isEmpty(tag.getCreator())) {
+        if (tag == null || StringUtils.isEmpty(tag.getName()) || StringUtils.isEmpty(tag.getCreator()) || StringUtils.isEmpty(tag.getColor())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("tag名,创建者不能为空");
+            commonResponse.setMessage("tag名,创建者,颜色不能为空");
             return commonResponse;
         }
         //判断tag是否存在
@@ -40,9 +40,9 @@ public class TagService {
     public CommonResponse updateTag(Tag tag) {
         CommonResponse commonResponse = new CommonResponse();
         //校验参数
-        if (tag == null || StringUtils.isEmpty(tag.getName())) {
+        if (tag == null || StringUtils.isEmpty(tag.getName()) || StringUtils.isEmpty(tag.getColor())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("tag名不能为空");
+            commonResponse.setMessage("tag名和颜色不能为空");
             return commonResponse;
         }
 
