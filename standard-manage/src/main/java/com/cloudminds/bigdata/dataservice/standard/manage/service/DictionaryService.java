@@ -236,7 +236,7 @@ public class DictionaryService {
             condition=condition+"and d.zh_name like '"+dictionaryQuery.getZh_name()+"%'";
         }
         if(dictionaryQuery.getClassify_id()>0){
-            condition=condition+" and three.id="+dictionaryQuery.getClassify_id();
+            condition=condition+" and (one.id="+dictionaryQuery.getClassify_id()+" or two.id="+dictionaryQuery.getClassify_id()+" or three.id="+dictionaryQuery.getClassify_id()+")";
         }
         int page = dictionaryQuery.getPage();
         int size = dictionaryQuery.getSize();

@@ -36,10 +36,13 @@ public interface TermMapper {
 	@Update({"<script> update term set deleted=1 where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>"})
 	public int batchDeleteTerm(int[] id);
 	
-	@Select("select t.*,three.id as classify_id,three.name as classify_name from term t left join classify three on t.classify_id=three.id where t.deleted=0 ${condition} order by t.update_time desc limit #{startLine},#{size}")
+	@Select("select t.*,three.id as classify_id,three.name as classify_name from term t left join classify three on t.classify_id=three.id left join classify two on three.pid=two.id left join classify one on two.pid=one.id where t.deleted=0 ${condition} order by t.update_time desc limit #{startLine},#{size}")
 	public List<TermExtendInfo> queryTerm(String condition, int startLine, int size);
-	
-	@Select("select count(*) from term t left join classify three on t.classify_id=three.id where t.deleted=0 ${condition}")
+
+	@Select("select * from term where deleted=0 and classify_id=#{classify_id}")
+	public List<Term> findTermByClassify(int classify_id);
+
+	@Select("select count(*) from term t left join classify three on t.classify_id=three.id left join classify two on three.pid=two.id left join classify one on two.pid=one.id where t.deleted=0 ${condition}")
 	public int queryTermCount(String condition);
 
 }

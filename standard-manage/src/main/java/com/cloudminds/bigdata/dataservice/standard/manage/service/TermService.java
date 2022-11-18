@@ -150,7 +150,7 @@ public class TermService {
 			condition=condition+"and t.zh_name like '"+termQuery.getZh_name()+"%'";
 		}
 		if(termQuery.getClassify_id()>0){
-			condition=condition+" and three.id="+termQuery.getClassify_id();
+			condition=condition+" and (one.id="+termQuery.getClassify_id()+" or two.id="+termQuery.getClassify_id()+" or three.id="+termQuery.getClassify_id()+")";
 		}
 		int page = termQuery.getPage();
 		int size = termQuery.getSize();
