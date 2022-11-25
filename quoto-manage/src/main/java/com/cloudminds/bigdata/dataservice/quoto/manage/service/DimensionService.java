@@ -335,4 +335,10 @@ public class DimensionService {
         commonResponse.setData(supportDimension);
         return commonResponse;
     }
+
+    public CommonResponse queryAllDimension() {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(dimensionMapper.queryAllDimension());
+        return commonResponse;
+    }
 }

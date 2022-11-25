@@ -61,7 +61,7 @@ public class DictionaryControl {
     }
 
     //上传文件获取字典信息
-    @RequestMapping(value = "/analysisFile", method = RequestMethod.POST)
+    @RequestMapping(value = "analysisFile", method = RequestMethod.POST)
     public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request)  {
         return dictionaryService.analysisFile(file);
     }

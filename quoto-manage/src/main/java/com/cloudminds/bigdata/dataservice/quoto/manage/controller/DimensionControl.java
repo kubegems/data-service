@@ -77,5 +77,11 @@ public class DimensionControl {
         return dimensionService.querySupportDimension(tableId);
     }
 
+    // 获取所有的维度属性
+    @RequestMapping(value = "queryAllDimension", method = RequestMethod.GET)
+    public CommonResponse queryAllDimension() {
+        return dimensionService.queryAllDimension();
+    }
+
 
 }

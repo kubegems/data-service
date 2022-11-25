@@ -319,6 +319,14 @@ public class AdjectiveService {
 			condition = condition + " and type=" + adjectiveQuery.getType();
 		}
 
+		if(adjectiveQuery.getDimension_id()!=null){
+			if(adjectiveQuery.getDimension_id()>0) {
+				condition = condition + " and dimension_id=" + adjectiveQuery.getDimension_id();
+			}else if(adjectiveQuery.getDimension_id()==-1){
+				condition = condition + " and dimension_id is null";
+			}
+		}
+
 		if (adjectiveQuery.getName() != null && (!adjectiveQuery.getName().equals(""))) {
 			condition = condition + " and name like '" + adjectiveQuery.getName() + "%'";
 		}

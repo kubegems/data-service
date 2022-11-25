@@ -2052,7 +2052,18 @@ public class QuotoService {
         Set<String> groups = new HashSet<>();
         if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
             String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
-            for (String column : select.split(",")) {
+            String[] columnSelect = select.split(",");
+            List<String> columnsTmp = new ArrayList<>();
+            for(int i=0;i<columnSelect.length;i++){
+                if(judgeIsRight(columnSelect[i])){
+                    columnsTmp.add(columnSelect[i]);
+                }else{
+                    if(i<columnSelect.length-1){
+                        columnSelect[i+1]=columnSelect[i]+columnSelect[i+1];
+                    }
+                }
+            }
+            for (String column : columnsTmp) {
                 column = column.trim();
                 if (column.contains(" as ")) {
                     column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
@@ -2086,5 +2097,21 @@ public class QuotoService {
         result.put("group",groups);
         result.put("column",columns);
         return result;
+    }
+    public boolean judgeIsRight(String colunm){
+        int a=0;
+        int b=0;
+        for(int i=0;i<colunm.length();i++){
+            if(colunm.charAt(i)=='('){
+                a=a+1;
+            }else if(colunm.charAt(i)==')'){
+                b=b+1;
+            }
+        }
+        if(a==b){
+            return true;
+        }else{
+            return false;
+        }
     }
 }

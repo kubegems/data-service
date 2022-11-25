@@ -6,6 +6,7 @@ import lombok.Data;
 public class AdjectiveQuery {
 	private int type = -1;
 	private String name;
+	private Integer dimension_id;
 	private int page;
 	private int size;
 }

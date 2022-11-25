@@ -1,19 +1,25 @@
 package com.cloudminds.bigdata.dataservice.standard.manage.service;
 
+import com.cloudminds.bigdata.dataservice.standard.manage.controller.TermControl;
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.Classify;
+import com.cloudminds.bigdata.dataservice.standard.manage.entity.DictionaryValue;
+import com.cloudminds.bigdata.dataservice.standard.manage.entity.request.*;
 import com.cloudminds.bigdata.dataservice.standard.manage.mapper.ClassifyMapper;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.Term;
-import com.cloudminds.bigdata.dataservice.standard.manage.entity.request.BatchDeleteReq;
-import com.cloudminds.bigdata.dataservice.standard.manage.entity.request.CheckReq;
-import com.cloudminds.bigdata.dataservice.standard.manage.entity.request.DeleteReq;
-import com.cloudminds.bigdata.dataservice.standard.manage.entity.request.TermQuery;
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.response.CommonQueryResponse;
 import com.cloudminds.bigdata.dataservice.standard.manage.entity.response.CommonResponse;
 import com.cloudminds.bigdata.dataservice.standard.manage.mapper.TermMapper;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.*;
 
 @Service
 public class TermService {
@@ -159,5 +165,112 @@ public class TermService {
 		commonQueryResponse.setCurrentPage(termQuery.getPage());
 		commonQueryResponse.setTotal(termMapper.queryTermCount(condition));
 		return commonQueryResponse;
+	}
+
+	public CommonResponse analysisFile(MultipartFile file) {
+		CommonResponse commonResponse = new CommonResponse();
+		List<Term> termList = new ArrayList<>();
+		try {
+			CSVReader csvReader = new CSVReaderBuilder(
+					new BufferedReader(
+							new InputStreamReader(file.getInputStream(), "utf-8"))).build();
+			Iterator<String[]> iterator = csvReader.iterator();
+			while (iterator.hasNext()) {
+				String[] next = iterator.next();
+				Term term = new Term();
+				if(next.length>=1){
+					term.setZh_name(next[0]);
+				}
+				if(next.length>=2){
+					term.setEn_name(next[1]);
+				}
+				if(next.length>=3){
+					term.setTerm_field(next[1]);
+				}
+				if(next.length>=4){
+					term.setDescr(next[1]);
+				}
+				termList.add(term);
+			}
+			commonResponse.setData(termList);
+			return commonResponse;
+		} catch (Exception e) {
+			e.printStackTrace();
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage(e.getMessage());
+			return commonResponse;
+		}
+	}
+
+	public CommonResponse batchAddTerm(BatchAddReq batchAddReq) {
+		CommonResponse commonResponse = new CommonResponse();
+		if(batchAddReq==null||batchAddReq.getTerms()==null||batchAddReq.getTerms().isEmpty()){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("请求参数不能为空");
+			return commonResponse;
+		}
+		//校验分类
+		int classifyId = batchAddReq.getTerms().get(0).getClassify_id();
+		Classify classify = classifyMapper.findClassifyById(classifyId);
+		if(classify==null){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("分类不存在");
+			return commonResponse;
+		}
+		Set<String> zhNames=new HashSet<>();
+		Set<String> enNames=new HashSet<>();
+		Set<String> fields=new HashSet<>();
+		//检查参数是是否重复
+		for(Term term:batchAddReq.getTerms()){
+			if(term==null || StringUtils.isEmpty(term.getZh_name()) || StringUtils.isEmpty(term.getTerm_field())|| StringUtils.isEmpty(term.getEn_name())){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("中文名 英文名 编码不能为空");
+				return commonResponse;
+			}
+			if(zhNames.contains(term.getZh_name())){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("中文名为"+term.getZh_name()+" 存在多个");
+				return commonResponse;
+			}else{
+				zhNames.add(term.getZh_name());
+			}
+			if(enNames.contains(term.getEn_name())){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("英文名为"+term.getEn_name()+" 存在多个");
+				return commonResponse;
+			}else{
+				enNames.add(term.getEn_name());
+			}
+			if(fields.contains(term.getTerm_field())){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("英文简称为"+term.getTerm_field()+" 存在多个");
+				return commonResponse;
+			}else{
+				fields.add(term.getTerm_field());
+			}
+			//判断分类
+			if(term.getClassify_id()!=classifyId){
+				if(classifyMapper.findClassifyById(term.getClassify_id())==null){
+					commonResponse.setSuccess(false);
+					commonResponse.setMessage("分类不存在");
+					return commonResponse;
+				}
+			}
+			Term oldTerm = termMapper.findTerm(term.getZh_name(),term.getEn_name(),term.getTerm_field());
+			if(oldTerm!=null){
+				commonResponse.setSuccess(false);
+				commonResponse.setMessage("与中文名为"+term.getZh_name()+" 的术语在中文,英文或英文简称上有重复");
+				return commonResponse;
+			}
+
+		}
+		//批量添加数据
+		if(termMapper.batchInsertTerm(batchAddReq.getTerms())<1){
+			commonResponse.setSuccess(false);
+			commonResponse.setMessage("批量添加数据失败,请联系管理员");
+			return commonResponse;
+		}
+
+		return commonResponse;
 	}
 }

@@ -19,6 +19,9 @@ public interface DimensionMapper {
     @Select("select d.*,dd.`name` as dimension_object_name,dd.`code` as dimension_object_code from dimension d left join dimension_object dd on d.dimension_object_id=dd.id where d.deleted=0 and dd.code='time'")
     public List<DimensionExtend> queryTimeDimension();
 
+    @Select("select d.*,dd.`name` as dimension_object_name,dd.`code` as dimension_object_code from dimension d left join dimension_object dd on d.dimension_object_id=dd.id where d.deleted=0 and dd.code!='time'")
+    public List<DimensionExtend> queryAllDimension();
+
     @Select("select * from dimension_object where deleted=0 and name=#{name}")
     public DimensionObject queryDimensionObjectByName(String name);
 
