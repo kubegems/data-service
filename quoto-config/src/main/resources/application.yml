@@ -5,8 +5,4 @@ spring:
     name: dataServer-quotoConfig
   profiles:
     active: dev
-  cloud:
-    nacos:
-      discovery:
-        group: bigdata
     

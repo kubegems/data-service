@@ -3,6 +3,7 @@ spring:
     nacos:
       discovery:
         server-addr: nacos.cloudminds.com
+        group: bigdata
   datasource:
     url: jdbc:mysql://bigdata-mysql:3306/bigdata_rule?characterEncoding=utf8&useSSL=true
     username: root

@@ -11,9 +11,6 @@ spring:
       config:
         prefix: chatbot
         file-extension: yaml
-        namespace: dataservice
-      discovery:
-        group: bigdata
   profiles:
     active: test
 
@@ -27,8 +24,10 @@ spring:
       config:
         group: bigdata-quoto-chatbot.bj-fit-86
         server-addr: 172.16.31.146:8848
+        namespace: dataservice
       discovery:
         server-addr: 172.16.31.146:8848
+        group: bigdata
         
 ---
 #线上环境配置
@@ -39,8 +38,10 @@ spring:
       config:
         group: bigdata-quoto-chatbot.bj-fit-86
         server-addr: nacos.cloudminds.com
+        namespace: dataservice
       discovery:
         server-addr: nacos.cloudminds.com
+        group: bigdata
 
 ---
 #线上环境配置
@@ -49,7 +50,9 @@ spring:
   cloud:
     nacos:
       config:
-        group: bigdata-quoto-chatbot.bj-prod-232
-        server-addr: nacos.cloudminds.com
+        group: dataservice-232
+        server-addr: nacos-client.nacos:8848
+        namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
       discovery:
-        server-addr: nacos.cloudminds.com
+        server-addr: nacos-client.nacos:8848
+        group: dataservice-232
