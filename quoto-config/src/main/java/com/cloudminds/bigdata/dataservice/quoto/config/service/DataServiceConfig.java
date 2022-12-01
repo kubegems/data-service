@@ -349,7 +349,7 @@ public class DataServiceConfig {
                 commonResponse.setMessage("指标名不能是数、中文或者含有()+-*/&#特殊符号");
                 return commonResponse;
             }
-            if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name(),quotoInfo.getTable_id()) != null) {
+            if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name(),oldQuotoInfo.getTable_id()) != null) {
                 commonResponse.setMessage("指标名已存在！");
                 commonResponse.setSuccess(false);
                 return commonResponse;
