@@ -1,0 +1,10 @@
+variables:
+  appName: bigdata-quoto-roc
+  IMAGE_NAME: "quoto-roc"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "quoto-roc"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/quoto-roc/gitlab-ci-template.yml'
+  ref: develop
