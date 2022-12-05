@@ -11,6 +11,6 @@ spring:
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
   redis:
-    host: bigdata-redis
+    host: bigdata-redis-master
     port: 6379
 dataServiceUrl: http://bigdata-service-gw:8001
