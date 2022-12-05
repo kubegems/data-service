@@ -458,7 +458,7 @@ public class DataServiceConfig {
             QuotoInfo quotoInfo = new QuotoInfo();
             quotoInfo.setTable_id(tableInfo.getId());
             quotoInfo.setQuoto_sql("count(*)");
-            quotoInfo.setQuoto_name("count");
+            quotoInfo.setQuoto_name("cnt");
             quotoInfo.setDes("总数");
             insertQuotoInfo(quotoInfo);
             refreshDataService(tableInfo.getId());

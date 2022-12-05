@@ -4,6 +4,7 @@ spring:
       discovery:
         server-addr: nacos-client.nacos:8848
         group: dataservice-232
+        namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
   datasource:
     url: jdbc:mysql://bigdata-mysql:3306/bigdata_label?characterEncoding=utf8&useSSL=true
     username: root
