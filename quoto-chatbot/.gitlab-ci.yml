@@ -8,3 +8,4 @@ include:
   project: 'devops/ci-template'
   file: '/bigdata/bigdata-dataservice/quoto-chatbot/gitlab-ci-template.yml'
   ref: develop
+
