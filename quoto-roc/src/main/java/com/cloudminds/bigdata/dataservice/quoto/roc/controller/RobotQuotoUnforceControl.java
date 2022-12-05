@@ -25,7 +25,7 @@ import apijson.orm.AbstractSQLConfig;
 import apijson.orm.Parser;
 
 @RestController
-@RequestMapping("/roc/unForce/quoto")
+@RequestMapping("/data/unForce/quoto")
 public class RobotQuotoUnforceControl extends APIJSONController {
     @Autowired
     private RedisUtil redisUtil;

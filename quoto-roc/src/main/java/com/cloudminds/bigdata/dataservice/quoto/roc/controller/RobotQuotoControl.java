@@ -32,7 +32,7 @@ import apijson.orm.AbstractSQLConfig;
 import apijson.orm.Parser;
 
 @RestController
-@RequestMapping("/roc/quoto")
+@RequestMapping("/data/quoto")
 public class RobotQuotoControl extends APIJSONController {
     @Autowired
     private RedisUtil redisUtil;
