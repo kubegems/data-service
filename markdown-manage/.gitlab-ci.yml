@@ -1,0 +1,9 @@
+variables:
+  IMAGE_NAME: "markdown-manage"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "markdown-manage"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
+  ref: develop

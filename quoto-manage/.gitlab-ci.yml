@@ -1,0 +1,10 @@
+variables:
+  appName: bigdata-quoto-manage
+  IMAGE_NAME: "quoto-manage"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "quoto-manage"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
+  ref: develop

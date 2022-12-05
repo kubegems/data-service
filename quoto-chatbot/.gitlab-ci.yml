@@ -1,0 +1,10 @@
+variables:
+  appName: bigdata-quoto-chatbot
+  IMAGE_NAME: "quoto-chatbot"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "quoto-chatbot"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/quoto-chatbot/gitlab-ci-template.yml'
+  ref: develop

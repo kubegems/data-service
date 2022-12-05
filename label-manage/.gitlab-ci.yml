@@ -1,0 +1,10 @@
+variables:
+  appName: label-manage
+  IMAGE_NAME: "label-manage"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "label-manage"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
+  ref: develop
