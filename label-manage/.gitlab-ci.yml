@@ -2,6 +2,7 @@ variables:
   appName: label-manage
   IMAGE_NAME: "label-manage"
   devBranchName: develop
+  envName: dataservice-232
   PROJECT_BASE_NAME: "label-manage"
 
 include:
