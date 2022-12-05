@@ -7,4 +7,4 @@ variables:
 include:
   project: 'devops/ci-template'
   file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
-  ref: chenhao
+  ref: develop
