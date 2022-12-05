@@ -8,4 +8,3 @@ include:
   project: 'devops/ci-template'
   file: '/bigdata/bigdata-dataservice/quoto-search/gitlab-ci-template.yml'
   ref: develop
-
