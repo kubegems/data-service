@@ -7,6 +7,7 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.AdjectiveExtend;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.BusinessProcess;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DimensionExtend;
+import com.sun.org.apache.xpath.internal.operations.Quo;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.type.JdbcType;
 
@@ -20,6 +21,9 @@ public interface QuotoMapper {
 
 	@Select("select * from quoto where field=#{checkValue} and deleted=0")
 	public Quoto findQuotoByField(String checkValue);
+
+	@Select("select * from quoto where metric=#{metric} and table_id=#{table_id} and deleted=0")
+	public Quoto findQuotoByMetricAndTableId(int table_id,String metric);
 
 	@Select("select * from quoto where id=#{id} and deleted=0")
 	@Result(column = "quotos", property = "quotos", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
@@ -113,7 +117,7 @@ public interface QuotoMapper {
 	@Select("select * from Table_info where is_delete=0 and (theme_id=#{theme_id} or theme_id is null)")
 	public List<TableInfo> queryAllDataServiceByThemeId(int theme_id);
 
-	@Select("select * from Quoto_info where table_id=#{tableId} and is_delete=0 and quoto_name not in (select field from quoto where table_id=#{tableId} and deleted=0)")
+	@Select("select * from Quoto_info where table_id=#{tableId} and is_delete=0 and quoto_name not in (select metric from quoto where table_id=#{tableId} and deleted=0)")
 	public List<QuotoInfo> queryUsableQuotoInfoByTableId(int tableId);
 
 	@Update("update quoto set deleted=null where id=#{id}")
@@ -155,15 +159,15 @@ public interface QuotoMapper {
 	@Select("select * from quoto where ${condition}")
 	public List<Quoto> queryQuotoFuzzy(String condition);
 
-	@Insert("insert into quoto(name,time_column_id,`sql`,use_sql,field,theme_id,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr,expression) "
-			+ "values(#{name},#{time_column_id},#{sql},#{use_sql}, #{field}, #{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr}, #{expression})")
+	@Insert("insert into quoto(name,time_column_id,`sql`,use_sql,field,metric,theme_id,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr,expression) "
+			+ "values(#{name},#{time_column_id},#{sql},#{use_sql},#{field},#{metric},#{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},now(),now(), #{creator}, #{descr}, #{expression})")
 	public int insertQuoto(Quoto quoto);
 
-	@Insert("insert into quoto_update_history(id,name,time_column_id,`sql`,use_sql,field,theme_id,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr,expression) "
-			+ "values(#{id},#{name},#{time_column_id},#{sql},#{use_sql}, #{field}, #{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},#{create_time},#{update_time}, #{creator}, #{descr}, #{expression})")
+	@Insert("insert into quoto_update_history(id,name,time_column_id,`sql`,use_sql,field,metric,theme_id,business_process_id,quoto_level,data_type,data_unit,table_id,accumulation,dimension,adjective,quotos,state,type,origin_quoto,cycle,create_time,update_time, creator,descr,expression) "
+			+ "values(#{id},#{name},#{time_column_id},#{sql},#{use_sql},#{field},#{metric},#{theme_id},#{business_process_id},#{quoto_level},#{data_type},#{data_unit},#{table_id},#{accumulation},#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},#{state}, #{type},#{origin_quoto},#{cycle},#{create_time},#{update_time}, #{creator}, #{descr}, #{expression})")
 	public int insertQuotoUpdateHistory(Quoto quoto);
 
-	@Update("update quoto set name=#{name},business_process_id=#{business_process_id},time_column_id=#{time_column_id},`sql`=#{sql},use_sql=#{use_sql}, field=#{field},theme_id=#{theme_id},quoto_level=#{quoto_level},data_type=#{data_type},data_unit=#{data_unit},table_id=#{table_id},accumulation=#{accumulation},origin_quoto=#{origin_quoto},cycle=#{cycle},"
+	@Update("update quoto set name=#{name},business_process_id=#{business_process_id},time_column_id=#{time_column_id},`sql`=#{sql},use_sql=#{use_sql},field=#{field},metric=#{metric},theme_id=#{theme_id},quoto_level=#{quoto_level},data_type=#{data_type},data_unit=#{data_unit},table_id=#{table_id},accumulation=#{accumulation},origin_quoto=#{origin_quoto},cycle=#{cycle},"
 			+ "dimension=#{dimension,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},adjective=#{adjective,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},quotos=#{quotos,typeHandler=com.cloudminds.bigdata.dataservice.quoto.manage.entity.handler.ArrayTypeHandler},type=#{type},descr=#{descr},expression=#{expression} where id=#{id}")
 	public int updateQuoto(Quoto quoto);
 

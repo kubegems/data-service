@@ -11,6 +11,7 @@ public class Quoto extends BaseEntity {
 	private int id;
 	private String name;
 	private String field;
+	private String metric;
 	private int theme_id;
 	private Integer business_process_id;
 	private int quoto_level;
