@@ -9,8 +9,12 @@ import java.util.List;
 
 @Mapper
 public interface MetaDataTableMapper {
-    @Select("select * from metadata_table where deleted=0 and database_name=#{database_name} and name=#{name} and table_type=#{table_type}")
-    public MetaDataTable findMetaDataTableByName(String database_name, String name, int table_type);
+    @Select("select m.*,t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from (select * from metadata_table where deleted=0 and database_name=#{database_name} and name=#{name} and table_type=#{table_type}) m left join theme t on m.theme_id=t.id left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id")
+    @Results({
+            @Result(column = "columns", property = "columns", typeHandler = JsonListTypeHandler.class),
+            @Result(column = "partition_field", property = "partition_field", typeHandler = JsonListTypeHandler.class)
+    })
+    public MetaDataTableExtendInfo findMetaDataTableByName(String database_name, String name, int table_type);
 
     @Select("select * from metadata_table where deleted=0 and id=#{id}")
     public MetaDataTable findMetaDataTableById(int id);

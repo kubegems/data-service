@@ -279,6 +279,22 @@ public class MetaDataService {
         return commonResponse;
     }
 
+    public CommonResponse findTableByTableName(int table_type, String database_name, String table_name) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(StringUtils.isEmpty(database_name)||StringUtils.isEmpty((table_name))){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("库名和表名不能为空");
+            return commonResponse;
+        }
+        if(table_type!=1){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("暂不支持的表类型");
+            return commonResponse;
+        }
+        commonResponse.setData(metaDataTableMapper.findMetaDataTableByName(database_name,table_name,table_type));
+        return commonResponse;
+    }
+
     public CommonResponse analysisFile(MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();
         List<Column> columns = new ArrayList<>();

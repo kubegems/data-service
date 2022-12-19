@@ -38,9 +38,16 @@ public class MetaDataControl {
         return metaDataService.findTable(queryMetaDataTableReq);
     }
 
+    //根据库表查询table
+    @RequestMapping(value = "findTableByTableName", method = RequestMethod.GET)
+    public CommonResponse findTableByTableName(int table_type, String database_name, String table_name) {
+        return metaDataService.findTableByTableName(table_type, database_name, table_name);
+    }
+
+
     //上传文件获取字典信息
     @RequestMapping(value = "analysisFile", method = RequestMethod.POST)
-    public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request)  {
+    public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request) {
         return metaDataService.analysisFile(file);
     }
 }
