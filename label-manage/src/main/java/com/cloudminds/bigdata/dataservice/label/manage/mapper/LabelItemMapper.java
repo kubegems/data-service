@@ -28,11 +28,11 @@ public interface LabelItemMapper {
     @Select("select max(right(tag_id,3)) from tag_item where tag_cate_id=#{tag_cate_id}")
     public String findMaxTagIdCode(String tag_cate_id);
 
-    @Insert("insert into tag_item(tag_id,tag_name,tag_cate_id,value_type,value_scope,source,tag_type,tag_rule,exclusive,update_cycle,update_cycle_unit,creator,updater,descr) " +
-            "values(#{tag_id},#{tag_name},#{tag_cate_id},#{value_type},#{value_scope},#{source},#{tag_type},#{tag_rule},#{exclusive},#{update_cycle},#{update_cycle_unit},#{creator},#{creator},#{descr})")
+    @Insert("insert into tag_item(tag_id,tag_name,tag_cate_id,value_type,value_scope,source_type,source,tag_type,exclusive,update_cycle,update_cycle_unit,creator,updater,descr) " +
+            "values(#{tag_id},#{tag_name},#{tag_cate_id},#{value_type},#{value_scope},#{source_type},#{source},#{tag_type},#{exclusive},#{update_cycle},#{update_cycle_unit},#{creator},#{creator},#{descr})")
     public int insertTagItem(TagItem tagItem);
 
-    @Update("update tag_item set tag_id=#{new_tag_id},tag_cate_id=#{tagItem.tag_cate_id},tag_name=#{tagItem.tag_name},value_type=#{tagItem.value_type},value_scope=#{tagItem.value_scope},source=#{tagItem.source},tag_type=#{tagItem.tag_type},tag_rule=#{tagItem.tag_rule},exclusive=#{tagItem.exclusive},update_cycle=#{tagItem.update_cycle},update_cycle_unit=#{tagItem.update_cycle_unit},updater=#{tagItem.updater},descr=#{tagItem.descr} where tag_id=#{tagItem.tag_id}")
+    @Update("update tag_item set tag_id=#{new_tag_id},tag_cate_id=#{tagItem.tag_cate_id},tag_name=#{tagItem.tag_name},value_type=#{tagItem.value_type},value_scope=#{tagItem.value_scope},source_type=#{tagItem.source_type},source=#{tagItem.source},tag_type=#{tagItem.tag_type},exclusive=#{tagItem.exclusive},update_cycle=#{tagItem.update_cycle},update_cycle_unit=#{tagItem.update_cycle_unit},updater=#{tagItem.updater},descr=#{tagItem.descr} where tag_id=#{tagItem.tag_id}")
     public int updateTagItem(TagItem tagItem,String new_tag_id);
 
     @Insert({"<script>", "insert into tag_enum_value(tag_enum_id,tag_value, tag_id,creator,updater,descr) values ",

@@ -52,9 +52,30 @@ public class TagControl {
         return tagService.queryTagCate(tag_object_id,pid);
     }
 
+    //根据id查询分类
     @RequestMapping(value = "queryTagCateById", method = RequestMethod.GET)
     public CommonResponse queryTagCateById(String id){
         return tagService.queryTagCateById(id);
     }
+
+    //创建标签组合
+
+    //更新标签组合
+
+    //更新标签组合的状态
+
+    //查询标签组合
+
+    //删除标签组合
+
+    //创建标签任务
+
+    //更新标签任务
+
+    //更新标签任务的状态
+
+    //查询标签任务
+
+    //删除标签任务
 
 }
