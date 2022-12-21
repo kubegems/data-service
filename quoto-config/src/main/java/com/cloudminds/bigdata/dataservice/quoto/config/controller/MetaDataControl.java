@@ -29,7 +29,7 @@ public class MetaDataControl {
     //删除table
     @RequestMapping(value = "deleteTable", method = RequestMethod.POST)
     public CommonResponse deleteTable(@RequestBody DeleteReq deleteReq) {
-        return metaDataService.deleteTable(deleteReq.getId());
+        return metaDataService.deleteTable(deleteReq);
     }
 
     //根据库查询table

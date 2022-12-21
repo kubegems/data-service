@@ -1,9 +1,6 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.Column;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.CommonResponse;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.MetaDataTable;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.QueryMetaDataTableReq;
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.MetaDataTableMapper;
 import com.linkedin.common.FabricType;
 import com.linkedin.common.SubTypes;
@@ -234,22 +231,27 @@ public class MetaDataService {
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-
             }
         }
         return commonResponse;
     }
 
-    public CommonResponse deleteTable(int id) {
+    public CommonResponse deleteTable(DeleteReq deleteReq) {
         CommonResponse commonResponse = new CommonResponse();
         //查询原始表
-        MetaDataTable metaDataTable = metaDataTableMapper.findMetaDataTableById(id);
+
+        MetaDataTable metaDataTable = metaDataTableMapper.findMetaDataTableById(deleteReq.getId());
         if(metaDataTable==null){
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("原始表不存在");
-            return commonResponse;
+            if((!StringUtils.isEmpty(deleteReq.getDatabase_name()))&&(!StringUtils.isEmpty(deleteReq.getName()))){
+                metaDataTable = metaDataTableMapper.findMetaDataTableByName(deleteReq.getDatabase_name(), deleteReq.getName(), deleteReq.getTable_type());
+            }
+            if(metaDataTable==null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("原始表不存在");
+                return commonResponse;
+            }
         }
-        if(metaDataTableMapper.deleteMetaDataTableById(id)<1){
+        if(metaDataTableMapper.deleteMetaDataTableById(metaDataTable.getId())<1){
             commonResponse.setSuccess(false);
             commonResponse.setMessage("删除失败,请稍后再试");
             return commonResponse;
