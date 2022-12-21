@@ -20,7 +20,7 @@ public class TagItemTask extends BaseEntity{
     private String advanced_parameters;
     private String cron;
     private String run_application_id;
-    private int status;
+    private int state;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date start_time;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

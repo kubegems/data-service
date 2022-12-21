@@ -1,7 +1,9 @@
 package com.cloudminds.bigdata.dataservice.label.manage.controller;
 
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItem;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.request.UpdateLabelItemState;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItemComplex;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItemTask;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.request.*;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.CommonResponse;
 import com.cloudminds.bigdata.dataservice.label.manage.service.LabelService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,5 +58,63 @@ public class LabelControl {
     @RequestMapping(value = "dataPreview", method = RequestMethod.GET)
     public CommonResponse dataPreview(String tag_id) {
         return labelService.dataPreview(tag_id);
+    }
+
+    //创建标签组合
+    @RequestMapping(value = "addLabelItemComplex", method = RequestMethod.POST)
+    public CommonResponse addLabelItemComplex(@RequestBody TagItemComplex tagItemComplex){
+        return labelService.addLabelItemComplex(tagItemComplex);
+    }
+
+    //更新标签组合
+    @RequestMapping(value = "updateLabelItemComplex", method = RequestMethod.POST)
+    public CommonResponse updateLabelItemComplex(@RequestBody TagItemComplex tagItemComplex){
+        return labelService.updateLabelItemComplex(tagItemComplex);
+    }
+
+    //更新标签组合的状态
+    @RequestMapping(value = "updateLabelItemComplexStatus", method = RequestMethod.POST)
+    public CommonResponse updateLabelItemComplexStatus(@RequestBody UpdateLabelItemComplexStatusReq updateLabelItemComplexStatusReq){
+        return labelService.updateLabelItemComplexStatus(updateLabelItemComplexStatusReq.getId(),updateLabelItemComplexStatusReq.getState());
+    }
+
+    //查询标签组合
+    @RequestMapping(value = "queryLabelItemComplex", method = RequestMethod.POST)
+    public CommonResponse queryLabelItemComplex(@RequestBody LabelItemComplexQuery labelItemComplexQuery) {
+        return labelService.queryLabelItemComplex(labelItemComplexQuery);
+    }
+
+    //删除标签组合
+    @RequestMapping(value = "deleteLabelItemComplex", method = RequestMethod.POST)
+    public CommonResponse deleteLabelItemComplex(@RequestBody DeleteReq deleteReq){
+        return labelService.deleteLabelItemComplex(deleteReq);
+    }
+
+    //创建标签任务
+    @RequestMapping(value = "addLabelItemTask", method = RequestMethod.POST)
+    public CommonResponse addLabelItemTask(@RequestBody TagItemTask tagItemTask){
+        return labelService.addLabelItemTask(tagItemTask);
+    }
+
+    //更新标签任务
+    @RequestMapping(value = "updateLabelItemTask", method = RequestMethod.POST)
+    public CommonResponse updateLabelItemTask(@RequestBody TagItemTask tagItemTask){
+        return labelService.updateLabelItemTask(tagItemTask);
+    }
+
+    //更新标签任务的状态
+
+
+    //查询标签任务
+    @RequestMapping(value = "queryLabelItemTask", method = RequestMethod.POST)
+    public CommonResponse queryLabelItemTask(@RequestBody LabelItemTaskQuery labelItemTaskQuery) {
+        return labelService.queryLabelItemTask(labelItemTaskQuery);
+    }
+
+
+    //删除标签任务
+    @RequestMapping(value = "deleteLabelItemTask", method = RequestMethod.POST)
+    public CommonResponse deleteLabelItemTask(@RequestBody DeleteReq deleteReq){
+        return labelService.deleteLabelItemTask(deleteReq);
     }
 }

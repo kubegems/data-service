@@ -10,6 +10,6 @@ public class TagItemComplex extends BaseEntity{
     private String name;
     private int tag_object_id;
     private String filter;
-    private String tag_items;
+    private String[] tag_enum_values;
     private int state;
 }
