@@ -103,7 +103,10 @@ public class LabelControl {
     }
 
     //更新标签任务的状态
-
+    @RequestMapping(value = "updateLabelItemTaskState", method = RequestMethod.POST)
+    public CommonResponse updateLabelItemTaskState(@RequestBody UpdateLabelItemTaskStateReq updateLabelItemTaskStateReq){
+        return labelService.updateLabelItemTaskState(updateLabelItemTaskStateReq);
+    }
 
     //查询标签任务
     @RequestMapping(value = "queryLabelItemTask", method = RequestMethod.POST)
@@ -111,10 +114,16 @@ public class LabelControl {
         return labelService.queryLabelItemTask(labelItemTaskQuery);
     }
 
-
     //删除标签任务
     @RequestMapping(value = "deleteLabelItemTask", method = RequestMethod.POST)
     public CommonResponse deleteLabelItemTask(@RequestBody DeleteReq deleteReq){
         return labelService.deleteLabelItemTask(deleteReq);
     }
+
+    //统计标签
+    @RequestMapping(value = "queryLabelSummary", method = RequestMethod.POST)
+    public CommonResponse queryLabelSummary(@RequestBody LabelSummaryQuery labelSummaryQuery) {
+        return labelService.queryLabelSummary(labelSummaryQuery);
+    }
+
 }

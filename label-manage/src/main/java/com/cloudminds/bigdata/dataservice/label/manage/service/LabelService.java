@@ -3,10 +3,7 @@ package com.cloudminds.bigdata.dataservice.label.manage.service;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.*;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.request.DeleteReq;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.request.LabelItemComplexQuery;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.request.LabelItemTaskQuery;
-import com.cloudminds.bigdata.dataservice.label.manage.entity.request.UpdateLabelItemState;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.request.*;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.response.*;
 import com.cloudminds.bigdata.dataservice.label.manage.mapper.*;
 import org.apache.commons.lang.StringUtils;
@@ -778,6 +775,12 @@ public class LabelService {
             commonResponse.setMessage("标签不存在");
             return commonResponse;
         }
+        //验证标签对象是否存在
+        if(tagObjectMapper.queryTagObject(tagItemTask.getTag_object_id())==null){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签对象不存在");
+            return commonResponse;
+        }
         //校验任务是不是已经存在
         TagItemTask oldTagItemTask = tagItemTaskMapper.findTagItemTaskByTagId(tagItemTask.getTag_id());
         if (oldTagItemTask != null) {
@@ -800,14 +803,6 @@ public class LabelService {
                 return commonResponse;
             }
 
-        }
-        //离线任务参数校验
-        if (tagItemTask.getType() == 1) {
-            if (StringUtils.isEmpty(tagItemTask.getCron())) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("离线任务,调度时间不能为空");
-                return commonResponse;
-            }
         }
         //插入数据
         if (tagItemTaskMapper.insertTagItemTask(tagItemTask) < 1) {
@@ -833,7 +828,7 @@ public class LabelService {
             return commonResponse;
         }
         //校验标签是否存在
-        if(!oldTagItemTask.getTag_id().equals(tagItemTask.getTag_id())) {
+        if (!oldTagItemTask.getTag_id().equals(tagItemTask.getTag_id())) {
             if (labelItemMapper.findTagItemByTagId(tagItemTask.getTag_id()) == null) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("标签不存在");
@@ -863,16 +858,8 @@ public class LabelService {
             }
 
         }
-        //离线任务参数校验
-        if (tagItemTask.getType() == 1) {
-            if (StringUtils.isEmpty(tagItemTask.getCron())) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("离线任务,调度时间不能为空");
-                return commonResponse;
-            }
-        }
         //更新任务
-        if(tagItemTaskMapper.updateTagItemTask(tagItemTask)<1){
+        if (tagItemTaskMapper.updateTagItemTask(tagItemTask) < 1) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("任务更新失败,请联系管理员");
             return commonResponse;
@@ -912,6 +899,69 @@ public class LabelService {
 
     public CommonResponse queryLabelItemTask(LabelItemTaskQuery labelItemTaskQuery) {
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
+        String condition = "t.deleted=0";
+        if (labelItemTaskQuery.getTag_object_id() > 0) {
+            condition = condition + " and t.tag_object_id=" + labelItemTaskQuery.getTag_object_id();
+        }
+        if (!StringUtils.isEmpty(labelItemTaskQuery.getQueryValue())) {
+            condition = condition + " and (t.name like '" + labelItemTaskQuery.getQueryValue() + "%' or t.tag_id like '" + labelItemTaskQuery.getQueryValue() + "%' or l.tag_name like '" + labelItemTaskQuery.getQueryValue() + "%')";
+        }
+        condition = condition + " order by t.update_time desc";
+        int page = labelItemTaskQuery.getPage();
+        int size = labelItemTaskQuery.getSize();
+        int startLine = (page - 1) * size;
+        commonQueryResponse.setData(tagItemTaskMapper.queryTagItemTask(condition, startLine, size));
+        commonQueryResponse.setCurrentPage(labelItemTaskQuery.getPage());
+        commonQueryResponse.setTotal(tagItemTaskMapper.queryTagItemTaskCount(condition));
         return commonQueryResponse;
+    }
+
+    public CommonResponse updateLabelItemTaskState(UpdateLabelItemTaskStateReq updateLabelItemTaskStateReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        TagItemTask tagItemTask = tagItemTaskMapper.findTagItemTaskById(updateLabelItemTaskStateReq.getId());
+        if (tagItemTask == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("任务不存在");
+            return commonResponse;
+        }
+        if (updateLabelItemTaskStateReq.getState() == 1) {
+            if (labelItemMapper.findTagItemByTagId(tagItemTask.getTag_id()).getState() != 1) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("请先上线基础标签");
+                return commonResponse;
+            }
+        }
+        //更新
+        if (tagItemTaskMapper.updateTagItemTaskState(updateLabelItemTaskStateReq.getId(), updateLabelItemTaskStateReq.getState(), updateLabelItemTaskStateReq.getRun_info()) < 0) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("任务更新失败,请稍后再试");
+            return commonResponse;
+        }
+
+        return commonResponse;
+    }
+
+    public CommonResponse queryLabelSummary(LabelSummaryQuery labelSummaryQuery) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (labelSummaryQuery.getQuery_type() == 1) {
+            commonResponse.setData(labelItemMapper.findTagItemSumaryByObject());
+            return commonResponse;
+        } else if (labelSummaryQuery.getQuery_type() == 2) {
+            commonResponse.setData(labelItemMapper.findTagItemSumaryByObjectAndState());
+            return commonResponse;
+        } else if (labelSummaryQuery.getQuery_type() == 3) {
+            commonResponse.setData(labelItemMapper.findTagItemSumaryByCate(labelSummaryQuery.getTag_object_id()));
+            return commonResponse;
+        } else if (labelSummaryQuery.getQuery_type() == 4) {
+            commonResponse.setData(labelItemMapper.findTagItemSumaryByCateAndState(labelSummaryQuery.getTag_object_id()));
+            return commonResponse;
+        } else if (labelSummaryQuery.getQuery_type() == 5) {
+
+        } else {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("不支持的查询类型");
+            return commonResponse;
+        }
+        return commonResponse;
     }
 }
