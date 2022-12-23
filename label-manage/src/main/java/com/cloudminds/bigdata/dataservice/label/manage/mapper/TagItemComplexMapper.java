@@ -29,15 +29,21 @@ public interface TagItemComplexMapper {
     @Update("update tag_item_complex set deleted=null where id=#{id}")
     public int deleteTagItemComplex(int id);
 
-    @Select("select * from tag_item_complex where deleted=0 order by update_time desc limit #{startLine},#{size}")
-    public List<TagItemComplex> queryLabelItemComplex(int startLine, int size);
+    @Select("select * from tag_item_complex where ${condition} order by update_time desc limit #{startLine},#{size}")
+    public List<TagItemComplex> queryLabelItemComplex(String condition, int startLine, int size);
 
-    @Select("select count(*) from tag_item_complex where deleted=0")
-    public int queryLabelItemComplexCount();
+    @Select("select count(*) from tag_item_complex where ${condition}")
+    public int queryLabelItemComplexCount(String condition);
 
     @Select("select distinct t.tag_name from (select * from tag_enum_value where tag_enum_id in ${tag_enum_values})m left join tag_item t on m.tag_id=t.tag_id where t.state!=1")
     public List<String> queryUnOnlineLableItem(String tag_enum_values);
 
     @Update("update tag_item_complex set state=#{state} where id=#{id}")
     public int updateTagItemComplexState(int id,int state);
+
+    @Select("select distinct b.name from (select a.name,a.id,substring_index(substring_index(a.tag_enum_values,',',b.help_topic_id+1),',',-1) as tag_enum_id from (select * from tag_item_complex where state=1 and deleted=0)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_enum_values) - length(replace(a.tag_enum_values,',',''))+1)) b left join tag_enum_value tt on b.tag_enum_id=tt.tag_enum_id where tt.tag_id in ${tag_ids}")
+    public List<String> queryOnlineTagItemComplex(String tag_ids);
+
+    @Select("select distinct b.name from (select a.name,a.id,substring_index(substring_index(a.tag_enum_values,',',b.help_topic_id+1),',',-1) as tag_enum_id from (select * from tag_item_complex where deleted=0)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_enum_values) - length(replace(a.tag_enum_values,',',''))+1)) b left join tag_enum_value tt on b.tag_enum_id=tt.tag_enum_id where tt.tag_id in ${tag_ids}")
+    public List<String> queryUseTagItemComplex(String tag_ids);
 }

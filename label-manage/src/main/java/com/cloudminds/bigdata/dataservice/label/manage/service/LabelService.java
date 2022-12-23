@@ -409,6 +409,20 @@ public class LabelService {
             commonResponse.setMessage("更新者不能为空");
             return commonResponse;
         }
+        //校验是否有组合标签在用
+        if(updateLabelItemState.getState()==0){
+            String tag_ids = "(";
+            for (String tag_id : updateLabelItemState.getTag_ids()) {
+                tag_ids = tag_ids + "'" + tag_id + "',";
+            }
+            tag_ids = tag_ids.substring(0, tag_ids.length() - 1) + ")";
+            List<String> onlineTagItemComplex = tagItemComplexMapper.queryOnlineTagItemComplex(tag_ids);
+            if(onlineTagItemComplex!=null&&onlineTagItemComplex.size()>0){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("这些上线状态的组合标签使用了这些基础标签,请先下线组合标签："+ StringUtils.join(onlineTagItemComplex,","));
+                return commonResponse;
+            }
+        }
         labelItemMapper.updateTagItemState(updateLabelItemState.getTag_ids(), updateLabelItemState.getState(), updateLabelItemState.getUpdater());
         return commonResponse;
     }
@@ -426,6 +440,19 @@ public class LabelService {
             commonResponse.setMessage("更新者不能为空");
             return commonResponse;
         }
+        //判断是否有组合标签在使用
+        String tag_ids = "(";
+        for (String tag_id : updateLabelItemState.getTag_ids()) {
+            tag_ids = tag_ids + "'" + tag_id + "',";
+        }
+        tag_ids = tag_ids.substring(0, tag_ids.length() - 1) + ")";
+        List<String> useTagItemComplex = tagItemComplexMapper.queryUseTagItemComplex(tag_ids);
+        if(useTagItemComplex!=null&&useTagItemComplex.size()>0){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("这些组合标签使用了这些基础标签,请先删除组合标签："+ StringUtils.join(useTagItemComplex,","));
+            return commonResponse;
+        }
+
         //判断是否有标签状态为上线中
         String onlineTagName = labelItemMapper.findOnlineTagItemName(updateLabelItemState.getTag_ids());
         if (!StringUtils.isEmpty(onlineTagName)) {
@@ -712,12 +739,16 @@ public class LabelService {
 
     public CommonQueryResponse queryLabelItemComplex(LabelItemComplexQuery labelItemComplexQuery) {
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
+        String condition = "deleted=0";
+        if (labelItemComplexQuery.getTag_object_id() > 0) {
+            condition = condition + " and tag_object_id=" + labelItemComplexQuery.getTag_object_id();
+        }
         int page = labelItemComplexQuery.getPage();
         int size = labelItemComplexQuery.getSize();
         int startLine = (page - 1) * size;
-        commonQueryResponse.setData(tagItemComplexMapper.queryLabelItemComplex(startLine, size));
+        commonQueryResponse.setData(tagItemComplexMapper.queryLabelItemComplex(condition,startLine, size));
         commonQueryResponse.setCurrentPage(labelItemComplexQuery.getPage());
-        commonQueryResponse.setTotal(tagItemComplexMapper.queryLabelItemComplexCount());
+        commonQueryResponse.setTotal(tagItemComplexMapper.queryLabelItemComplexCount(condition));
         return commonQueryResponse;
     }
 
