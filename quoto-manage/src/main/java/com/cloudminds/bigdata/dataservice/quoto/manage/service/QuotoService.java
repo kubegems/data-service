@@ -664,6 +664,19 @@ public class QuotoService {
                 commonResponse.setMessage("计算周期不能为空");
                 return commonResponse;
             }
+
+            if (StringUtils.isEmpty(quoto.getMetric())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("度量不能为空");
+                return commonResponse;
+            }
+            //判断度量是否被使用了
+            Quoto metricQuoto = quotoMapper.findQuotoByMetricAndTableId(quoto.getTable_id(), quoto.getMetric());
+            if (metricQuoto != null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("度量已被指标名为:"+metricQuoto.getName()+" 的指标使用");
+                return commonResponse;
+            }
             quoto.setUse_sql(false);
         } else if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
             quoto.setState(StateEnum.active_state.getCode());
@@ -907,17 +920,33 @@ public class QuotoService {
             }
         }
 
-        if (oldQuoto.getType() == TypeEnum.atomic_quoto.getCode()
-                && oldQuoto.getState() == StateEnum.active_state.getCode()) {
-            if (!oldQuoto.getField().equals(quoto.getField())) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("激活的原子指标不能修改字段名！");
-                return commonResponse;
-            }
-            if (oldQuoto.getTable_id() != quoto.getTable_id()) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("激活的原子指标不能修改数据服务！");
-                return commonResponse;
+        if (oldQuoto.getType() == TypeEnum.atomic_quoto.getCode()) {
+            if (oldQuoto.getState() == StateEnum.active_state.getCode()) {
+                if (!oldQuoto.getField().equals(quoto.getField())) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("激活的原子指标不能修改字段名！");
+                    return commonResponse;
+                }
+                if (oldQuoto.getTable_id() != quoto.getTable_id()) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("激活的原子指标不能修改数据服务！");
+                    return commonResponse;
+                }
+                if (!oldQuoto.getMetric().equals(quoto.getMetric())) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("激活的原子指标不能修改度量");
+                    return commonResponse;
+                }
+            } else {
+                //判断度量是否被使用了
+                if (!oldQuoto.getMetric().equals(quoto.getMetric())) {
+                    Quoto metricQuoto = quotoMapper.findQuotoByMetricAndTableId(quoto.getTable_id(), quoto.getMetric());
+                    if (metricQuoto != null) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("度量已被指标名为:" + metricQuoto.getName() + " 的指标使用");
+                        return commonResponse;
+                    }
+                }
             }
         }
         if (quoto.getType() == TypeEnum.complex_quoto.getCode()) {
@@ -1196,7 +1225,7 @@ public class QuotoService {
             return commonResponse;
         }
 
-        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getField());
+        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getMetric(),quoto.getTable_id());
         if (quotoInfo == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("数据服务没有此指标的配置,请前往数据服务-服务管理页配置此指标");
@@ -1345,7 +1374,7 @@ public class QuotoService {
             atomicQuoto = quotoMapper.findQuotoById(quoto.getOrigin_quoto());
         }
         Set<String> fileds = new HashSet<>();
-        fileds.add(atomicQuoto.getField());
+        fileds.add(atomicQuoto.getMetric());
         commonResponse.setFields(fileds);
         commonResponse.setCycle(atomicQuoto.getCycle());
         // 查询数据服务对应的信息
@@ -1356,7 +1385,7 @@ public class QuotoService {
             return commonResponse;
         }
         String url = dataServiceUrl + servicePathInfo.getPath();
-        String bodyRequest = "{'[]':{'" + servicePathInfo.getTableName() + "':{'@column':'" + atomicQuoto.getField();
+        String bodyRequest = "{'[]':{'" + servicePathInfo.getTableName() + "':{'@column':'" + atomicQuoto.getMetric();
         if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
             //判断是否启用的指标sql
             if (quoto.isUse_sql()) {
@@ -1581,7 +1610,7 @@ public class QuotoService {
             }
         }
         if (quoto.getType() == TypeEnum.derive_quoto.getCode() && quoto.isUse_sql()) {
-            Map<String,Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
+            Map<String, Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
             if (!columnAndGroup.get("column").isEmpty()) {
                 commonResponse.setFields(columnAndGroup.get("column"));
             }
@@ -1987,22 +2016,22 @@ public class QuotoService {
         extendFieldOrder.setDesc("排序的参数组合");
         if (quoto.getType() == TypeEnum.derive_quoto.getCode()) {
             String desc = "可排序的参数名：";
-            if(quoto.isUse_sql()){
-                Map<String,Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
+            if (quoto.isUse_sql()) {
+                Map<String, Set<String>> columnAndGroup = getColumnAndGroup(quoto.getSql());
                 if (!columnAndGroup.get("column").isEmpty()) {
-                    for(String cl: columnAndGroup.get("column")){
-                        desc = desc+cl+",";
+                    for (String cl : columnAndGroup.get("column")) {
+                        desc = desc + cl + ",";
                     }
                 }
                 if (!columnAndGroup.get("group").isEmpty()) {
-                    for(String cl: columnAndGroup.get("group")){
-                        desc = desc+cl+",";
+                    for (String cl : columnAndGroup.get("group")) {
+                        desc = desc + cl + ",";
                     }
                 }
-                if(desc.charAt(desc.length()-1)==','){
-                    desc=desc.substring(0,desc.length()-1);
+                if (desc.charAt(desc.length() - 1) == ',') {
+                    desc = desc.substring(0, desc.length() - 1);
                 }
-            }else {
+            } else {
                 Quoto originQuoto = quotoMapper.queryQuotoById(quoto.getOrigin_quoto());
                 List<DimensionExtend> dimensionInfo = quotoMapper.queryDimensionByQuotoId(quoto.getId());
                 desc = "可排序的参数名：" + originQuoto.getField();
@@ -2045,21 +2074,21 @@ public class QuotoService {
         return commonResponse;
     }
 
-    public Map<String,Set<String>> getColumnAndGroup(String sql){
+    public Map<String, Set<String>> getColumnAndGroup(String sql) {
         sql = sql.toLowerCase();
-        Map<String,Set<String>> result = new HashMap<>();
+        Map<String, Set<String>> result = new HashMap<>();
         Set<String> columns = new HashSet<>();
         Set<String> groups = new HashSet<>();
         if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
             String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
             String[] columnSelect = select.split(",");
             List<String> columnsTmp = new ArrayList<>();
-            for(int i=0;i<columnSelect.length;i++){
-                if(judgeIsRight(columnSelect[i])){
+            for (int i = 0; i < columnSelect.length; i++) {
+                if (judgeIsRight(columnSelect[i])) {
                     columnsTmp.add(columnSelect[i]);
-                }else{
-                    if(i<columnSelect.length-1){
-                        columnSelect[i+1]=columnSelect[i]+columnSelect[i+1];
+                } else {
+                    if (i < columnSelect.length - 1) {
+                        columnSelect[i + 1] = columnSelect[i] + columnSelect[i + 1];
                     }
                 }
             }
@@ -2094,23 +2123,24 @@ public class QuotoService {
         }
         groups.retainAll(columns);
         columns.removeAll(groups);
-        result.put("group",groups);
-        result.put("column",columns);
+        result.put("group", groups);
+        result.put("column", columns);
         return result;
     }
-    public boolean judgeIsRight(String colunm){
-        int a=0;
-        int b=0;
-        for(int i=0;i<colunm.length();i++){
-            if(colunm.charAt(i)=='('){
-                a=a+1;
-            }else if(colunm.charAt(i)==')'){
-                b=b+1;
+
+    public boolean judgeIsRight(String colunm) {
+        int a = 0;
+        int b = 0;
+        for (int i = 0; i < colunm.length(); i++) {
+            if (colunm.charAt(i) == '(') {
+                a = a + 1;
+            } else if (colunm.charAt(i) == ')') {
+                b = b + 1;
             }
         }
-        if(a==b){
+        if (a == b) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
