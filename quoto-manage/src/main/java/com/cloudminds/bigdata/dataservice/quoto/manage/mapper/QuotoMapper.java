@@ -194,8 +194,8 @@ public interface QuotoMapper {
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoByField(String field);
 
-	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName}")
-	public QuotoInfo queryQuotoInfo(String QuotoName);
+	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName} and table_id=#{table_id}")
+	public QuotoInfo queryQuotoInfo(String QuotoName,int table_id);
 
 	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")
 	public ServicePathInfo queryServicePathInfo(int tableId);

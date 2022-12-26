@@ -1225,7 +1225,7 @@ public class QuotoService {
             return commonResponse;
         }
 
-        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getField());
+        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getMetric(),quoto.getTable_id());
         if (quotoInfo == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("数据服务没有此指标的配置,请前往数据服务-服务管理页配置此指标");
