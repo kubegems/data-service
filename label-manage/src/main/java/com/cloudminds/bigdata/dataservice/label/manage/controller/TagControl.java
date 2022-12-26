@@ -22,11 +22,11 @@ public class TagControl {
         return tagService.queryAllTagObject();
     }
 
-    //查询标签对象的属性
+   /* //查询标签对象的属性
     @RequestMapping(value = "queryTagObjectAttribute", method = RequestMethod.GET)
     public CommonResponse findAllTagObject(int id) {
         return tagService.queryTagObjectAttribute(id);
-    }
+    }*/
 
     //增加分类
     @RequestMapping(value = "addTagCate", method = RequestMethod.POST)
@@ -52,6 +52,7 @@ public class TagControl {
         return tagService.queryTagCate(tag_object_id,pid);
     }
 
+    //根据id查询分类
     @RequestMapping(value = "queryTagCateById", method = RequestMethod.GET)
     public CommonResponse queryTagCateById(String id){
         return tagService.queryTagCateById(id);

@@ -44,7 +44,7 @@ public class TagService {
         return commonResponse;
     }
 
-    public CommonResponse queryTagObjectAttribute(int id) {
+    /*public CommonResponse queryTagObjectAttribute(int id) {
         CommonResponse commonResponse = new CommonResponse();
         TagObject tagObject = tagObjectMapper.queryTagObject(id);
         if (tagObject == null) {
@@ -69,7 +69,7 @@ public class TagService {
         }
         commonResponse.setData(data);
         return commonResponse;
-    }
+    }*/
 
     public CommonResponse insertTagCate(TagCate tagCate) {
         CommonResponse commonResponse = new CommonResponse();
