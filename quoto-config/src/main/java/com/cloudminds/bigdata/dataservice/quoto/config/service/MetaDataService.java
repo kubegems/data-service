@@ -140,6 +140,7 @@ public class MetaDataService {
         return commonResponse;
     }
 
+    //增加元数据接口
     public void addMetadata(String entityType, Urn urn, RecordTemplate recordTemplate, RestEmitter emitter) throws IOException, ExecutionException, InterruptedException {
         MetadataChangeProposalWrapper mcpw = MetadataChangeProposalWrapper.builder()
                 .entityType(entityType)
