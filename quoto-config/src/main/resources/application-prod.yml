@@ -16,3 +16,9 @@ spring:
 dataServiceUrl: http://bigdata-service-gw:8001
 datahubToken: eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6ImJhNmQzZDRlLTY3M2ItNDMwYS1hNmI1LTg4YjkwZWM0YjQyOCIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.hK4IHfjeiJSyDcUgc_8vExxEhiqUAR4Sd32Ql7jYjk4
 datahubUrl: http://172.16.31.144:8080
+hiveUrl: jdbc:hive2://172.16.23.37:10000
+hiveUser: dataserver
+hivePassword: dataserver
+hiveMetastoreUrl: jdbc:mysql://172.16.23.37:3306/metastore?autoReconnect=true
+hiveMetastoreUser: hive
+hiveMetastorePassword: hive
