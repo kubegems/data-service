@@ -31,6 +31,12 @@
 		</repository>
 
 		<repository>
+			<id>cdh.snapshots.repo</id>
+			<url>http://nexus.cloudminds.com/repository/cloudera-central-snapshots/</url>
+			<name>CDH Snapshots Repository</name>
+		</repository>
+
+		<repository>
 			<id>JBoss-repos</id>
 			<name>JBoss Repository</name>
 			<url>http://repository.jboss.org/nexus/content/groups/public/</url>
