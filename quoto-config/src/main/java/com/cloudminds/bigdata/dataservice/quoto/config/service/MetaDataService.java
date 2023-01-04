@@ -449,14 +449,14 @@ public class MetaDataService {
                     }
                     metaDataTable.setDescr(set.getString("PARAM_VALUE"));
                     String inputFormat = set.getString("INPUT_FORMAT");
-                    if (inputFormat.equals("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")) {
-                        metaDataTable.setStorage_format("parquet");
-                    } else if (inputFormat.equals("org.apache.hadoop.mapred.TextInputFormat")) {
-                        metaDataTable.setStorage_format("textfile");
-                    } else {
-                        commonResponse.setSuccess(false);
-                        commonResponse.setMessage("暂不支持的存储格式");
-                        return commonResponse;
+                    if(!StringUtils.isEmpty(inputFormat)) {
+                        if (inputFormat.equals("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")) {
+                            metaDataTable.setStorage_format("parquet");
+                        } else if (inputFormat.equals("org.apache.hadoop.mapred.TextInputFormat")) {
+                            metaDataTable.setStorage_format("textfile");
+                        } else {
+                            metaDataTable.setStorage_format(inputFormat);
+                        }
                     }
                     String owner = set.getString("OWNER");
                     if(StringUtils.isEmpty(owner)){
