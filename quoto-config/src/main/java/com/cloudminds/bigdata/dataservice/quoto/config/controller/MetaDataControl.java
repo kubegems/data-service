@@ -22,8 +22,8 @@ public class MetaDataControl {
 
     //更新table
     @RequestMapping(value = "updateTable", method = RequestMethod.POST)
-    public CommonResponse updateTable(@RequestBody MetaDataTable metaDataTable) {
-        return metaDataService.updateTable(metaDataTable);
+    public CommonResponse updateTable(@RequestBody UpdateMetaDataTableReq updateMetaDataTableReq) {
+        return metaDataService.updateTable(updateMetaDataTableReq);
     }
 
     //删除table
@@ -49,5 +49,10 @@ public class MetaDataControl {
     @RequestMapping(value = "analysisFile", method = RequestMethod.POST)
     public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request) {
         return metaDataService.analysisFile(file);
+    }
+
+    @RequestMapping(value = "historyDataAddDataBase", method = RequestMethod.POST)
+    public CommonResponse historyDataAddDataBase(@RequestBody HistoryDataAddDataBase historyDataAddDataBase) {
+        return metaDataService.historyDataAddDataBase(historyDataAddDataBase);
     }
 }

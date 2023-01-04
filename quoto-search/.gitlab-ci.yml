@@ -1,0 +1,10 @@
+variables:
+  appName: bigdata-quoto-search
+  IMAGE_NAME: "quoto-search"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "quoto-search"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/quoto-search/gitlab-ci-template.yml'
+  ref: develop

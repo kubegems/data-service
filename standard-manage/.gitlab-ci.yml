@@ -1,0 +1,11 @@
+variables:
+  appName: standard-manage
+  IMAGE_NAME: "standard-manage"
+  devBranchName: develop
+  PROJECT_BASE_NAME: "standard-manage"
+
+include:
+  project: 'devops/ci-template'
+  file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
+  ref: develop
+
