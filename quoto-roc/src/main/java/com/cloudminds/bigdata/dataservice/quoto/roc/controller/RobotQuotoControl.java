@@ -475,7 +475,7 @@ public class RobotQuotoControl extends APIJSONController {
             return jsonResult.toString();
         }
         if (result.contains("\"code\":200,\"msg\":\"success\"")) {
-            if (!redisUtil.hset(serviceName, item, result, 60)) {
+            if (!redisUtil.hset(serviceName, item, result, 10)) {
                 System.err.println(
                         "\n\n\n redis数据存储失败,存储的value:" + result + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
             }
