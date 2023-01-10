@@ -333,20 +333,51 @@ public class ESQueryService {
                 BoolQueryBuilder subBoolQuery = QueryBuilders.boolQuery();
                 for (int j = 0; j < subJsonArray.size(); j++) {
                     JSONObject finalJsonObject = subJsonArray.getJSONObject(j);
-                    Boolean finalInOp = true;
-                    if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
-                        finalInOp = false;
-                    }
-                    List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
-                    if (tagValues == null || tagValues.isEmpty()) {
-                        commonResponse.setSuccess(false);
-                        commonResponse.setMessage("tag_values必须有值");
-                        return commonResponse;
-                    }
-                    if (finalInOp) {
-                        subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                    //处理组合标签
+                    if (finalJsonObject.containsKey("item_complex_name")) {
+                        String complexFilter = searchMapper.findTagItemComplexByName(finalJsonObject.getString("item_complex_name"), tagObject.getId());
+                        if(StringUtils.isEmpty(complexFilter)){
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("组合标签不存在："+finalJsonObject.getString("item_complex_name"));
+                            return commonResponse;
+                        }
+                        JSONArray complexJsonArray = JSONObject.parseArray(complexFilter);
+                        for (int t = 0; t < complexJsonArray.size(); t++) {
+                            JSONObject complexFinalJsonObject = complexJsonArray.getJSONObject(i);
+                            Boolean finalInOp = true;
+                            if (complexFinalJsonObject.get("op") != null && complexFinalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
+                                finalInOp = false;
+                            }
+                            List<String> tagValues = JSONArray.parseArray(complexFinalJsonObject.getString("tag_values"), String.class);
+                            if (tagValues == null || tagValues.isEmpty()) {
+                                commonResponse.setSuccess(false);
+                                commonResponse.setMessage("tag_values必须有值");
+                                return commonResponse;
+                            }
+                            if (finalInOp) {
+                                subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                            } else {
+                                subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                            }
+
+                        }
+
                     } else {
-                        subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        Boolean finalInOp = true;
+                        if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
+                            finalInOp = false;
+                        }
+                        List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
+                        if (tagValues == null || tagValues.isEmpty()) {
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("tag_values必须有值");
+                            return commonResponse;
+                        }
+                        if (finalInOp) {
+                            subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        } else {
+                            subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        }
                     }
                 }
                 if (fatherAndOp) {

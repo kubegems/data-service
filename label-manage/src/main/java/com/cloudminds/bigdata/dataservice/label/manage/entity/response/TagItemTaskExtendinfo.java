@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class TagItemTaskExtendinfo extends TagItemTask {
     private String tag_name;
-    private String tag_state;
+    private int tag_state;
 }

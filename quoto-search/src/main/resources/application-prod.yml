@@ -6,7 +6,7 @@ spring:
         group: dataservice-232
         namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
   datasource:
-    url: jdbc:mysql://bigdata-mysql:3306/bigdata_label?characterEncoding=utf8&useSSL=true
+    url: jdbc:mysql://bigdata-mysql:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=true
     username: root
     password: bigdata-mysql-cloud1688
     driver-class-name: com.mysql.jdbc.Driver
@@ -15,3 +15,4 @@ elasticsearch:
   port: 9400
 hbase:
   quorum: 172.16.23.37:2181,172.16.23.38:2181,172.16.23.39:2181
+dataServiceUrl: http://bigdata-service-gw:8001

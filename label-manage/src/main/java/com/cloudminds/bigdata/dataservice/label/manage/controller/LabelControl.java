@@ -55,6 +55,24 @@ public class LabelControl {
     }
 
     //查询标签
+    @RequestMapping(value = "queryAllLabelItem", method = RequestMethod.GET)
+    public CommonResponse queryAllLabelItem(int tag_object_id) {
+        return labelService.queryAllLabelItem(tag_object_id);
+    }
+
+    //查询标签
+    @RequestMapping(value = "queryAllLabelItemNoTask", method = RequestMethod.GET)
+    public CommonResponse queryAllLabelItemNoTask(int tag_object_id) {
+        return labelService.queryAllLabelItemNoTask(tag_object_id);
+    }
+
+    //查询标签
+    @RequestMapping(value = "queryLabelItemByTagEnums", method = RequestMethod.POST)
+    public CommonResponse queryLabelItemByTagEnums(@RequestBody LabelItemByTagEnumsQuery labelItemByTagEnumsQuery) {
+        return labelService.queryLabelItemByTagEnums(labelItemByTagEnumsQuery);
+    }
+
+    //查询标签
     @RequestMapping(value = "dataPreview", method = RequestMethod.GET)
     public CommonResponse dataPreview(String tag_id) {
         return labelService.dataPreview(tag_id);
@@ -96,6 +114,12 @@ public class LabelControl {
         return labelService.addLabelItemTask(tagItemTask);
     }
 
+    //判断标签任务是否可以创建
+    @RequestMapping(value = "checkLabelItemTask", method = RequestMethod.POST)
+    public CommonResponse checkLabelItemTask(@RequestBody TagItemTask tagItemTask){
+        return labelService.checkLabelItemTask(tagItemTask);
+    }
+
     //更新标签任务
     @RequestMapping(value = "updateLabelItemTask", method = RequestMethod.POST)
     public CommonResponse updateLabelItemTask(@RequestBody TagItemTask tagItemTask){
@@ -108,11 +132,18 @@ public class LabelControl {
         return labelService.updateLabelItemTaskState(updateLabelItemTaskStateReq);
     }
 
+    //更新标签任务的状态
+    @RequestMapping(value = "labelItemTaskIsReady", method = RequestMethod.POST)
+    public CommonResponse labelItemTaskIsReady(@RequestBody DeleteReq deleteReq){
+        return labelService.labelItemTaskIsReady(deleteReq);
+    }
+
     //查询标签任务
     @RequestMapping(value = "queryLabelItemTask", method = RequestMethod.POST)
     public CommonResponse queryLabelItemTask(@RequestBody LabelItemTaskQuery labelItemTaskQuery) {
         return labelService.queryLabelItemTask(labelItemTaskQuery);
     }
+
 
     //删除标签任务
     @RequestMapping(value = "deleteLabelItemTask", method = RequestMethod.POST)

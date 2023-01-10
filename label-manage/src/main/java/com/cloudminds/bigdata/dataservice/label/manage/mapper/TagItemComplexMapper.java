@@ -1,6 +1,9 @@
 package com.cloudminds.bigdata.dataservice.label.manage.mapper;
 
+import com.cloudminds.bigdata.dataservice.label.manage.entity.BaseEntity;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagEnumValueExtend;
 import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItemComplex;
+import com.cloudminds.bigdata.dataservice.label.manage.entity.TagItemComplexExtend;
 import com.cloudminds.bigdata.dataservice.label.manage.handler.ArrayTypeHandler;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.type.JdbcType;
@@ -30,7 +33,8 @@ public interface TagItemComplexMapper {
     public int deleteTagItemComplex(int id);
 
     @Select("select * from tag_item_complex where ${condition} order by update_time desc limit #{startLine},#{size}")
-    public List<TagItemComplex> queryLabelItemComplex(String condition, int startLine, int size);
+    @Result(column = "tag_enum_values", property = "tag_enum_values", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+    public List<TagItemComplexExtend> queryLabelItemComplex(String condition, int startLine, int size);
 
     @Select("select count(*) from tag_item_complex where ${condition}")
     public int queryLabelItemComplexCount(String condition);
@@ -46,4 +50,7 @@ public interface TagItemComplexMapper {
 
     @Select("select distinct b.name from (select a.name,a.id,substring_index(substring_index(a.tag_enum_values,',',b.help_topic_id+1),',',-1) as tag_enum_id from (select * from tag_item_complex where deleted=0)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_enum_values) - length(replace(a.tag_enum_values,',',''))+1)) b left join tag_enum_value tt on b.tag_enum_id=tt.tag_enum_id where tt.tag_id in ${tag_ids}")
     public List<String> queryUseTagItemComplex(String tag_ids);
+
+    @Select("select t.name as descr,t.creator from (select a.name,a.creator,substring_index(substring_index(a.tag_item_complexs,',',b.help_topic_id+1),',',-1) as tag_item_complex from (select * from bigdata_dataservice.data_set where deleted=0 and data_source_id=#{tag_object_id} and data_type=2)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_item_complexs) - length(replace(a.tag_item_complexs,',',''))+1)) t where t.name=#{name}")
+    public List<BaseEntity> queryDatasetByTagItemComplex(String name,int tag_object_id);
 }

@@ -21,6 +21,8 @@ public class TagItemTask extends BaseEntity{
     private String advanced_parameters;
     private String cron;
     private String run_info;
+    private String oozie_hue_uuid;
+    private String workflow_hue_uuid;
     private int state;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date start_time;

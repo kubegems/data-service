@@ -409,17 +409,31 @@ public class LabelService {
             commonResponse.setMessage("更新者不能为空");
             return commonResponse;
         }
-        //校验是否有组合标签在用
-        if(updateLabelItemState.getState()==0){
+        //下线标签 校验是否有组合标签和数据集在用
+        if (updateLabelItemState.getState() == 0) {
             String tag_ids = "(";
             for (String tag_id : updateLabelItemState.getTag_ids()) {
                 tag_ids = tag_ids + "'" + tag_id + "',";
             }
             tag_ids = tag_ids.substring(0, tag_ids.length() - 1) + ")";
             List<String> onlineTagItemComplex = tagItemComplexMapper.queryOnlineTagItemComplex(tag_ids);
-            if(onlineTagItemComplex!=null&&onlineTagItemComplex.size()>0){
+            if (onlineTagItemComplex != null && onlineTagItemComplex.size() > 0) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("这些上线状态的组合标签使用了这些基础标签,请先下线组合标签："+ StringUtils.join(onlineTagItemComplex,","));
+                commonResponse.setMessage("这些上线状态的组合标签使用了这些基础标签,请先下线组合标签：" + StringUtils.join(onlineTagItemComplex, ","));
+                return commonResponse;
+            }
+            //校验有没有数据集在使用,如果数据集在使用不能下线
+            List<BaseEntity> dataSet = labelItemMapper.queryDatasetByTagItem(tag_ids);
+            if (dataSet != null && dataSet.size() > 0) {
+                String message = "以下数据集在使用标签,请联系使用者删除数据集：\n";
+                for (int i = 0; i < dataSet.size(); i++) {
+                    message = message + dataSet.get(i).getCreator() + ": " + dataSet.get(i).getDescr();
+                    if (i != dataSet.size() - 1) {
+                        message = message + "\n";
+                    }
+                }
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(message);
                 return commonResponse;
             }
         }
@@ -447,9 +461,9 @@ public class LabelService {
         }
         tag_ids = tag_ids.substring(0, tag_ids.length() - 1) + ")";
         List<String> useTagItemComplex = tagItemComplexMapper.queryUseTagItemComplex(tag_ids);
-        if(useTagItemComplex!=null&&useTagItemComplex.size()>0){
+        if (useTagItemComplex != null && useTagItemComplex.size() > 0) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("这些组合标签使用了这些基础标签,请先删除组合标签："+ StringUtils.join(useTagItemComplex,","));
+            commonResponse.setMessage("这些组合标签使用了这些基础标签,请先删除组合标签：" + StringUtils.join(useTagItemComplex, ","));
             return commonResponse;
         }
 
@@ -499,6 +513,51 @@ public class LabelService {
         commonResponse.setCurrentPage(page);
         commonResponse.setData(labelItemMapper.findTagItem(condition, startLine, size));
         commonResponse.setTotal(labelItemMapper.findTagItemCount(condition));
+        return commonResponse;
+    }
+
+    public CommonResponse queryAllLabelItem(int tag_object_id) {
+        CommonResponse commonResponse = new CommonResponse();
+        String condition = "c.tag_object_id=" + tag_object_id + " and i.deleted=0";
+        commonResponse.setData(labelItemMapper.findAllTagItem(condition));
+        return commonResponse;
+    }
+
+    public CommonResponse queryLabelItemByTagEnums(LabelItemByTagEnumsQuery labelItemByTagEnumsQuery) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(labelItemByTagEnumsQuery==null||labelItemByTagEnumsQuery.getTag_enum_ids().length==0){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("tag_enum_ids不能为空");
+            return commonResponse;
+        }
+        String tagItems="(";
+        String tagItemEnums="(";
+        for(int i =0;i<labelItemByTagEnumsQuery.getTag_enum_ids().length;i++){
+            String tagItemEnum=labelItemByTagEnumsQuery.getTag_enum_ids()[i];
+            String tagItem=tagItemEnum.substring(0,tagItemEnum.indexOf("_"));
+            tagItemEnums=tagItemEnums+"'"+tagItemEnum+"'";
+            tagItems=tagItems+"'"+tagItem+"'";
+            if(i!=labelItemByTagEnumsQuery.getTag_enum_ids().length-1){
+                tagItemEnums=tagItemEnums+",";
+                tagItems=tagItems+",";
+            }
+        }
+        tagItems=tagItems+")";
+        tagItemEnums=tagItemEnums+")";
+        List<TagItemExtend> tagItemExtends = labelItemMapper.findTagItemByTagEnums(tagItems);
+        if(tagItemExtends!=null&&tagItemExtends.size()>0){
+            for(int i=0;i<tagItemExtends.size();i++){
+                tagItemExtends.get(i).setTagEnumValueList(labelItemMapper.findTagEnumValueByTagEnums(tagItemExtends.get(i).getTag_id(),tagItemEnums));
+            }
+        }
+        commonResponse.setData(tagItemExtends);
+        return commonResponse;
+    }
+
+    public CommonResponse queryAllLabelItemNoTask(int tag_object_id) {
+        CommonResponse commonResponse = new CommonResponse();
+        String condition = "c.tag_object_id=" + tag_object_id + " and i.deleted=0";
+        commonResponse.setData(labelItemMapper.findAllTagItemNoTask(condition));
         return commonResponse;
     }
 
@@ -746,10 +805,27 @@ public class LabelService {
         int page = labelItemComplexQuery.getPage();
         int size = labelItemComplexQuery.getSize();
         int startLine = (page - 1) * size;
-        commonQueryResponse.setData(tagItemComplexMapper.queryLabelItemComplex(condition,startLine, size));
+        List<TagItemComplexExtend> tagItemComplexExtends = tagItemComplexMapper.queryLabelItemComplex(condition, startLine, size);
+        if (tagItemComplexExtends != null && tagItemComplexExtends.size() > 0) {
+            for (int i = 0; i < tagItemComplexExtends.size(); i++) {
+                tagItemComplexExtends.get(i).setTag_enum_values_list(findTagEnumValueByTagEnumIds(tagItemComplexExtends.get(i).getTag_enum_values()));
+            }
+        }
+        commonQueryResponse.setData(tagItemComplexExtends);
         commonQueryResponse.setCurrentPage(labelItemComplexQuery.getPage());
         commonQueryResponse.setTotal(tagItemComplexMapper.queryLabelItemComplexCount(condition));
         return commonQueryResponse;
+    }
+
+    public List<TagEnumValueExtend> findTagEnumValueByTagEnumIds(String[] tag_enum_values) {
+        String tagEnumValues = "";
+        for (int i = 0; i < tag_enum_values.length; i++) {
+            tagEnumValues = tagEnumValues + "'" + tag_enum_values[i] + "'";
+            if (i != tag_enum_values.length - 1) {
+                tagEnumValues = tagEnumValues + ",";
+            }
+        }
+        return labelItemMapper.findTagEnumValueByTagEnumIds(tagEnumValues);
     }
 
     public CommonResponse updateLabelItemComplexStatus(int id, int state) {
@@ -771,6 +847,12 @@ public class LabelService {
             if (state == 1) {
                 String tag_enum_values = "(";
                 for (String tag_enum_value : tagItemComplex.getTag_enum_values()) {
+                    TagEnumValueExtend tagEnumValueExtend = labelItemMapper.findTagEnumValueByTagEnumId(tag_enum_value);
+                    if (tagEnumValueExtend == null) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage(tag_enum_value + "不存在了,请重新编辑组合标签");
+                        return commonResponse;
+                    }
                     tag_enum_values = tag_enum_values + "'" + tag_enum_value + "',";
                 }
                 tag_enum_values = tag_enum_values.substring(0, tag_enum_values.length() - 1) + ")";
@@ -780,6 +862,22 @@ public class LabelService {
                     commonResponse.setMessage("使用到的" + String.join(",", unOnlineLableItem) + "这些基础标签需是上线状态");
                     return commonResponse;
                 }
+            } else {
+                //校验有没有数据集在使用,如果数据集在使用不能下线
+                List<BaseEntity> dataSet = tagItemComplexMapper.queryDatasetByTagItemComplex(tagItemComplex.getName(), tagItemComplex.getTag_object_id());
+                if (dataSet != null && dataSet.size() > 0) {
+                    String message = "以下数据集在使用这个组合标签,请联系使用者删除数据集：\n";
+                    for (int i = 0; i < dataSet.size(); i++) {
+                        message = message + dataSet.get(i).getCreator() + ": " + dataSet.get(i).getDescr();
+                        if (i != dataSet.size() - 1) {
+                            message = message + "\n";
+                        }
+                    }
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(message);
+                    return commonResponse;
+                }
+
             }
         }
         //更新状态
@@ -807,7 +905,7 @@ public class LabelService {
             return commonResponse;
         }
         //验证标签对象是否存在
-        if(tagObjectMapper.queryTagObject(tagItemTask.getTag_object_id())==null){
+        if (tagObjectMapper.queryTagObject(tagItemTask.getTag_object_id()) == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("标签对象不存在");
             return commonResponse;
@@ -840,6 +938,52 @@ public class LabelService {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("新建任务失败,请联系管理员");
             return commonResponse;
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse checkLabelItemTask(TagItemTask tagItemTask) {
+        CommonResponse commonResponse = new CommonResponse();
+        //校验参数是否为空
+        if (tagItemTask == null || StringUtils.isEmpty(tagItemTask.getTag_id()) || StringUtils.isEmpty(tagItemTask.getName())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签和任务名不能为空");
+            return commonResponse;
+        }
+        //校验标签是否存在
+        if (labelItemMapper.findTagItemByTagId(tagItemTask.getTag_id()) == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签不存在");
+            return commonResponse;
+        }
+        //验证标签对象是否存在
+        if (tagObjectMapper.queryTagObject(tagItemTask.getTag_object_id()) == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签对象不存在");
+            return commonResponse;
+        }
+        //校验任务是不是已经存在
+        TagItemTask oldTagItemTask = tagItemTaskMapper.findTagItemTaskByTagId(tagItemTask.getTag_id());
+        if (oldTagItemTask != null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("该标签下已经存在任务：" + oldTagItemTask.getName() + " 不能再创建了");
+            return commonResponse;
+        }
+
+        //规则类别参数校验
+        if (tagItemTask.getTag_rule_type() == 1) {
+            if (StringUtils.isEmpty(tagItemTask.getTag_rule())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("规则类别为sql时,标签规则不能为空");
+                return commonResponse;
+            }
+        } else {
+            if (StringUtils.isEmpty(tagItemTask.getMain_class()) || StringUtils.isEmpty(tagItemTask.getJar_package())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("规则类别为model时,程序入口和jar包路径不能为空");
+                return commonResponse;
+            }
+
         }
         return commonResponse;
     }
@@ -969,6 +1113,28 @@ public class LabelService {
             return commonResponse;
         }
 
+        return commonResponse;
+    }
+
+    public CommonResponse labelItemTaskIsReady(DeleteReq deleteReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        TagItemTask tagItemTask = tagItemTaskMapper.findTagItemTaskById(deleteReq.getId());
+        if (tagItemTask == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("任务不存在");
+            return commonResponse;
+        }
+        TagItem tagItem = labelItemMapper.findTagItemByTagId(tagItemTask.getTag_id());
+        if(tagItem==null){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("任务异常：基础标签已经被删了");
+            return commonResponse;
+        }
+        if (tagItem.getState() != 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("请先上线基础标签");
+            return commonResponse;
+        }
         return commonResponse;
     }
 
