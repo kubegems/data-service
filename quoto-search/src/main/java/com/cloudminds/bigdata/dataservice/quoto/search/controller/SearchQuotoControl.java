@@ -1,6 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.search.controller;
 
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.CommonResponse;
+import com.cloudminds.bigdata.dataservice.quoto.search.entity.QueryDataByRowKeyReq;
 import com.cloudminds.bigdata.dataservice.quoto.search.service.ESQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,5 +37,10 @@ public class SearchQuotoControl {
     @RequestMapping(value = "queryApiDoc", method = RequestMethod.GET)
     public CommonResponse queryApiDoc(String object_code){
         return eSQueryService.queryApiDoc(object_code);
+    }
+
+    @RequestMapping(value = "queryDataByRowKey", method = RequestMethod.POST)
+    public CommonResponse queryDataByRowKey(@RequestBody QueryDataByRowKeyReq queryDataByRowKeyReq){
+        return eSQueryService.queryDataByRowKey(queryDataByRowKeyReq);
     }
 }

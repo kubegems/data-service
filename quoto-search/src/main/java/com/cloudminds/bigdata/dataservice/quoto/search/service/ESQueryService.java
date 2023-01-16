@@ -163,9 +163,9 @@ public class ESQueryService {
         }
         if (jsonObjectRequest.get("count") != null) {
             count = jsonObjectRequest.getIntValue("count");
-            if (count > 1000) {
+            if (count > 100000) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("count不能超过1000");
+                commonResponse.setMessage("count不能超过100000");
                 return commonResponse;
             }
         }
@@ -219,15 +219,15 @@ public class ESQueryService {
         }
 
         Map<String, String> columnAttribute = new HashMap<>();
-        List<ColumnAlias> columnAliases = searchMapper.queryTagObjectColunmAttribute(tagObject.getDatabase(), tagObject.getTable());
-        if (columnAliases == null || columnAliases.size() == 0) {
+        if (tagObject.getColumns() == null || tagObject.getColumns().size() == 0) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage(tagObject.getDatabase() + "." + tagObject.getTable() + " 对应的表没在数据服务里配置,请联系管理员");
+            commonResponse.setMessage(tagObject.getCode() + " 标签对象没有配置列信息");
             return commonResponse;
         } else {
             Map<String, String> columnAttributeTmp = new HashMap<>();
-            for (ColumnAlias columnAlias : columnAliases) {
-                columnAttributeTmp.put(columnAlias.getColumn_name(), columnAlias.getData_type());
+            for (int i = 0; i < tagObject.getColumns().size(); i++) {
+                Map<String, String> column = (Map<String, String>) tagObject.getColumns().get(i);
+                columnAttributeTmp.put(column.get("name"), column.get("type"));
             }
             if (jsonObjectRequest.get("column") == null || StringUtils.isEmpty(jsonObjectRequest.getString("column"))) {
                 columnAttribute = columnAttributeTmp;
@@ -327,26 +327,57 @@ public class ESQueryService {
                     commonResponse.setMessage("嵌套里的filter必须有值");
                     return commonResponse;
                 }
-                if(subJsonArray.isEmpty()){
+                if (subJsonArray.isEmpty()) {
                     continue;
                 }
                 BoolQueryBuilder subBoolQuery = QueryBuilders.boolQuery();
                 for (int j = 0; j < subJsonArray.size(); j++) {
                     JSONObject finalJsonObject = subJsonArray.getJSONObject(j);
-                    Boolean finalInOp = true;
-                    if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
-                        finalInOp = false;
-                    }
-                    List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
-                    if (tagValues == null || tagValues.isEmpty()) {
-                        commonResponse.setSuccess(false);
-                        commonResponse.setMessage("tag_values必须有值");
-                        return commonResponse;
-                    }
-                    if (finalInOp) {
-                        subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                    //处理组合标签
+                    if (finalJsonObject.containsKey("item_complex_name")) {
+                        String complexFilter = searchMapper.findTagItemComplexByName(finalJsonObject.getString("item_complex_name"), tagObject.getId());
+                        if(StringUtils.isEmpty(complexFilter)){
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("组合标签不存在："+finalJsonObject.getString("item_complex_name"));
+                            return commonResponse;
+                        }
+                        JSONArray complexJsonArray = JSONObject.parseArray(complexFilter);
+                        for (int t = 0; t < complexJsonArray.size(); t++) {
+                            JSONObject complexFinalJsonObject = complexJsonArray.getJSONObject(i);
+                            Boolean finalInOp = true;
+                            if (complexFinalJsonObject.get("op") != null && complexFinalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
+                                finalInOp = false;
+                            }
+                            List<String> tagValues = JSONArray.parseArray(complexFinalJsonObject.getString("tag_values"), String.class);
+                            if (tagValues == null || tagValues.isEmpty()) {
+                                commonResponse.setSuccess(false);
+                                commonResponse.setMessage("tag_values必须有值");
+                                return commonResponse;
+                            }
+                            if (finalInOp) {
+                                subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                            } else {
+                                subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                            }
+
+                        }
+
                     } else {
-                        subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        Boolean finalInOp = true;
+                        if (finalJsonObject.get("op") != null && finalJsonObject.get("op").toString().toLowerCase().equals("not in")) {
+                            finalInOp = false;
+                        }
+                        List<String> tagValues = JSONArray.parseArray(finalJsonObject.getString("tag_values"), String.class);
+                        if (tagValues == null || tagValues.isEmpty()) {
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("tag_values必须有值");
+                            return commonResponse;
+                        }
+                        if (finalInOp) {
+                            subBoolQuery.must(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        } else {
+                            subBoolQuery.mustNot(QueryBuilders.matchQuery("tags", tagValues.toString().replaceAll(",", " ")).operator(Operator.OR));
+                        }
                     }
                 }
                 if (fatherAndOp) {
@@ -393,6 +424,7 @@ public class ESQueryService {
                 sourceBuilder.from((page - 1) * count);
             }
             sourceBuilder.size(count);
+            sourceBuilder.fetchSource(false);
             searchRequest.source(sourceBuilder);
 
             //1. 查询,获取查询结果
@@ -404,9 +436,10 @@ public class ESQueryService {
                 SearchHit[] hits1 = hits.getHits();
                 //获取json字符串格式的数据
                 for (SearchHit searchHit : hits1) {
-                    rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
+                    rowKeys.add(searchHit.getId());
+                    //rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
                 }
-                if (scroll_search&&(!rowKeys.isEmpty())) {
+                if (scroll_search && (!rowKeys.isEmpty())) {
                     scroll_id_result = hits1[hits1.length - 1].getSortValues()[0].toString();
                 }
             } catch (Exception e) {
@@ -429,9 +462,8 @@ public class ESQueryService {
     }
 
     /**
-     *
-     * @param tableName hbase表名
-     * @param rowKeys 表的rowkey数组
+     * @param tableName       hbase表名
+     * @param rowKeys         表的rowkey数组
      * @param columnAttribute 过滤的列属性
      * @return
      */
@@ -450,7 +482,7 @@ public class ESQueryService {
             Result[] results = table.get(getList);
             Arrays.stream(results).forEach(result -> {
                 Map<String, Object> data = new HashMap<>();
-                if(columnAttribute.containsKey("rowkey")) {
+                if (columnAttribute.containsKey("rowkey")) {
                     data.put("rowkey", new StringBuffer(Bytes.toString(result.getRow())).reverse().toString());
                 }
                 Arrays.stream(result.rawCells()).forEach(cell -> {
@@ -470,7 +502,7 @@ public class ESQueryService {
                                     data.put(qualifier, value);
                                 }
                             }
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
                             String value = Bytes.toString(CellUtil.cloneValue(cell));
                             if (value.startsWith("{") && value.endsWith("}")) {
@@ -492,7 +524,7 @@ public class ESQueryService {
 
     public CommonResponse queryApiDoc(String object_code) {
         CommonResponse commonResponse = new CommonResponse();
-        if(StringUtils.isEmpty(object_code)){
+        if (StringUtils.isEmpty(object_code)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("object_code必传");
             return commonResponse;
@@ -552,6 +584,92 @@ public class ESQueryService {
         extendFieldFilter.setDesc("1：空的数组[]查询所有的数据 2：最外层数组之间的逻辑由外层的op控制,最里层的filter数组都是且操作 3：op为in表示被打上tag_values里的任意一个标签,not in表示没被打上tag_values里的任意一个标签");
         extendFields.add(extendFieldFilter);
         commonResponse.setData(extendFields);
+        return commonResponse;
+    }
+
+    public CommonResponse queryDataByRowKey(QueryDataByRowKeyReq queryDataByRowKeyReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (queryDataByRowKeyReq == null || StringUtils.isEmpty(queryDataByRowKeyReq.getId()) || StringUtils.isEmpty(queryDataByRowKeyReq.getTagObjectCode())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("rowkey和tagObjectCode不能为空");
+            return commonResponse;
+        }
+        String rowkey = new StringBuffer(queryDataByRowKeyReq.getId()).reverse().toString();
+        TagObject tagObject = searchMapper.queryTagObjectByCode(queryDataByRowKeyReq.getTagObjectCode());
+        if (tagObject == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签对象不存在");
+            return commonResponse;
+        }
+        if (tagObject.getColumns() == null || tagObject.getColumns().isEmpty()) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标签对象没有配置列信息");
+            return commonResponse;
+        }
+
+        String tableName = tagObject.getDatabase() + ":" + tagObject.getTable();
+        List<Column> columns = tagObject.getColumns();
+        Map<String, String> columnAttribute = new HashMap<>();
+        if (columns != null && columns.size() > 0) {
+            for (int i = 0; i < columns.size(); i++) {
+                Map<String, String> column = (Map<String, String>) columns.get(i);
+                columnAttribute.put(column.get("name"), column.get("type"));
+            }
+        }
+        try {
+            Table table = hbaseConnection.getAdmin().getConnection().getTable(TableName.valueOf(tableName));
+            Get get = new Get(rowkey.getBytes());
+            Result result = table.get(get);
+            QueryDataByRowKeyResponse queryDataByRowKeyResponse = new QueryDataByRowKeyResponse();
+            Map<String, Object> data = new HashMap<>();
+            Set<String> tags = new HashSet<>();
+            Arrays.stream(result.rawCells()).forEach(cell -> {
+                String family = Bytes.toString(CellUtil.cloneFamily(cell));
+                if (family.equals("f1")) {
+                    String qualifier = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    if (columnAttribute != null && (!StringUtils.isEmpty(columnAttribute.get(qualifier)))) {
+                        String type = columnAttribute.get(qualifier).toLowerCase();
+                        try {
+                            if (type.contains("int")) {
+                                data.put(qualifier, Bytes.toInt(CellUtil.cloneValue(cell)));
+                            } else if (type.contains("float")) {
+                                data.put(qualifier, Bytes.toFloat(CellUtil.cloneValue(cell)));
+                            } else {
+                                String value = Bytes.toString(CellUtil.cloneValue(cell));
+                                if (value.startsWith("{") && value.endsWith("}")) {
+                                    data.put(qualifier, JSONObject.parseObject(value));
+                                } else {
+                                    data.put(qualifier, value);
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            String value = Bytes.toString(CellUtil.cloneValue(cell));
+                            if (value.startsWith("{") && value.endsWith("}")) {
+                                data.put(qualifier, JSONObject.parseObject(value));
+                            } else {
+                                data.put(qualifier, value);
+                            }
+                        }
+                    }
+                } else if (family.equals("f2")) {
+                    String qualifier = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    String value = Bytes.toString(CellUtil.cloneValue(cell));
+                    if (!StringUtils.isEmpty(value)) {
+                        tags.add(Bytes.toString(CellUtil.cloneQualifier(cell)));
+                    }
+                }
+
+            });
+            queryDataByRowKeyResponse.setDataInfo(data);
+            queryDataByRowKeyResponse.setTags(tags);
+            commonResponse.setData(queryDataByRowKeyResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        }
         return commonResponse;
     }
 }

@@ -27,7 +27,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 @Service
@@ -674,7 +681,7 @@ public class QuotoService {
             Quoto metricQuoto = quotoMapper.findQuotoByMetricAndTableId(quoto.getTable_id(), quoto.getMetric());
             if (metricQuoto != null) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("度量已被指标名为:"+metricQuoto.getName()+" 的指标使用");
+                commonResponse.setMessage("度量已被指标名为:" + metricQuoto.getName() + " 的指标使用");
                 return commonResponse;
             }
             quoto.setUse_sql(false);
@@ -1225,7 +1232,7 @@ public class QuotoService {
             return commonResponse;
         }
 
-        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getMetric(),quoto.getTable_id());
+        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(quoto.getMetric(), quoto.getTable_id());
         if (quotoInfo == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("数据服务没有此指标的配置,请前往数据服务-服务管理页配置此指标");
@@ -1770,6 +1777,34 @@ public class QuotoService {
                     start = start + " 00:00:00";
                 }
                 result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
+            } else if (adjective.getCode().equals("pre1WEEK")) {
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                TemporalAdjuster LastMonday = TemporalAdjusters.ofDateAdjuster(
+
+                        temporal -> {
+
+                            DayOfWeek dow = DayOfWeek.of(temporal.get(ChronoField.DAY_OF_WEEK));
+
+                            int value = -(dow.getValue() + 6);
+
+                            return temporal.plus(value, ChronoUnit.DAYS);
+
+                        });
+
+                LocalDate localDateLastMonday = LocalDate.now().with(LastMonday);
+                String start = localDateLastMonday.toString()+ " 00:00:00";
+                try {
+                    Date date = format.parse(localDateLastMonday.toString());
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(date);
+                    cal.add(Calendar.DATE, 7);
+                    String end = format.format(cal.getTime())+" 00:00:00";
+                    result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
+                }catch (Exception e){
+                    e.printStackTrace();
+                    return result;
+                }
+
             }
             return result;
         }
