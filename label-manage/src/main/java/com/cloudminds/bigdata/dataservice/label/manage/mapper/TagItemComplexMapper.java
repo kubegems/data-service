@@ -51,6 +51,6 @@ public interface TagItemComplexMapper {
     @Select("select distinct b.name from (select a.name,a.id,substring_index(substring_index(a.tag_enum_values,',',b.help_topic_id+1),',',-1) as tag_enum_id from (select * from tag_item_complex where deleted=0)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_enum_values) - length(replace(a.tag_enum_values,',',''))+1)) b left join tag_enum_value tt on b.tag_enum_id=tt.tag_enum_id where tt.tag_id in ${tag_ids}")
     public List<String> queryUseTagItemComplex(String tag_ids);
 
-    @Select("select t.name as descr,t.creator from (select a.name,a.creator,substring_index(substring_index(a.tag_item_complexs,',',b.help_topic_id+1),',',-1) as tag_item_complex from (select * from bigdata_dataservice.data_set where deleted=0 and data_source_id=#{tag_object_id} and data_type=2)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_item_complexs) - length(replace(a.tag_item_complexs,',',''))+1)) t where t.name=#{name}")
+    @Select("select t.name as descr,t.creator from (select a.name,a.creator,substring_index(substring_index(a.tag_item_complexs,',',b.help_topic_id+1),',',-1) as tag_item_complex from (select * from bigdata_dataservice.data_set where deleted=0 and data_source_id=#{tag_object_id} and data_type=2)a join mysql.help_topic b on b.help_topic_id < (length(a.tag_item_complexs) - length(replace(a.tag_item_complexs,',',''))+1)) t where t.tag_item_complex=#{name}")
     public List<BaseEntity> queryDatasetByTagItemComplex(String name,int tag_object_id);
 }

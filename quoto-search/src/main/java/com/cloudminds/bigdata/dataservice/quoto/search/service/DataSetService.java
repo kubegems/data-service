@@ -3,7 +3,9 @@ package com.cloudminds.bigdata.dataservice.quoto.search.service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.cloudminds.bigdata.dataservice.quoto.search.config.CsvExportUtil;
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.*;
+import com.cloudminds.bigdata.dataservice.quoto.search.entity.ExtendField;
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.dataset.*;
 import com.cloudminds.bigdata.dataservice.quoto.search.mapper.DataSetMapper;
 import com.cloudminds.bigdata.dataservice.quoto.search.mapper.SearchMapper;
@@ -19,10 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.sql.*;
+import java.util.*;
 
 @Service
 public class DataSetService {
@@ -36,6 +39,8 @@ public class DataSetService {
     private String dataServiceUrl;
     @Autowired
     RestTemplate restTemplate;
+    @Autowired
+    HttpServletResponse response;
 
     public CommonResponse addDirectory(Directory directory) {
         CommonResponse commonResponse = new CommonResponse();
@@ -81,6 +86,7 @@ public class DataSetService {
             commonResponse.setMessage("文件夹创建失败,请联系管理员");
             return commonResponse;
         }
+        commonResponse.setData(directory.getId());
         return commonResponse;
     }
 
@@ -94,13 +100,18 @@ public class DataSetService {
             return commonResponse;
         }
         //校验参数是否为空
-        if (StringUtils.isEmpty(directory.getName()) || StringUtils.isEmpty(directory.getCreator())) {
+        if (StringUtils.isEmpty(directory.getName())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("文件夹名和创建者不能为空");
+            commonResponse.setMessage("文件夹名不能为空");
             return commonResponse;
         }
         if (directory.getPid() != oldDirectory.getPid()) {
             //校验pid是否存在
+            if (directory.getPid() == directory.getId()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("父文件夹不能为自己");
+                return commonResponse;
+            }
             if (directory.getPid() != 0) {
                 Directory pidDirectory = dataSetMapper.findDirectoryById(directory.getPid());
                 if (pidDirectory == null) {
@@ -182,13 +193,19 @@ public class DataSetService {
     public CommonResponse queryDirectory(String creator, int pid) {
         CommonResponse commonResponse = new CommonResponse();
         String condition = "deleted=0";
+        String conditionDataset = "deleted=0";
         if (pid != -1) {
             condition = condition + " and pid=" + pid;
+            conditionDataset = conditionDataset + " and directory_id=" + pid;
         }
         if (!StringUtils.isEmpty(creator)) {
             condition = condition + " and creator='" + creator + "'";
+            conditionDataset = conditionDataset + " and creator='" + creator + "'";
         }
-        commonResponse.setData(dataSetMapper.queryDirectory(condition));
+        Map<String, Object> data = new HashMap<>();
+        data.put("directory", dataSetMapper.queryDirectory(condition));
+        data.put("dataset", dataSetMapper.queryAllDataSet(conditionDataset));
+        commonResponse.setData(data);
         return commonResponse;
     }
 
@@ -214,6 +231,13 @@ public class DataSetService {
                 return commonResponse;
             }
         }
+
+        if (dataSet.getData_columns() == null || dataSet.getData_columns().isEmpty()) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("输出的列必须有值");
+            return commonResponse;
+        }
+
         //校验目录下的名字是否有重复
         if (dataSetMapper.findDataSetByByNameAndCreator(dataSet.getName(), dataSet.getCreator(), dataSet.getDirectory_id()) != null) {
             commonResponse.setSuccess(false);
@@ -236,7 +260,15 @@ public class DataSetService {
             }
             dataSet.setTag_enum_values(analyseFilterReult.getTag_enum_values());
             dataSet.setTag_item_complexs(analyseFilterReult.getTag_item_complexs());
-        } else if (dataSet.getData_type() != 1) {
+        } else if (dataSet.getData_type() == 1) {
+            //校验sql
+            String sql = dataSet.getData_rule().toLowerCase();
+            if (sql.contains(" order by") || sql.contains(" limit")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("数据集里的sql不能写order by和limit");
+                return commonResponse;
+            }
+        } else {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("暂不支持的创建方式");
             return commonResponse;
@@ -253,6 +285,7 @@ public class DataSetService {
             commonResponse.setMessage("新建数据集失败,请稍后再试");
             return commonResponse;
         }
+        commonResponse.setData(dataSet.getId());
         return commonResponse;
     }
 
@@ -271,6 +304,12 @@ public class DataSetService {
             commonResponse.setMessage("名称,数据来源名称,创建者,规则不能为空");
             return commonResponse;
         }
+        if (dataSet.getData_columns() == null || dataSet.getData_columns().isEmpty()) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("输出的列必须有值");
+            return commonResponse;
+        }
+
         //校验目录是否存在
         if (dataSet.getDirectory_id() != 0 && oldDataSet.getDirectory_id() != dataSet.getDirectory_id()) {
             Directory directory = dataSetMapper.findDirectoryById(dataSet.getDirectory_id());
@@ -314,7 +353,15 @@ public class DataSetService {
                 dataSet.setTag_item_complexs(oldDataSet.getTag_item_complexs());
                 dataSet.setTag_enum_values(oldDataSet.getTag_enum_values());
             }
-        } else if (dataSet.getData_type() != 1) {
+        } else if (dataSet.getData_type() == 1) {
+            //校验sql
+            String sql = dataSet.getData_rule().toLowerCase();
+            if (sql.contains(" order by") || sql.contains(" limit")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("数据集里的sql不能写order by和limit");
+                return commonResponse;
+            }
+        } else {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("暂不支持的创建方式");
             return commonResponse;
@@ -442,8 +489,8 @@ public class DataSetService {
             commonResponse.setMessage("rule参数有问题,解析不出来标签");
             return commonResponse;
         }
-        commonResponse.setTag_enum_values(tag_item_complexs.toArray(new String[tag_item_complexs.size()]));
-        commonResponse.setTag_item_complexs(tag_enum_values.toArray(new String[tag_enum_values.size()]));
+        commonResponse.setTag_item_complexs(tag_item_complexs.toArray(new String[tag_item_complexs.size()]));
+        commonResponse.setTag_enum_values(tag_enum_values.toArray(new String[tag_enum_values.size()]));
         return commonResponse;
     }
 
@@ -487,12 +534,45 @@ public class DataSetService {
 
     public CommonResponse queryDataService(QueryDataReq queryDataReq, DataSet dataSet) {
         CommonResponse commonResponse = new CommonResponse();
-        String sql = "";
+        String sql = dataSet.getData_rule().toLowerCase();
         if (queryDataReq.getQuery() == 1) {
-            sql = "select count(*) from (" + dataSet.getData_rule() + ") source";
+            if (sql.contains(" group by")) {
+                sql = "select count(*) as total from (" + sql + ") source";
+            } else {
+                int start = sql.indexOf("select ");
+                int end = sql.indexOf(" from ");
+                if (start == -1 || end == -1) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("规则里的sql不合法");
+                    return commonResponse;
+                }
+                sql = sql.substring(0, 7) + "count(*) as total" + sql.substring(end);
+            }
         } else {
-            sql = "select * from (" + dataSet.getData_rule() + ") source";
-            sql = sql + " LIMIT " + queryDataReq.getCount();
+            if (queryDataReq.getOrder() != null && queryDataReq.getOrder().size() > 0) {
+                List<Column> columns = dataSet.getData_columns();
+                Set<String> columnName = new HashSet<>();
+                if (columns != null && columns.size() > 0) {
+                    for (int i = 0; i < columns.size(); i++) {
+                        Map<String, String> column = (Map<String, String>) columns.get(i);
+                        columnName.add(column.get("name"));
+                    }
+                    for (String order : queryDataReq.getOrder()) {
+                        if (!columnName.contains(order)) {
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("不支持排序字段：" + order);
+                            return commonResponse;
+                        }
+                    }
+                    sql = sql + " order by " + StringUtils.join(queryDataReq.getOrder().toArray(), ",");
+                } else {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("此数据集不支持排序列");
+                    return commonResponse;
+                }
+
+            }
+            sql = sql + " limit " + queryDataReq.getCount();
             if (queryDataReq.getPage() > 0) {
                 sql = sql + " offset " + queryDataReq.getCount() * queryDataReq.getPage();
             }
@@ -504,8 +584,8 @@ public class DataSetService {
             return commonResponse;
         }
         String url = dataServiceUrl + servicePathInfo.getPath();
-        String bodyRequest = "{'[]':{'" + servicePathInfo.getTableName() + "':{'@sql':'" + sql + "'";
-        bodyRequest = bodyRequest + "},'page':" + queryDataReq.getPage() + ",'count':" + queryDataReq.getCount() + "}}";
+        String bodyRequest = "{\"[]\":{\"" + servicePathInfo.getTableName() + "\":{\"@sql\":\"" + sql + "\"";
+        bodyRequest = bodyRequest + "},\"page\":" + queryDataReq.getPage() + ",\"count\":" + queryDataReq.getCount() + "}}";
         System.out.println(bodyRequest);
         // 请求数据服务
         HttpHeaders headers = new HttpHeaders();
@@ -531,7 +611,11 @@ public class DataSetService {
                 List<JSONObject> list = JSONObject.parseArray(result.get("[]").toString(), JSONObject.class);
                 if (list != null) {
                     if (list.size() == 1) {
-                        commonResponse.setData(list.get(0).get(servicePathInfo.getTableName()));
+                        if (queryDataReq.getQuery() == 1) {
+                            commonResponse.setData(list.get(0).getJSONObject(servicePathInfo.getTableName()).get("total"));
+                        } else {
+                            commonResponse.setData(list.get(0).get(servicePathInfo.getTableName()));
+                        }
                     } else {
                         List<Object> data = new ArrayList<Object>();
                         for (int i = 0; i < list.size(); i++) {
@@ -561,28 +645,249 @@ public class DataSetService {
             dataInfoQueryReq.setPage(queryDataReq.getPage() + 1);
             dataInfoQueryReq.setCount(queryDataReq.getCount());
             dataInfoQueryReq.setScroll_id(queryDataReq.getScroll_id());
-        }
-        List<Column> columns = dataSet.getData_columns();
-        String column = "";
-        for (int i = 0; i < columns.size(); i++) {
-            column = column + columns.get(i).getName();
-            if (i != columns.size() - 1) {
-                column = column + ",";
+            dataInfoQueryReq.setScroll_search(queryDataReq.isScroll_search());
+            String columnResult = "";
+            List<Column> columns = dataSet.getData_columns();
+            Map<String, String> columnAttribute = new HashMap<>();
+            if (columns != null && columns.size() > 0) {
+                for (int i = 0; i < columns.size(); i++) {
+                    Map<String, String> column = (Map<String, String>) columns.get(i);
+                    columnResult = columnResult + column.get("name");
+                    if (i != columns.size() - 1) {
+                        columnResult = columnResult + ",";
+                    }
+                }
             }
-
+            dataInfoQueryReq.setColumn(columnResult);
         }
-        dataInfoQueryReq.setColumn(column);
         return eSQueryService.queryDataInfo(JSON.toJSONString(dataInfoQueryReq));
     }
 
     public CommonResponse checkSql(CheckSqlReq checkSqlReq) {
+        List<Column> columns = new ArrayList<>();
         CommonResponse commonResponse = new CommonResponse();
         if (checkSqlReq == null || StringUtils.isEmpty(checkSqlReq.getSql())) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("sql参数不能为空");
             return commonResponse;
         }
+        DbInfo dbInfo = dataSetMapper.queryDbInfo(checkSqlReq.getTable_id());
+        if (dbInfo == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("此表没有数据配置数据库的连接信息,请联系管理员");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(dbInfo.getDb_url()) || StringUtils.isEmpty(dbInfo.getDb_url()) || StringUtils.isEmpty(dbInfo.getUserName())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("此表配置的数据库的连接信息有缺失,请联系管理员");
+            return commonResponse;
+        }
+        //去连接库看字段信息
+        Connection conn = null;
+        PreparedStatement pStemt = null;
+        try {
+            conn = DriverManager.getConnection(dbInfo.getDb_url(), dbInfo.getUserName(), dbInfo.getPassword());
+            String sql = checkSqlReq.getSql() + " limit 1";
+            pStemt = conn.prepareStatement(sql);
+            ResultSet set = pStemt.executeQuery();
+            ResultSetMetaData resultSetMetaData = set.getMetaData();
+            for (int i = 1; i < resultSetMetaData.getColumnCount() + 1; i++) {
+                Column column = new Column();
+                column.setName(resultSetMetaData.getColumnName(i));
+                column.setType(resultSetMetaData.getColumnTypeName(i));
+                columns.add(column);
+            }
+            commonResponse.setData(columns);
+        } catch (Exception e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        } finally {
+            try {
+                pStemt.close();
+                conn.close();
+            } catch (Exception ee) {
+                ee.printStackTrace();
+            }
+        }
+        return commonResponse;
+    }
 
+    public CommonResponse dataAccount(DataAccountReq dataAccountReq) {
+        Map<String, Object> data = new HashMap<>();
+        CommonResponse commonResponse = new CommonResponse();
+        if (dataAccountReq == null || StringUtils.isEmpty(dataAccountReq.getData_rule()) || StringUtils.isEmpty(dataAccountReq.getData_source_name())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("规则不能为空");
+            return commonResponse;
+        }
+        QueryDataReq queryDataReq = new QueryDataReq();
+        DataSet dataSet = new DataSet();
+        queryDataReq.setQuery(1);
+        dataSet.setData_rule(dataAccountReq.getData_rule());
+        dataSet.setData_source_name(dataAccountReq.getData_source_name());
+        dataSet.setData_source_id(dataAccountReq.getData_source_id());
+        if (dataAccountReq.getData_type() == 1) {
+            CommonResponse commonResponseCount = queryDataService(queryDataReq, dataSet);
+            if (!commonResponseCount.isSuccess()) {
+                return commonResponseCount;
+            }
+            dataSet.setData_rule("select * from " + dataAccountReq.getData_source_name());
+            CommonResponse commonResponseTotal = queryDataService(queryDataReq, dataSet);
+            if (!commonResponseTotal.isSuccess()) {
+                return commonResponseTotal;
+            }
+            data.put("cnt", commonResponseCount.getData());
+            data.put("total", commonResponseTotal.getData());
+            commonResponse.setData(data);
+            return commonResponse;
+        } else if (dataAccountReq.getData_type() == 2) {
+            CommonResponse commonResponseCount = querySearchService(queryDataReq, dataSet);
+            if (!commonResponseCount.isSuccess()) {
+                return commonResponseCount;
+            }
+            dataSet.setData_rule("{'op':'and','filter':[]}");
+            CommonResponse commonResponseTotal = querySearchService(queryDataReq, dataSet);
+            if (!commonResponseTotal.isSuccess()) {
+                return commonResponseTotal;
+            }
+            data.put("cnt", commonResponseCount.getData());
+            data.put("total", commonResponseTotal.getData());
+            commonResponse.setData(data);
+            return commonResponse;
+        } else {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("不支持的数据类型");
+            return commonResponse;
+        }
+    }
+
+    public CommonResponse downloadData( int id) {
+        CommonResponse commonResponse = new CommonResponse();
+        DataSet dataSet = dataSetMapper.findDataSetByById(id);
+        if (dataSet == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("数据集不存在");
+            return commonResponse;
+        }
+        List<Column> columns = dataSet.getData_columns();
+        String title = "";
+        Map<String, String> columnAttribute = new HashMap<>();
+        if (columns != null && columns.size() > 0) {
+            for (int i = 0; i < columns.size(); i++) {
+                Map<String, String> column = (Map<String, String>) columns.get(i);
+                title = title + column.get("name");
+                if (i != columns.size() - 1) {
+                    title = title + ",";
+                }
+            }
+        }
+        QueryDataReq queryDataReq = new QueryDataReq();
+        queryDataReq.setQuery(2);
+        queryDataReq.setPage(0);
+        String name = dataSet.getName();
+        CommonResponse commonResponseData = null;
+        if (dataSet.getData_type() == 1) {
+            queryDataReq.setCount(50000);
+            commonResponseData = queryDataService(queryDataReq, dataSet);
+        }else{
+            queryDataReq.setCount(10000);
+             commonResponseData = querySearchService(queryDataReq, dataSet);
+        }
+        if (!commonResponseData.isSuccess()) {
+            return commonResponseData;
+        }
+        List<Map<String, Object>> list = (List<Map<String, Object>>) commonResponseData.getData();
+        try {
+            OutputStream os = response.getOutputStream();
+            CsvExportUtil.responseSetProperties(name, response);
+            CsvExportUtil.doExport(list, title, title, os);
+        } catch (Exception e) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+            return commonResponse;
+        }
+        return null;
+    }
+
+    public CommonResponse queryDataSetApiDoc(int id) {
+        CommonResponse commonResponse = new CommonResponse();
+        ApiDoc datasetApiDoc = new ApiDoc();
+        datasetApiDoc.setService_path("/search/dataset/queryData");
+        DataSet dataSet = dataSetMapper.findDataSetByById(id);
+        if (dataSet == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("数据集不存在");
+            return commonResponse;
+        }
+        List<ExtendField> extendFields = new ArrayList<>();
+        ExtendField extendFieldId = new ExtendField();
+        extendFieldId.setName("id");
+        extendFieldId.setType("int");
+        extendFieldId.setAllowBlank(false);
+        extendFieldId.setSample(id);
+        extendFieldId.setDesc("数据集id值");
+        extendFields.add(extendFieldId);
+
+        ExtendField extendFieldQuery = new ExtendField();
+        extendFieldQuery.setName("query");
+        extendFieldQuery.setType("int");
+        extendFieldQuery.setAllowBlank(true);
+        extendFieldQuery.setSample(2);
+        extendFieldQuery.setDesc("默认值为2查询数据明细,1查询总条数");
+        extendFields.add(extendFieldQuery);
+
+        if (dataSet.getData_type() == 1) {
+            ExtendField extendFieldPage = new ExtendField();
+            extendFieldPage.setName("page");
+            extendFieldPage.setType("int");
+            extendFieldPage.setAllowBlank(true);
+            extendFieldPage.setSample(0);
+            extendFieldPage.setDesc("page从0页开始");
+            extendFields.add(extendFieldPage);
+
+            ExtendField extendFieldOrder = new ExtendField();
+            extendFieldOrder.setName("order");
+            extendFieldOrder.setType("String[]");
+            extendFieldOrder.setAllowBlank(true);
+            String[] orders = {"XXX", "XXX"};
+            extendFieldOrder.setSample(orders);
+            extendFieldOrder.setDesc("排序的参数组合");
+            String desc = "可排序的参数名：";
+            List<Column> columns = dataSet.getData_columns();
+            desc = "可排序的参数名：";
+            Map<String, String> columnAttribute = new HashMap<>();
+            if (columns != null && columns.size() > 0) {
+                for (int i = 0; i < columns.size(); i++) {
+                    Map<String, String> column = (Map<String, String>) columns.get(i);
+                    desc = desc + column.get("name");
+                    if (i != columns.size() - 1) {
+                        desc = desc + ",";
+                    }
+                }
+            }
+            extendFieldOrder.setDesc(desc);
+            extendFields.add(extendFieldOrder);
+        }
+        ExtendField extendFieldCount = new ExtendField();
+        extendFieldCount.setName("count");
+        extendFieldCount.setType("int");
+        extendFieldCount.setAllowBlank(true);
+        extendFieldCount.setSample(10);
+        extendFieldCount.setDesc("返回的数据量,最大为1000条");
+        extendFields.add(extendFieldCount);
+
+        if (dataSet.getData_type() == 2) {
+            ExtendField extendFieldScroll = new ExtendField();
+            extendFieldScroll.setName("scroll_id");
+            extendFieldScroll.setType("String");
+            extendFieldQuery.setAllowBlank(true);
+            extendFieldScroll.setSample("");
+            extendFieldScroll.setDesc("首次查询不传或传空串,后面查询传入前一次查询结果里的scroll_id值");
+            extendFields.add(extendFieldScroll);
+        }
+        commonResponse.setData(extendFields);
         return commonResponse;
     }
 }

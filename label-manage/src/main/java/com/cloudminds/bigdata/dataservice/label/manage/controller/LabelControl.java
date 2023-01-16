@@ -50,14 +50,14 @@ public class LabelControl {
 
     //查询标签
     @RequestMapping(value = "queryLabelItem", method = RequestMethod.GET)
-    public CommonResponse queryLabelItem(int tag_object_id,String tag_cate_id,int page,int size,String order_name,boolean desc,String tag_name) {
-        return labelService.queryLabelItem(tag_object_id,tag_cate_id,page,size,order_name,desc,tag_name);
+    public CommonResponse queryLabelItem(int tag_object_id,String tag_cate_id,int page,int size,String order_name,boolean desc,String tag_name,Integer state) {
+        return labelService.queryLabelItem(tag_object_id,tag_cate_id,page,size,order_name,desc,tag_name,state);
     }
 
     //查询标签
     @RequestMapping(value = "queryAllLabelItem", method = RequestMethod.GET)
-    public CommonResponse queryAllLabelItem(int tag_object_id) {
-        return labelService.queryAllLabelItem(tag_object_id);
+    public CommonResponse queryAllLabelItem(int tag_object_id,Integer state) {
+        return labelService.queryAllLabelItem(tag_object_id,state);
     }
 
     //查询标签

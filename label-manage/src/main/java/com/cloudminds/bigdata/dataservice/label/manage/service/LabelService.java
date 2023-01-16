@@ -419,7 +419,7 @@ public class LabelService {
             List<String> onlineTagItemComplex = tagItemComplexMapper.queryOnlineTagItemComplex(tag_ids);
             if (onlineTagItemComplex != null && onlineTagItemComplex.size() > 0) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("这些上线状态的组合标签使用了这些基础标签,请先下线组合标签：" + StringUtils.join(onlineTagItemComplex, ","));
+                commonResponse.setMessage("处于上线状态的组合标签使用了这些基础标签,请先下线组合标签：" + StringUtils.join(onlineTagItemComplex, ","));
                 return commonResponse;
             }
             //校验有没有数据集在使用,如果数据集在使用不能下线
@@ -483,9 +483,12 @@ public class LabelService {
         return commonResponse;
     }
 
-    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size, String order_name, boolean desc, String tag_name) {
+    public CommonResponse queryLabelItem(int tag_object_id, String tag_cate_id, int page, int size, String order_name, boolean desc, String tag_name, Integer state) {
         CommonQueryResponse commonResponse = new CommonQueryResponse();
         String condition = "c.tag_object_id=" + tag_object_id + " and i.deleted=0";
+        if (state != null && state != -1) {
+            condition = condition + " and i.state=" + state;
+        }
         if (page < 1 || size < 1) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("page和size必须大于0!");
@@ -516,38 +519,41 @@ public class LabelService {
         return commonResponse;
     }
 
-    public CommonResponse queryAllLabelItem(int tag_object_id) {
+    public CommonResponse queryAllLabelItem(int tag_object_id, Integer state) {
         CommonResponse commonResponse = new CommonResponse();
         String condition = "c.tag_object_id=" + tag_object_id + " and i.deleted=0";
+        if (state != null && state != -1) {
+            condition = condition + " and i.state=" + state;
+        }
         commonResponse.setData(labelItemMapper.findAllTagItem(condition));
         return commonResponse;
     }
 
     public CommonResponse queryLabelItemByTagEnums(LabelItemByTagEnumsQuery labelItemByTagEnumsQuery) {
         CommonResponse commonResponse = new CommonResponse();
-        if(labelItemByTagEnumsQuery==null||labelItemByTagEnumsQuery.getTag_enum_ids().length==0){
+        if (labelItemByTagEnumsQuery == null || labelItemByTagEnumsQuery.getTag_enum_ids().length == 0) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("tag_enum_ids不能为空");
             return commonResponse;
         }
-        String tagItems="(";
-        String tagItemEnums="(";
-        for(int i =0;i<labelItemByTagEnumsQuery.getTag_enum_ids().length;i++){
-            String tagItemEnum=labelItemByTagEnumsQuery.getTag_enum_ids()[i];
-            String tagItem=tagItemEnum.substring(0,tagItemEnum.indexOf("_"));
-            tagItemEnums=tagItemEnums+"'"+tagItemEnum+"'";
-            tagItems=tagItems+"'"+tagItem+"'";
-            if(i!=labelItemByTagEnumsQuery.getTag_enum_ids().length-1){
-                tagItemEnums=tagItemEnums+",";
-                tagItems=tagItems+",";
+        String tagItems = "(";
+        String tagItemEnums = "(";
+        for (int i = 0; i < labelItemByTagEnumsQuery.getTag_enum_ids().length; i++) {
+            String tagItemEnum = labelItemByTagEnumsQuery.getTag_enum_ids()[i];
+            String tagItem = tagItemEnum.substring(0, tagItemEnum.indexOf("_"));
+            tagItemEnums = tagItemEnums + "'" + tagItemEnum + "'";
+            tagItems = tagItems + "'" + tagItem + "'";
+            if (i != labelItemByTagEnumsQuery.getTag_enum_ids().length - 1) {
+                tagItemEnums = tagItemEnums + ",";
+                tagItems = tagItems + ",";
             }
         }
-        tagItems=tagItems+")";
-        tagItemEnums=tagItemEnums+")";
+        tagItems = tagItems + ")";
+        tagItemEnums = tagItemEnums + ")";
         List<TagItemExtend> tagItemExtends = labelItemMapper.findTagItemByTagEnums(tagItems);
-        if(tagItemExtends!=null&&tagItemExtends.size()>0){
-            for(int i=0;i<tagItemExtends.size();i++){
-                tagItemExtends.get(i).setTagEnumValueList(labelItemMapper.findTagEnumValueByTagEnums(tagItemExtends.get(i).getTag_id(),tagItemEnums));
+        if (tagItemExtends != null && tagItemExtends.size() > 0) {
+            for (int i = 0; i < tagItemExtends.size(); i++) {
+                tagItemExtends.get(i).setTagEnumValueList(labelItemMapper.findTagEnumValueByTagEnums(tagItemExtends.get(i).getTag_id(), tagItemEnums));
             }
         }
         commonResponse.setData(tagItemExtends);
@@ -801,6 +807,9 @@ public class LabelService {
         String condition = "deleted=0";
         if (labelItemComplexQuery.getTag_object_id() > 0) {
             condition = condition + " and tag_object_id=" + labelItemComplexQuery.getTag_object_id();
+        }
+        if (labelItemComplexQuery.getState() != -1) {
+            condition = condition + " and state=" + labelItemComplexQuery.getState();
         }
         int page = labelItemComplexQuery.getPage();
         int size = labelItemComplexQuery.getSize();
@@ -1075,6 +1084,9 @@ public class LabelService {
     public CommonResponse queryLabelItemTask(LabelItemTaskQuery labelItemTaskQuery) {
         CommonQueryResponse commonQueryResponse = new CommonQueryResponse();
         String condition = "t.deleted=0";
+        if (labelItemTaskQuery.getState() != -1) {
+            condition = condition + " and t.state=" + labelItemTaskQuery.getState();
+        }
         if (labelItemTaskQuery.getTag_object_id() > 0) {
             condition = condition + " and t.tag_object_id=" + labelItemTaskQuery.getTag_object_id();
         }
@@ -1125,7 +1137,7 @@ public class LabelService {
             return commonResponse;
         }
         TagItem tagItem = labelItemMapper.findTagItemByTagId(tagItemTask.getTag_id());
-        if(tagItem==null){
+        if (tagItem == null) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("任务异常：基础标签已经被删了");
             return commonResponse;

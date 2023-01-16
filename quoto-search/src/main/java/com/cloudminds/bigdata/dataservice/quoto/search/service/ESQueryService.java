@@ -163,9 +163,9 @@ public class ESQueryService {
         }
         if (jsonObjectRequest.get("count") != null) {
             count = jsonObjectRequest.getIntValue("count");
-            if (count > 1000) {
+            if (count > 100000) {
                 commonResponse.setSuccess(false);
-                commonResponse.setMessage("count不能超过1000");
+                commonResponse.setMessage("count不能超过100000");
                 return commonResponse;
             }
         }
@@ -424,6 +424,7 @@ public class ESQueryService {
                 sourceBuilder.from((page - 1) * count);
             }
             sourceBuilder.size(count);
+            sourceBuilder.fetchSource(false);
             searchRequest.source(sourceBuilder);
 
             //1. 查询,获取查询结果
@@ -435,7 +436,8 @@ public class ESQueryService {
                 SearchHit[] hits1 = hits.getHits();
                 //获取json字符串格式的数据
                 for (SearchHit searchHit : hits1) {
-                    rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
+                    rowKeys.add(searchHit.getId());
+                    //rowKeys.add(searchHit.getSourceAsMap().get("rowkey").toString());
                 }
                 if (scroll_search && (!rowKeys.isEmpty())) {
                     scroll_id_result = hits1[hits1.length - 1].getSortValues()[0].toString();
