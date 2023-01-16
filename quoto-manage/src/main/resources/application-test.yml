@@ -9,4 +9,4 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
-dataServiceUrl: http://172.16.23.83:30515
+dataServiceUrl: http://172.16.31.96:30515
