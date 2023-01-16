@@ -520,9 +520,19 @@ public class DataSetService {
             }
         }
         if (dataSet.getData_type() == 1) {
+            if(queryDataReq.getCount()>50000){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("查数据count不能超过50000");
+                return commonResponse;
+            }
             //查询数据服务
             return queryDataService(queryDataReq, dataSet);
         } else if (dataSet.getData_type() == 2) {
+            if(queryDataReq.getCount()>5000){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("查数据count不能超过5000");
+                return commonResponse;
+            }
             //查询搜索服务
             return querySearchService(queryDataReq, dataSet);
         } else {
@@ -875,7 +885,11 @@ public class DataSetService {
         extendFieldCount.setType("int");
         extendFieldCount.setAllowBlank(true);
         extendFieldCount.setSample(10);
-        extendFieldCount.setDesc("返回的数据量,最大为1000条");
+        if (dataSet.getData_type() == 1) {
+            extendFieldCount.setDesc("返回的数据量,最大为50000条");
+        }else {
+            extendFieldCount.setDesc("返回的数据量,最大为5000条");
+        }
         extendFields.add(extendFieldCount);
 
         if (dataSet.getData_type() == 2) {
