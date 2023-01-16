@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 @RestController
 @RequestMapping("/search/dataset")
 public class DataSetControl {
@@ -76,4 +79,24 @@ public class DataSetControl {
     public CommonResponse checkSql(@RequestBody CheckSqlReq checkSqlReq){
         return dataSetService.checkSql(checkSqlReq);
     }
+
+    //查询数据占比
+    @RequestMapping(value = "dataAccount", method = RequestMethod.POST)
+    public CommonResponse dataAccount(@RequestBody DataAccountReq dataAccountReq){
+        return dataSetService.dataAccount(dataAccountReq);
+    }
+
+    // 获取指标调用文档
+    @RequestMapping(value = "queryDataSetApiDoc", method = RequestMethod.GET)
+    public CommonResponse queryDataSetApiDoc(int id) {
+        CommonResponse CommonResponse = dataSetService.queryDataSetApiDoc(id);
+        return CommonResponse;
+    }
+
+    //数据下载
+    @RequestMapping(value = "/downloadData", method = RequestMethod.GET)
+    public CommonResponse downloadData(int id) {
+        return dataSetService.downloadData(id);
+    }
+
 }
