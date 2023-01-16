@@ -534,7 +534,7 @@ public class DataSetService {
 
     public CommonResponse queryDataService(QueryDataReq queryDataReq, DataSet dataSet) {
         CommonResponse commonResponse = new CommonResponse();
-        String sql = dataSet.getData_rule().toLowerCase();
+        String sql = dataSet.getData_rule().toLowerCase().replaceAll("\n","");
         if (queryDataReq.getQuery() == 1) {
             if (sql.contains(" group by")) {
                 sql = "select count(*) as total from (" + sql + ") source";
