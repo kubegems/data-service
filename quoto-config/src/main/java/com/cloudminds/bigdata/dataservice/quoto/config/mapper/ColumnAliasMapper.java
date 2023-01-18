@@ -28,6 +28,9 @@ public interface ColumnAliasMapper {
 
 	@Select("SELECT * FROM Column_alias WHERE column_name=#{column_name} AND table_id=#{table_id}")
 	public ColumnAlias getColumnAlias(ColumnAlias columnAlias);
+
+	@Select("SELECT * FROM Column_alias WHERE column_alias=#{column_alias} AND table_id=#{table_id}")
+	public ColumnAlias getColumnAliasByColumnAlias(int table_id,String column_alias);
 	
 	@Select("SELECT * FROM Column_alias WHERE id=#{id}")
 	public ColumnAlias getColumnAliasById(int id);

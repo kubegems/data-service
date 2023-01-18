@@ -318,6 +318,12 @@ public class DataServiceConfig {
                 commonResponse.setMessage("指标名不能是数、中文或者含有()+-*/&#特殊符号");
                 return commonResponse;
             }
+            //判断是否和列名重复
+            if (columnAliasMapper.getColumnAliasByColumnAlias(quotoInfo.getTable_id(), quotoInfo.getQuoto_name()) != null) {
+                commonResponse.setMessage("不能和列别名相同!");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
             if (quotoInfoMapper.insertQuotoInfo(quotoInfo) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
@@ -349,8 +355,13 @@ public class DataServiceConfig {
                 commonResponse.setMessage("指标名不能是数、中文或者含有()+-*/&#特殊符号");
                 return commonResponse;
             }
-            if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name(),oldQuotoInfo.getTable_id()) != null) {
+            if (quotoInfoMapper.getQuotoInfoByQuotoName(quotoInfo.getQuoto_name(), oldQuotoInfo.getTable_id()) != null) {
                 commonResponse.setMessage("指标名已存在！");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+            if (columnAliasMapper.getColumnAliasByColumnAlias(quotoInfo.getTable_id(), quotoInfo.getQuoto_name()) != null) {
+                commonResponse.setMessage("不能和列别名相同!");
                 commonResponse.setSuccess(false);
                 return commonResponse;
             }
@@ -359,6 +370,10 @@ public class DataServiceConfig {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
             return commonResponse;
+        }
+        if (!oldQuotoInfo.getQuoto_name().equals(quotoInfo.getQuoto_name())) {
+            //更新原子指标里面的字段
+            quotoInfoMapper.updateAtomQuotoMetric(oldQuotoInfo.getQuoto_name(),quotoInfo.getQuoto_name());
         }
         refreshDataService(oldQuotoInfo.getTable_id());
         return commonResponse;
