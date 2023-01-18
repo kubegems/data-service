@@ -5,10 +5,11 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.quoto.search.config.CsvExportUtil;
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.*;
-import com.cloudminds.bigdata.dataservice.quoto.search.entity.ExtendField;
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.dataset.*;
 import com.cloudminds.bigdata.dataservice.quoto.search.mapper.DataSetMapper;
 import com.cloudminds.bigdata.dataservice.quoto.search.mapper.SearchMapper;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -20,11 +21,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.*;
 
 @Service
@@ -37,6 +42,14 @@ public class DataSetService {
     private SearchMapper searchMapper;
     @Value("${dataServiceUrl}")
     private String dataServiceUrl;
+    @Value("${ckDataSetDB}")
+    private String ckDataSetDB;
+    @Value("${ckUrl}")
+    private String ckUrl;
+    @Value("${ckUser}")
+    private String ckUser;
+    @Value("${ckPassword}")
+    private String ckPassword;
     @Autowired
     RestTemplate restTemplate;
     @Autowired
@@ -209,13 +222,25 @@ public class DataSetService {
         return commonResponse;
     }
 
-    public CommonResponse addDataset(DataSet dataSet) {
+    public CommonResponse addDataset(DataSet dataSet, MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();
         //校验参数是否为空
-        if (dataSet == null || StringUtils.isEmpty(dataSet.getName()) || StringUtils.isEmpty(dataSet.getData_source_name()) || StringUtils.isEmpty(dataSet.getData_rule())) {
+        if (dataSet == null || StringUtils.isEmpty(dataSet.getName()) || StringUtils.isEmpty(dataSet.getData_rule())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("名称,数据来源名称,创建者,规则不能为空");
+            commonResponse.setMessage("名称,创建者,规则不能为空");
             return commonResponse;
+        }
+        if (dataSet.getData_type() != 3) {
+            if (StringUtils.isEmpty(dataSet.getData_source_name())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("数据来源名称不能为空");
+                return commonResponse;
+            }
+            if (dataSet.getData_connect_type() != 1) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("不支持的连接类型");
+                return commonResponse;
+            }
         }
         //校验目录是否存在
         if (dataSet.getDirectory_id() != 0) {
@@ -268,17 +293,138 @@ public class DataSetService {
                 commonResponse.setMessage("数据集里的sql不能写order by和limit");
                 return commonResponse;
             }
+        } else if (dataSet.getData_type() == 3) {
+            //csv文件上传
+            if (dataSet.getData_connect_type() != 2) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("csv只支持抽取");
+                return commonResponse;
+            }
+            //判断文件是否为空
+            if (file == null || file.isEmpty()) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("csv文件必传且不能为空");
+                return commonResponse;
+            }
+            //创建table 并数据抽取
+            SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+            Date date = new Date();
+            String tableName = ckDataSetDB + "." + "csv_" + format.format(date.getTime());
+            String createSql = createTableSql(dataSet.getData_columns(), tableName);
+            Connection conn = null;
+            PreparedStatement pStemt = null;
+            Boolean createTableStatus = false;
+            try {
+                conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
+                pStemt = conn.prepareStatement(createSql);
+                createTableStatus = pStemt.execute();
+                if (!createTableStatus) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("中间表创建失败,请联系管理员：" + createSql);
+                    return commonResponse;
+                }
+                //导入数据
+                CSVReader csvReader = new CSVReaderBuilder(
+                        new BufferedReader(
+                                new InputStreamReader(file.getInputStream(), "utf-8"))).build();
+                Iterator<String[]> iterator = csvReader.iterator();
+                int i = 0;
+                String insertSql = "";
+                String insertSqlStart = "insert into " + tableName + " values ";
+                while (iterator.hasNext()) {
+                    i++;
+                    String[] next = iterator.next();
+                    insertSql = "(";
+                    for (int j = 0; j < dataSet.getData_columns().size(); j++) {
+                        Column column = dataSet.getData_columns().get(j);
+                        String value = next[j];
+                        if (column.getType().equals("int") || column.getType().equals("float")) {
+                            insertSql = insertSql + value;
+                        } else {
+                            insertSql = insertSql + "'" + value + "'";
+                        }
+                        if (j != dataSet.getData_columns().size() - 1) {
+                            insertSql = insertSql + ",";
+                        }
+
+                    }
+                    insertSql = insertSql + "),";
+                    if(i==10000){
+                        //批量插入ck
+                        pStemt = conn.prepareStatement(insertSqlStart+insertSql);
+                        boolean executeStatue = pStemt.execute();
+                        if(!executeStatue){
+                            //执行不成功,就要删除表
+                            pStemt = conn.prepareStatement("drop table "+tableName);
+                            boolean dropTableStatus = pStemt.execute();
+                            String message = "数据插入失败,请联系管理员";
+                            if(!dropTableStatus){
+                                message = message+",且删除中间表失败"+tableName;
+                                System.out.println(message);
+                            }
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage(message);
+                            return commonResponse;
+                        }
+                        i=0;
+                        insertSql="";
+                    }
+                }
+                if(i!=0){
+                    pStemt = conn.prepareStatement(insertSqlStart+insertSql);
+                    boolean executeStatue = pStemt.execute();
+                    if(!executeStatue){
+                        //执行不成功,就要删除表
+                        pStemt = conn.prepareStatement("drop table "+tableName);
+                        boolean dropTableStatus = pStemt.execute();
+                        String message = "数据插入失败,请联系管理员";
+                        if(!dropTableStatus){
+                            message = message+",且删除中间表失败"+tableName;
+                            System.out.println(message);
+                        }
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage(message);
+                        return commonResponse;
+                    }
+                }
+
+            } catch (Exception e) {
+                if(createTableStatus){
+                    //删除表
+                    try {
+                        pStemt = conn.prepareStatement("drop table " + tableName);
+                        boolean dropTableStatus = pStemt.execute();
+                        String message = "数据插入失败,请联系管理员";
+                        if (!dropTableStatus) {
+                            message = message + ",且删除中间表失败" + tableName;
+                            System.out.println(message);
+                        }
+                        commonResponse.setMessage(message);
+                    }catch (Exception ee){
+                        ee.printStackTrace();
+                    }
+                    commonResponse.setSuccess(false);
+
+                }
+                e.printStackTrace();
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(e.getMessage());
+                return commonResponse;
+            } finally {
+                try {
+                    pStemt.close();
+                    conn.close();
+                } catch (Exception ee) {
+                    ee.printStackTrace();
+                }
+            }
+
         } else {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("暂不支持的创建方式");
             return commonResponse;
         }
-        //校验连接类型
-        if (dataSet.getData_connect_type() != 1) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("不支持的连接类型");
-            return commonResponse;
-        }
+
         //插入数据
         if (dataSetMapper.addDataSet(dataSet) < 1) {
             commonResponse.setSuccess(false);
@@ -287,6 +433,26 @@ public class DataSetService {
         }
         commonResponse.setData(dataSet.getId());
         return commonResponse;
+    }
+
+    public String createTableSql(List<Column> data_columns, String table) {
+        String sql = "create table " + table + " (";
+        for (int i = 0; i < data_columns.size(); i++) {
+            Column column = data_columns.get(i);
+            sql = sql + column.getName() + " ";
+            if (column.getType().equals("int")) {
+                sql = sql + "Int64";
+            } else if (column.getType().equals("float")) {
+                sql = sql + "Float64";
+            } else {
+                sql = sql + "String";
+            }
+            if (i != data_columns.size() - 1) {
+                sql = sql + ",";
+            }
+        }
+        sql = sql + ")ENGINE = MergeTree() ORDER BY " + data_columns.get(0).getName();
+        return sql;
     }
 
     public CommonResponse updateDataset(DataSet dataSet) {
@@ -520,7 +686,7 @@ public class DataSetService {
             }
         }
         if (dataSet.getData_type() == 1) {
-            if(queryDataReq.getCount()>50000){
+            if (queryDataReq.getCount() > 50000) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("查数据count不能超过50000");
                 return commonResponse;
@@ -528,7 +694,7 @@ public class DataSetService {
             //查询数据服务
             return queryDataService(queryDataReq, dataSet);
         } else if (dataSet.getData_type() == 2) {
-            if(queryDataReq.getCount()>5000){
+            if (queryDataReq.getCount() > 5000) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("查数据count不能超过5000");
                 return commonResponse;
@@ -544,7 +710,7 @@ public class DataSetService {
 
     public CommonResponse queryDataService(QueryDataReq queryDataReq, DataSet dataSet) {
         CommonResponse commonResponse = new CommonResponse();
-        String sql = dataSet.getData_rule().toLowerCase().replaceAll("\n"," ");
+        String sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
         if (queryDataReq.getQuery() == 1) {
             if (sql.contains(" group by")) {
                 sql = "select count(*) as total from (" + sql + ") source";
@@ -773,7 +939,7 @@ public class DataSetService {
         }
     }
 
-    public CommonResponse downloadData( int id) {
+    public CommonResponse downloadData(int id) {
         CommonResponse commonResponse = new CommonResponse();
         DataSet dataSet = dataSetMapper.findDataSetByById(id);
         if (dataSet == null) {
@@ -801,9 +967,9 @@ public class DataSetService {
         if (dataSet.getData_type() == 1) {
             queryDataReq.setCount(50000);
             commonResponseData = queryDataService(queryDataReq, dataSet);
-        }else{
+        } else {
             queryDataReq.setCount(10000);
-             commonResponseData = querySearchService(queryDataReq, dataSet);
+            commonResponseData = querySearchService(queryDataReq, dataSet);
         }
         if (!commonResponseData.isSuccess()) {
             return commonResponseData;
@@ -887,7 +1053,7 @@ public class DataSetService {
         extendFieldCount.setSample(10);
         if (dataSet.getData_type() == 1) {
             extendFieldCount.setDesc("返回的数据量,最大为50000条");
-        }else {
+        } else {
             extendFieldCount.setDesc("返回的数据量,最大为5000条");
         }
         extendFields.add(extendFieldCount);

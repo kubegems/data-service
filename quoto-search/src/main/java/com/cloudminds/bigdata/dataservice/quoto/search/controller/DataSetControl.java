@@ -5,10 +5,8 @@ import com.cloudminds.bigdata.dataservice.quoto.search.entity.DeleteReq;
 import com.cloudminds.bigdata.dataservice.quoto.search.entity.dataset.*;
 import com.cloudminds.bigdata.dataservice.quoto.search.service.DataSetService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,8 +39,8 @@ public class DataSetControl {
 
     //新建数据集
     @RequestMapping(value = "add", method = RequestMethod.POST)
-    public CommonResponse addDataset(@RequestBody DataSet dataSet) {
-        return dataSetService.addDataset(dataSet);
+    public CommonResponse addDataset(@RequestBody DataSet dataSet,@RequestParam MultipartFile file, HttpServletRequest request) {
+        return dataSetService.addDataset(dataSet,file);
     }
 
     //更新数据集
@@ -73,7 +71,6 @@ public class DataSetControl {
     public CommonResponse queryData(@RequestBody QueryDataReq queryDataReq){
         return dataSetService.queryData(queryDataReq);
     }
-    //下载数据集的数据
     //sql预校验
     @RequestMapping(value = "checkSql", method = RequestMethod.POST)
     public CommonResponse checkSql(@RequestBody CheckSqlReq checkSqlReq){
