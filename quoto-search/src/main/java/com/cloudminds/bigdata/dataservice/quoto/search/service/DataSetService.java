@@ -710,13 +710,14 @@ public class DataSetService {
 
     public CommonResponse queryDataService(QueryDataReq queryDataReq, DataSet dataSet) {
         CommonResponse commonResponse = new CommonResponse();
-        String sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
+        String sql = dataSet.getData_rule().toLowerCase().replaceAll("\n"," ");
         if (queryDataReq.getQuery() == 1) {
-            if (sql.contains(" group by")) {
+            if (sql.contains(" group by") || whereHasAlias(sql)) {
                 sql = "select count(*) as total from (" + sql + ") source";
             } else {
-                int start = sql.indexOf("select ");
-                int end = sql.indexOf(" from ");
+                String lowerSql = sql.toLowerCase();
+                int start = lowerSql.indexOf("select ");
+                int end = lowerSql.indexOf(" from ");
                 if (start == -1 || end == -1) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("规则里的sql不合法");
@@ -803,6 +804,63 @@ public class DataSetService {
             }
         }
         return commonResponse;
+    }
+
+    public boolean whereHasAlias(String sql) {
+        sql = sql.toLowerCase();
+        if (!sql.contains(" where ")) {
+            return false;
+        }
+        Set<String> columns = new HashSet<>();
+        if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
+            String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
+            String[] columnSelect = select.split(",");
+            List<String> columnsTmp = new ArrayList<>();
+            for (int i = 0; i < columnSelect.length; i++) {
+                if (judgeIsRight(columnSelect[i])) {
+                    columnsTmp.add(columnSelect[i]);
+                } else {
+                    if (i < columnSelect.length - 1) {
+                        columnSelect[i + 1] = columnSelect[i] + columnSelect[i + 1];
+                    }
+                }
+            }
+            for (String column : columnsTmp) {
+                column = column.trim();
+                if (column.contains(" as ")) {
+                    column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
+                    columns.add(column);
+                }
+
+            }
+        }
+        if (columns.isEmpty()) {
+            return false;
+        }
+        String where = sql.substring(sql.lastIndexOf(" where ") + 7);
+        for (String column : columns) {
+            if (where.contains(column)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean judgeIsRight(String colunm) {
+        int a = 0;
+        int b = 0;
+        for (int i = 0; i < colunm.length(); i++) {
+            if (colunm.charAt(i) == '(') {
+                a = a + 1;
+            } else if (colunm.charAt(i) == ')') {
+                b = b + 1;
+            }
+        }
+        if (a == b) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public CommonResponse querySearchService(QueryDataReq queryDataReq, DataSet dataSet) {

@@ -2110,12 +2110,13 @@ public class QuotoService {
     }
 
     public Map<String, Set<String>> getColumnAndGroup(String sql) {
-        sql = sql.toLowerCase();
+        String sqlLower = sql.toLowerCase();
         Map<String, Set<String>> result = new HashMap<>();
+        Map<String,String> columnAlias = new HashMap<>();
         Set<String> columns = new HashSet<>();
         Set<String> groups = new HashSet<>();
-        if (sql.indexOf("select ") != -1 && sql.indexOf(" from ") != -1) {
-            String select = sql.substring(sql.indexOf("select ") + 7, sql.indexOf(" from ")).trim();
+        if (sqlLower.indexOf("select ") != -1 && sqlLower.indexOf(" from ") != -1) {
+            String select = sql.substring(sqlLower.indexOf("select ") + 7, sqlLower.indexOf(" from ")).trim();
             String[] columnSelect = select.split(",");
             List<String> columnsTmp = new ArrayList<>();
             for (int i = 0; i < columnSelect.length; i++) {
@@ -2129,8 +2130,10 @@ public class QuotoService {
             }
             for (String column : columnsTmp) {
                 column = column.trim();
-                if (column.contains(" as ")) {
-                    column = column.substring(column.indexOf(" as ") + 4).trim().replace("\"", "");
+                if (column.toLowerCase().contains(" as ")) {
+                    String alias = column.substring(column.toLowerCase().indexOf(" as ") + 4).trim().replace("\"", "");
+                    columnAlias.put(column.substring(0,column.toLowerCase().indexOf(" as ")),alias);
+                    column = alias;
                 } else if (column.equals("*") || StringUtils.isEmpty(column)) {
                     continue;
                 } else if (column.contains(".")) {
@@ -2140,23 +2143,26 @@ public class QuotoService {
             }
 
         }
-        if (sql.lastIndexOf(" group by ") != -1) {
-            String group = sql.substring(sql.lastIndexOf(" group by ") + 10).trim();
-            int index = group.indexOf(" having");
+        if (sqlLower.lastIndexOf(" group by ") != -1) {
+            String group = sql.substring(sqlLower.lastIndexOf(" group by ") + 10).trim();
+            int index = group.toLowerCase().indexOf(" having");
             if (index == -1) {
-                index = group.indexOf(" order ");
+                index = group.toLowerCase().indexOf(" order ");
                 if (index == -1) {
-                    index = group.indexOf(" limit ");
+                    index = group.toLowerCase().indexOf(" limit ");
                 }
             }
             if (index != -1) {
                 group = group.substring(0, index).trim();
             }
             for (String groupValue : group.split(",")) {
-                groups.add(groupValue);
+                if(columns.contains(groupValue)) {
+                    groups.add(groupValue);
+                }else if(columnAlias.containsKey(groupValue)){
+                    groups.add(columnAlias.get(groupValue));
+                }
             }
         }
-        groups.retainAll(columns);
         columns.removeAll(groups);
         result.put("group", groups);
         result.put("column", columns);
