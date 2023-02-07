@@ -373,7 +373,7 @@ public class DataServiceConfig {
         }
         if (!oldQuotoInfo.getQuoto_name().equals(quotoInfo.getQuoto_name())) {
             //更新原子指标里面的字段
-            quotoInfoMapper.updateAtomQuotoMetric(oldQuotoInfo.getQuoto_name(),quotoInfo.getQuoto_name());
+            quotoInfoMapper.updateAtomQuotoMetric(oldQuotoInfo.getQuoto_name(),quotoInfo.getQuoto_name(),oldQuotoInfo.getTable_id());
         }
         refreshDataService(oldQuotoInfo.getTable_id());
         return commonResponse;
