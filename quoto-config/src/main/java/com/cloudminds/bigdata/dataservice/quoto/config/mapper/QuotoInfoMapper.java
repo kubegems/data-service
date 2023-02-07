@@ -26,7 +26,7 @@ public interface QuotoInfoMapper {
 	@Update("update Quoto_info set quoto_name=#{quoto_name},des=#{des},quoto_sql=#{quoto_sql},is_delete=0,state=1 where id=#{id}")
 	public int updateQuotoInfo(QuotoInfo quotoInfo);
 
-	@Update("update quoto set metric=#{newMetric} where metric=#{oldMetric} and table_id=#{table_id} and is_delete=0 and type=0")
+	@Update("update quoto set metric=#{newMetric} where metric=#{oldMetric} and table_id=#{table_id} and deleted=0 and type=0")
 	public int updateAtomQuotoMetric(String oldMetric,String newMetric,int table_id);
 	
 	@Select("SELECT * FROM Quoto_info WHERE quoto_name=#{quoto_name} AND table_id=#{table_id}")
