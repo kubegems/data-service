@@ -13,10 +13,14 @@ public class DataSet extends BaseEntity {
     private int data_type;
     private int data_source_id;
     private String data_source_name;
+    private String data_source_type;
     private int data_connect_type;
     private int directory_id;
     private String data_rule;
     private List<Column> data_columns;
     private String[] tag_item_complexs;
     private String[] tag_enum_values;
+    private String mapping_ck_table;
+    private int state;
+    private String message;
 }

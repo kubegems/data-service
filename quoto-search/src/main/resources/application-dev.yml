@@ -19,3 +19,6 @@ ckDataSetDB: dataset
 ckUrl: jdbc:clickhouse://172.16.31.147:8123
 ckUser: default
 ckPassword: 123456
+hiveUrl: jdbc:hive2://172.16.31.145:10000
+hiveUser: hive
+hivePassword: Cm@456123
