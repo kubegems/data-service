@@ -1801,7 +1801,7 @@ public class QuotoService {
                     Calendar cal = Calendar.getInstance();
                     cal.setTime(date);
                     cal.add(Calendar.DATE, 7);
-                    String end = format.format(cal.getTime())+" 00:00:00";
+                    String end = format.format(cal.getTime());
                     if(timeType==1) {
                         end = end + " 00:00:00";
                     }
