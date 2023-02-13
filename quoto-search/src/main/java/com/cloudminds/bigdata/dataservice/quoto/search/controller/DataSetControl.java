@@ -107,12 +107,6 @@ public class DataSetControl {
         return dataSetService.downloadData(id);
     }
 
-    //csv追加数据
-    @RequestMapping(value = "/csvUploadData", method = RequestMethod.POST)
-    public CommonResponse csvUploadData(int id, MultipartFile file, boolean cover) {
-        return dataSetService.csvUploadData(id, file, cover);
-    }
-
 
     //增加任务
     @RequestMapping(value = "addTask", method = RequestMethod.POST)
@@ -142,5 +136,11 @@ public class DataSetControl {
     @RequestMapping(value = "updateTaskState", method = RequestMethod.POST)
     public CommonResponse updateTaskState(@RequestBody UpdateTaskStateReq updateTaskStateReq){
         return dataSetService.updateTaskState(updateTaskStateReq);
+    }
+
+    //查询系统配置信息
+    @RequestMapping(value = "querySysInfo", method = RequestMethod.GET)
+    public CommonResponse querySysInfo() {
+        return dataSetService.querySysInfo();
     }
 }

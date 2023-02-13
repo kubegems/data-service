@@ -26,17 +26,19 @@ public class SaveCsvDataService {
     private String ckUser;
     @Value("${ckPassword}")
     private String ckPassword;
+    @Value("${ckDataSetDB}")
+    private String ckDataSetDB;
     @Autowired
     private DataSetMapper dataSetMapper;
 
     @Async("csvTaskExecutor")
-    public void csvInsertData(DataSet dataSet, Iterator<String[]> iterator,String fileName,boolean cover) {
-        dataSetMapper.updateDataSetState(1,"上传中",dataSet.getId());
+    public void csvInsertData(DataSet dataSet, Iterator<String[]> iterator, String fileName, boolean cover) {
+        dataSetMapper.updateDataSetState(1, "上传中", dataSet.getId());
         //判断哪几列是String,需要加单引号
         Set<Integer> stringColumn = new HashSet<>();
         for (int j = 0; j < dataSet.getData_columns().size(); j++) {
             Column column = dataSet.getData_columns().get(j);
-            if ((!column.getType().equals("int")) && (!column.getType().equals("float"))) {
+            if (column.getType().equals("String")) {
                 stringColumn.add(j);
             }
         }
@@ -47,20 +49,20 @@ public class SaveCsvDataService {
             //导入数据
             int i = 0;
             String sql = "";
-            String insertSqlStart = "insert into " + dataSet.getMapping_ck_table() + " values ";
+            String insertSqlStart = "insert into " + ckDataSetDB + "." + dataSet.getMapping_ck_table() + " values ";
             while (iterator.hasNext()) {
                 i++;
                 String[] next = iterator.next();
                 for (int m : stringColumn) {
                     next[m] = "'" + next[m] + "'";
                 }
-                sql = sql+ "(" + StringUtils.join(next, ",") + "),";
+                sql = sql + "(" + StringUtils.join(next, ",") + "),";
                 if (i == 50000) {
                     //批量插入ck
                     pStemt = conn.prepareStatement(insertSqlStart + sql);
                     pStemt.execute();
                     i = 0;
-                    sql="";
+                    sql = "";
                 }
             }
             if (i != 0) {
@@ -71,8 +73,8 @@ public class SaveCsvDataService {
 
         } catch (Exception e) {
             e.printStackTrace();
-           //更新表状态
-            dataSetMapper.updateDataSetState(3,e.getMessage(),dataSet.getId());
+            //更新表状态
+            dataSetMapper.updateDataSetState(3, e.getMessage(), dataSet.getId());
             return;
         } finally {
             try {
@@ -85,12 +87,12 @@ public class SaveCsvDataService {
         //更新表导入信息和状态
         String dataRule = dataSet.getData_rule();
         List<CsvImportRecord> csvImportRecordList = null;
-        if(StringUtils.isEmpty(dataRule)){
+        if (StringUtils.isEmpty(dataRule)) {
             csvImportRecordList = new ArrayList<>();
-        }else{
+        } else {
             try {
                 csvImportRecordList = JSONArray.parseArray(dataRule, CsvImportRecord.class);
-            }catch (Exception e){
+            } catch (Exception e) {
                 csvImportRecordList = new ArrayList<>();
             }
         }
@@ -104,7 +106,7 @@ public class SaveCsvDataService {
         csvImportRecord.setCover(cover);
         csvImportRecordList.add(csvImportRecord);
         dataRule = JSON.toJSONString(csvImportRecordList);
-        dataSetMapper.updateDataSetDataRule(dataSet.getId(),dataRule);
-        dataSetMapper.updateDataSetState(2,"执行完成",dataSet.getId());
+        dataSetMapper.updateDataSetDataRule(dataSet.getId(), dataRule);
+        dataSetMapper.updateDataSetState(2, "执行完成", dataSet.getId());
     }
 }
