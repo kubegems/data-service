@@ -345,9 +345,9 @@ public class DataSetService {
             if (dataSet.getData_type() == 3) {
                 tablePrex = "csv_";
             }
-            String tableName = ckDataSetDB + "." + tablePrex + format.format(date.getTime());
+            String tableName = tablePrex + format.format(date.getTime());
             dataSet.setMapping_ck_table(tableName);
-            String createSql = createTableSql(dataSet.getData_columns(), tableName);
+            String[] createSql = createTableSql(dataSet.getData_columns(), tableName);
             Connection conn = null;
             PreparedStatement pStemt = null;
             try {
@@ -359,7 +359,9 @@ public class DataSetService {
                     iterator.next();
                 }
                 conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
-                pStemt = conn.prepareStatement(createSql);
+                pStemt = conn.prepareStatement(createSql[0]);
+                pStemt.execute();
+                pStemt = conn.prepareStatement(createSql[1]);
                 pStemt.execute();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -389,100 +391,22 @@ public class DataSetService {
         return commonResponse;
     }
 
-
-    public CommonResponse csvUploadData(int id, MultipartFile file, boolean cover) {
-        CommonResponse commonResponse = new CommonResponse();
-        DataSet dataSet = dataSetMapper.findDataSetByById(id);
-        if (dataSet == null) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("数据集不存在");
-            return commonResponse;
-        }
-        if (dataSet.getData_type() != 3) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("只有创建方式为csv的才能再次上传数据");
-            return commonResponse;
-        }
-        if (dataSet.getState() == 1 || dataSet.getState() == 0) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("数据集正在或等待写入数据,请稍等再传数据");
-            return commonResponse;
-        }
-        //判断文件是否为空
-        if (file == null || file.isEmpty()) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("csv文件必传且不能为空");
-            return commonResponse;
-        }
-        //取出文件里的数据
-        Iterator<String[]> iterator = null;
-        try {
-            CSVReader csvReader = new CSVReaderBuilder(
-                    new BufferedReader(
-                            new InputStreamReader(file.getInputStream(), "utf-8"))).build();
-            iterator = csvReader.iterator();
-            //去除头
-            iterator.next();
-        } catch (Exception e) {
-            e.printStackTrace();
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage(e.getMessage());
-            return commonResponse;
-        }
-
-        //清空表里的数据
-        if (cover) {
-            //删除中间表
-            Connection conn = null;
-            PreparedStatement pStemt = null;
-            try {
-                conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
-                pStemt = conn.prepareStatement("truncate table " + dataSet.getMapping_ck_table());
-                pStemt.execute();
-            } catch (Exception ee) {
-                ee.printStackTrace();
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage(ee.getMessage());
-                return commonResponse;
-            } finally {
-                try {
-                    pStemt.close();
-                    conn.close();
-                } catch (Exception ee) {
-                    ee.printStackTrace();
-                }
-            }
-        }
-        List<Column> columns = dataSet.getData_columns();
-        List<Column> columnNews = new ArrayList<>();
-        if (columns != null && columns.size() > 0) {
-            for (int i = 0; i < columns.size(); i++) {
-                Map<String, String> column = (Map<String, String>) columns.get(i);
-                Column columnNew = new Column();
-                columnNew.setName(column.get("name"));
-                columnNew.setType(column.get("type"));
-                columnNews.add(columnNew);
-            }
-            dataSet.setData_columns(columnNews);
-        }
-        //更新数据库状态
-        dataSetMapper.updateDataSetState(0, "排队等待上传", id);
-        csvInsertData(dataSet, iterator,file.getName(),cover);
-        return commonResponse;
-    }
-
     public void csvInsertData(DataSet dataSet, Iterator<String[]> iterator,String fileName,boolean cover) {
         saveCsvData.csvInsertData(dataSet, iterator,fileName,cover);
     }
 
-    public String createTableSql(List<Column> data_columns, String table) {
-        String sql = "create table " + table + " (";
+    public String[] createTableSql(List<Column> data_columns, String table) {
+        String sql="";
         for (int i = 0; i < data_columns.size(); i++) {
             Column column = data_columns.get(i);
             sql = sql + column.getName() + " ";
             if (column.getType().equals("int")) {
+                sql = sql + "Int32";
+            }else if (column.getType().equals("long")) {
                 sql = sql + "Int64";
             } else if (column.getType().equals("float")) {
+                sql = sql + "Float32";
+            } else if (column.getType().equals("double")) {
                 sql = sql + "Float64";
             } else {
                 sql = sql + "String";
@@ -491,8 +415,10 @@ public class DataSetService {
                 sql = sql + ",";
             }
         }
-        sql = sql + ")ENGINE = MergeTree() ORDER BY " + data_columns.get(0).getName();
-        return sql;
+        String tableSql="create table " + ckDataSetDB+"."+table + " ON CLUSTER cm_ck_cluster ("+sql + ")ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/"+ ckDataSetDB+"."+table+"', '{replica}')"+" ORDER BY " + data_columns.get(0).getName();
+        String vSql = "create table " + ckDataSetDB+".dis_"+table + " ON CLUSTER cm_ck_cluster ("+sql + ")ENGINE = Distributed('cm_ck_cluster', '"+ckDataSetDB+"', '"+table+"', rand())";
+
+        return new String[]{tableSql,vSql};
     }
 
     public CommonResponse updateDataset(DataSetAddReq dataSet) {
@@ -650,16 +576,21 @@ public class DataSetService {
                 String sql = "";
                 if (dataSet.getData_type() == 1) {
                     //删除表
-                    sql = "drop table " + oldDataSet.getMapping_ck_table();
+                    sql = "drop table " +ckDataSetDB+"."+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
+                    pStemt = conn.prepareStatement(sql);
+                    pStemt.execute();
+                    sql = "drop table " +ckDataSetDB+"."+"dis_"+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
                     pStemt = conn.prepareStatement(sql);
                     pStemt.execute();
                     deleteTable = true;
                     //重做表
-                    String createSql = createTableSql(dataSet.getData_columns(), oldDataSet.getMapping_ck_table());
-                    pStemt = conn.prepareStatement(createSql);
+                    String[] createSql = createTableSql(dataSet.getData_columns(), oldDataSet.getMapping_ck_table());
+                    pStemt = conn.prepareStatement(createSql[0]);
+                    pStemt.execute();
+                    pStemt = conn.prepareStatement(createSql[1]);
                     pStemt.execute();
                 } else {
-                    sql = "truncate table " + oldDataSet.getMapping_ck_table();
+                    sql = "truncate table " +ckDataSetDB+"."+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
                     pStemt = conn.prepareStatement(sql);
                     pStemt.execute();
                 }
@@ -671,7 +602,10 @@ public class DataSetService {
                 if (deleteTable) {
                     //回退
                     try {
-                        pStemt = conn.prepareStatement(createTableSql(oldColumn, oldDataSet.getMapping_ck_table()));
+                        String[] createSql = createTableSql(oldColumn, oldDataSet.getMapping_ck_table());
+                        pStemt = conn.prepareStatement(createSql[0]);
+                        pStemt.execute();
+                        pStemt = conn.prepareStatement(createSql[1]);
                         pStemt.execute();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -741,7 +675,9 @@ public class DataSetService {
             PreparedStatement pStemt = null;
             try {
                 conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
-                pStemt = conn.prepareStatement("drop table " + dataSet.getMapping_ck_table());
+                pStemt = conn.prepareStatement("drop table " +ckDataSetDB+"."+dataSet.getMapping_ck_table()+" on cluster cm_ck_cluster");
+                pStemt.execute();
+                pStemt = conn.prepareStatement("drop table " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table()+" on cluster cm_ck_cluster");
                 pStemt.execute();
             } catch (Exception ee) {
                 ee.printStackTrace();
@@ -917,13 +853,13 @@ public class DataSetService {
                     sql = sql.substring(0, 7) + "count(*) as total" + sql.substring(end);
                 }
             } else {
-                sql = "select count(*) as total from " + dataSet.getMapping_ck_table();
+                sql = "select count(*) as total from " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table();
             }
         } else {
             if (dataSet.getData_connect_type() == 1) {
                 sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
             } else {
-                sql = "select * from " + dataSet.getMapping_ck_table();
+                sql = "select * from " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table();
             }
             if (queryDataReq.getOrder() != null && queryDataReq.getOrder().size() > 0) {
                 List<Column> columns = dataSet.getData_columns();
@@ -958,7 +894,7 @@ public class DataSetService {
             servicePathInfo = dataSetMapper.queryServicePathInfo(dataSet.getData_source_id());
         } else {
             servicePathInfo.setPath("/data/quoto/get");
-            servicePathInfo.setTableName(dataSet.getMapping_ck_table().substring(dataSet.getMapping_ck_table().indexOf(".") + 1));
+            servicePathInfo.setTableName(dataSet.getMapping_ck_table());
         }
         if (servicePathInfo == null) {
             commonResponse.setSuccess(false);
@@ -1470,6 +1406,14 @@ public class DataSetService {
     public CommonResponse queryDateSetById(int id) {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(dataSetMapper.findDataSetByById(id));
+        return commonResponse;
+    }
+
+    public CommonResponse querySysInfo() {
+        CommonResponse commonResponse = new CommonResponse();
+        Map<String,Object> result = new HashMap<>();
+        result.put("ckDataSetDB",ckDataSetDB);
+        commonResponse.setData(result);
         return commonResponse;
     }
 }
