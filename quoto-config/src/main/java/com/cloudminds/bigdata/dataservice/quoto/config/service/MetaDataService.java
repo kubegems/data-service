@@ -541,6 +541,7 @@ public class MetaDataService {
                     }
                     metaDataTable.setColumns(columns);
                     metaDataTable.setDdl("");
+                    metaDataTable.setExternal_table(true);
                     //判断这个表是否已经存在,存在就跳过
                     if (metaDataTableMapper.findMetaDataTableByName(metaDataTable.getDatabase_name(), metaDataTable.getName(), metaDataTable.getTable_type()) == null) {
                         if (metaDataTableMapper.insertMetaDataTableHaveCreateTime(metaDataTable) < 1) {
