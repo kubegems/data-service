@@ -16,3 +16,10 @@ elasticsearch:
 hbase:
   quorum: 172.16.23.37:2181,172.16.23.38:2181,172.16.23.39:2181
 dataServiceUrl: http://bigdata-service-gw:8001
+ckDataSetDB: dataset
+ckUrl: jdbc:clickhouse://clickhouse.cloudminds.com:9090
+ckUser: distributed-write
+ckPassword: CloudMinds#
+hiveUrl: jdbc:hive2://172.16.23.37:10000
+hiveUser: dataserver
+hivePassword: dataserver

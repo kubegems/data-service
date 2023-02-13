@@ -15,3 +15,10 @@ elasticsearch:
 hbase:
   quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181
 dataServiceUrl: http://172.16.31.96:30515
+ckDataSetDB: dataset
+ckUrl: jdbc:clickhouse://172.16.31.147:8123
+ckUser: default
+ckPassword: 123456
+hiveUrl: jdbc:hive2://172.16.31.145:10000
+hiveUser: hive
+hivePassword: Cm@456123

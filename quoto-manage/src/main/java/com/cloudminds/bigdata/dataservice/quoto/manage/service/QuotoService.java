@@ -1792,13 +1792,19 @@ public class QuotoService {
                         });
 
                 LocalDate localDateLastMonday = LocalDate.now().with(LastMonday);
-                String start = localDateLastMonday.toString()+ " 00:00:00";
+                String start = localDateLastMonday.toString();
+                if(timeType==1) {
+                    start = start + " 00:00:00";
+                }
                 try {
                     Date date = format.parse(localDateLastMonday.toString());
                     Calendar cal = Calendar.getInstance();
                     cal.setTime(date);
                     cal.add(Calendar.DATE, 7);
                     String end = format.format(cal.getTime())+" 00:00:00";
+                    if(timeType==1) {
+                        end = end + " 00:00:00";
+                    }
                     result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
                 }catch (Exception e){
                     e.printStackTrace();

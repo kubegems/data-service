@@ -64,13 +64,19 @@ public interface DataSetMapper {
     @Select("select count(*) from data_set where ${condition}")
     int queryDataSetCount(String condition);
 
-    @Insert("insert into data_set(name,data_type,data_source_id,data_source_name,data_connect_type,directory_id,data_rule,data_columns,tag_item_complexs,tag_enum_values,creator,descr,create_time,update_time) "
-            + "values(#{name},#{data_type},#{data_source_id},#{data_source_name},#{data_connect_type},#{directory_id},#{data_rule},#{data_columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.JsonListTypeHandler},#{tag_item_complexs,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},#{tag_enum_values,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},#{creator},#{descr},now(),now())")
+    @Insert("insert into data_set(name,mapping_ck_table,data_type,data_source_id,data_source_name,data_source_type,data_connect_type,directory_id,data_rule,data_columns,tag_item_complexs,tag_enum_values,creator,descr,create_time,update_time,state,message) "
+            + "values(#{name},#{mapping_ck_table},#{data_type},#{data_source_id},#{data_source_name},#{data_source_type},#{data_connect_type},#{directory_id},#{data_rule},#{data_columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.JsonListTypeHandler},#{tag_item_complexs,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},#{tag_enum_values,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},#{creator},#{descr},now(),now(),#{state},#{message})")
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int addDataSet(DataSet dataSet);
 
-    @Update("update data_set set name=#{name},data_type=#{data_type},data_source_id=#{data_source_id},data_source_name=#{data_source_name},data_connect_type=#{data_connect_type},directory_id=#{directory_id},data_rule=#{data_rule},data_columns=#{data_columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.JsonListTypeHandler},tag_item_complexs=#{tag_item_complexs,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},tag_enum_values=#{tag_enum_values,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},descr=#{descr} where id=#{id}")
+    @Update("update data_set set name=#{name},data_type=#{data_type},data_source_id=#{data_source_id},data_source_name=#{data_source_name},data_source_type=#{data_source_type},directory_id=#{directory_id},data_rule=#{data_rule},data_columns=#{data_columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.JsonListTypeHandler},tag_item_complexs=#{tag_item_complexs,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},tag_enum_values=#{tag_enum_values,typeHandler=com.cloudminds.bigdata.dataservice.quoto.search.handler.ArrayTypeHandler},descr=#{descr} where id=#{id}")
     int updateDataSet(DataSet dataSet);
+
+    @Update("update data_set set state=#{state},message=#{message} where id=#{id}")
+    int updateDataSetState(int state,String message,int id);
+
+    @Update("update data_set set data_rule=#{data_rule} where id=#{id}")
+    int updateDataSetDataRule(int id,String data_rule);
 
     @Update("update data_set set deleted=null where id=#{id}")
     int deleteDataSet(int id);

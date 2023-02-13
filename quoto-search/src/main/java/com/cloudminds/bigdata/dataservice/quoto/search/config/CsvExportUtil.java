@@ -33,15 +33,23 @@ public class CsvExportUtil {
         titleArr = titles.split(",");
         keyArr = keys.split(",");
         // 组装表头
-        for (String title : titleArr) {
-            buf.append(title).append(CSV_COLUMN_SEPARATOR);
+        for (int i=0; i<titleArr.length; i++) {
+            String title=titleArr[i];
+            buf.append(title);
+            if(i!=keyArr.length-1){
+                buf.append(CSV_COLUMN_SEPARATOR);
+            }
         }
         buf.append(CSV_ROW_SEPARATOR);
         // 组装数据
         if (CollectionUtils.isNotEmpty(dataList)) {
             for (Map<String, Object> data : dataList) {
-                for (String key : keyArr) {
-                    buf.append("\t" + (data.get(key) != null ? data.get(key) + "" : "") + "\t").append(CSV_COLUMN_SEPARATOR);
+                for(int i=0;i<keyArr.length;i++){
+                    String key=keyArr[i];
+                    buf.append((data.get(key) != null ? data.get(key) + "" : ""));
+                    if(i!=keyArr.length-1){
+                        buf.append(CSV_COLUMN_SEPARATOR);
+                    }
                 }
                 buf.append(CSV_ROW_SEPARATOR);
             }
