@@ -16,7 +16,7 @@ run_service() {
         ;;
 
     "quoto-roc")
-        java -jar -Duser.timezone=Asia/Shanghai /dataservice/quoto-roc/bigdata-dataservice-quoto-roc.jar --spring.profiles.active=${2}
+        java -jar -Xmx3g -Xms3g -Duser.timezone=Asia/Shanghai /dataservice/quoto-roc/bigdata-dataservice-quoto-roc.jar --spring.profiles.active=${2}
         ;;
 		
 	"standard-manage")

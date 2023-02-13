@@ -10,6 +10,7 @@ public class MetaDataTable extends NewBaseEntity{
     private String name;
     private int table_type=1;
     private String storage_format;
+    private boolean external_table;
     private boolean system_storage_location;
     private String storage_location;
     private boolean system_delimiter;
