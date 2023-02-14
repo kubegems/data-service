@@ -12,6 +12,7 @@ import javax.servlet.http.HttpSession;
 import apijson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.cloudminds.bigdata.dataservice.quoto.roc.service.SaveAccessHistory;
+import com.google.common.base.Joiner;
 import com.mysql.cj.xdevapi.JsonArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
@@ -460,7 +461,7 @@ public class RobotQuotoControl extends APIJSONController {
         if (value != null) {
             String valueS = value.toString();
             if (!valueS.equals("")) {
-                accessHistory(token,servicePath,tableNameList.toString(),valueS,session);
+                accessHistory(token,servicePath,Joiner.on(",").join(tableNameList),valueS,session);
                 JSONObject jsonResult=JSON.parseObject(valueS);
                 jsonResult.remove("execute_sql");
                 return jsonResult.toString();
@@ -468,7 +469,7 @@ public class RobotQuotoControl extends APIJSONController {
 
         }
         String result = get(request, session);
-        accessHistory(token,servicePath,tableNameList.toString(),result,session);
+        accessHistory(token,servicePath,Joiner.on(",").join(tableNameList),result,session);
         if (redisExce) {
             JSONObject jsonResult=JSON.parseObject(result);
             jsonResult.remove("execute_sql");
