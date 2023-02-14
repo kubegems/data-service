@@ -185,16 +185,17 @@ public class MetaDataService {
         }
 
         //执行sql
-        if (!StringUtils.isEmpty(metaDataTable.getUpdateSql())) {
+        if (metaDataTable.getUpdateSql()!=null&&metaDataTable.getUpdateSql().length>0) {
             Connection conn = null;
             int i = 0;
-            String[] sqls = metaDataTable.getUpdateSql().split(";");
+            String[] sqls = metaDataTable.getUpdateSql();
             PreparedStatement stmt = null;
             try {
                 Class.forName("org.apache.hive.jdbc.HiveDriver");
                 conn = DriverManager.getConnection(hiveUrl, hiveUser, hivePassword);
                 for (i = 0; i < sqls.length; i++) {
-                    stmt = conn.prepareStatement(sqls[i]);
+                    String sqlExecute = sqls[i].replaceAll("\\?","").replaceAll("\\\\'","").replaceAll("\\\\","");
+                    stmt = conn.prepareStatement(sqlExecute);
                     stmt.execute();
                 }
             } catch (Exception e) {
@@ -206,17 +207,15 @@ public class MetaDataService {
                 } else if (i == 1) {
                     //删除表成功,创建新表失败,回退
                     try {
-                        String ddl = oldMetaDataTable.getDdl();
+                        String ddl = oldMetaDataTable.getDdl().replaceAll("\\?","").replaceAll("\\\\'","").replaceAll("\\\\","");
                         if(ddl!=null && ddl.endsWith(";")){
                             ddl = ddl.substring(0,ddl.length()-1);
                         }
                         stmt = conn.prepareStatement(ddl);
-                        boolean state = stmt.execute();
-                        if (state) {
-                            //执行加载分区的语句
-                            stmt = conn.prepareStatement("MSCK REPAIR TABLE " + oldMetaDataTable.getDatabase_name() + "." + oldMetaDataTable.getName());
-                            state = stmt.execute();
-                        }
+                        stmt.execute();
+                         //执行加载分区的语句
+                        stmt = conn.prepareStatement("MSCK REPAIR TABLE " + oldMetaDataTable.getDatabase_name() + "." + oldMetaDataTable.getName());
+                        stmt.execute();
                     } catch (Exception ee) {
                         ee.printStackTrace();
                         commonResponse.setSuccess(false);
