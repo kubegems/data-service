@@ -57,7 +57,7 @@ public interface TableInfoMapper {
 	@Select("select date(create_time) as date,count(*) as total from dataservice_access_history where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} group by date")
 	public List<TableAccessTotalByDay> getApiAccessTotalGroupByDay(String startDate, String endDate);
 
-	@Select("select tb.des,tb.id,tb.table_alias,tb.table_name,count(*) as total from dataservice_access_history d left join Table_info tb on d.table_alias=tb.table_alias where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} and tb.id is not null group by tb.des,tb.id,tb.table_alias,tb.table_name order by total desc limit #{top}")
+	@Select("select tb.des,tb.id,tb.table_alias,tb.table_name,count(*) as total from dataservice_access_history d left join (select * from Table_info where is_delete=0) tb on d.table_alias=tb.table_alias where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} and tb.id is not null group by tb.des,tb.id,tb.table_alias,tb.table_name order by total desc limit #{top}")
 	public List<TableAccessTop> getApiAccessTop(String startDate, String endDate, int top);
 
 	@Select("select db.service_path from (select * from Table_info where id=#{tableId}) t LEFT JOIN Database_info d on t.database_id=d.id LEFT JOIN Db_info db on d.db_id=db.id")
