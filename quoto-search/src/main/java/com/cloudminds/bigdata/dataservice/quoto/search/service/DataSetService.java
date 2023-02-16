@@ -1139,6 +1139,7 @@ public class DataSetService {
         dataSet.setData_source_name(dataAccountReq.getData_source_name());
         dataSet.setData_source_id(dataAccountReq.getData_source_id());
         if (dataAccountReq.getData_type() == 1) {
+            dataSet.setData_connect_type(1);
             CommonResponse commonResponseCount = queryDataService(queryDataReq, dataSet);
             if (!commonResponseCount.isSuccess()) {
                 return commonResponseCount;
