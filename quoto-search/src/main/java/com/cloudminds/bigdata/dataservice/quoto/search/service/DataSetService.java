@@ -243,8 +243,8 @@ public class DataSetService {
             return commonResponse;
         }
         if (dataSet.getData_type() != 3) {
-            if(dataSet.getData_source_type()==null || (!dataSet.getData_source_type().equals("hive"))){
-                if (StringUtils.isEmpty(dataSet.getData_source_name())){
+            if (dataSet.getData_source_type() == null || (!dataSet.getData_source_type().equals("hive"))) {
+                if (StringUtils.isEmpty(dataSet.getData_source_name())) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("数据来源不能为空");
                     return commonResponse;
@@ -385,24 +385,24 @@ public class DataSetService {
             return commonResponse;
         }
         if (dataSet.getData_type() == 3) {
-            csvInsertData(dataSet, iterator,dataSet.getFile().getOriginalFilename(),false);
+            csvInsertData(dataSet, iterator, dataSet.getFile().getOriginalFilename(), false);
         }
         commonResponse.setData(dataSet.getId());
         return commonResponse;
     }
 
-    public void csvInsertData(DataSet dataSet, Iterator<String[]> iterator,String fileName,boolean cover) {
-        saveCsvData.csvInsertData(dataSet, iterator,fileName,cover);
+    public void csvInsertData(DataSet dataSet, Iterator<String[]> iterator, String fileName, boolean cover) {
+        saveCsvData.csvInsertData(dataSet, iterator, fileName, cover);
     }
 
     public String[] createTableSql(List<Column> data_columns, String table) {
-        String sql="";
+        String sql = "";
         for (int i = 0; i < data_columns.size(); i++) {
             Column column = data_columns.get(i);
             sql = sql + column.getName() + " ";
             if (column.getType().equals("int")) {
                 sql = sql + "Int32";
-            }else if (column.getType().equals("long")) {
+            } else if (column.getType().equals("long")) {
                 sql = sql + "Int64";
             } else if (column.getType().equals("float")) {
                 sql = sql + "Float32";
@@ -415,10 +415,10 @@ public class DataSetService {
                 sql = sql + ",";
             }
         }
-        String tableSql="create table " + ckDataSetDB+"."+table + " ON CLUSTER cm_ck_cluster ("+sql + ")ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/"+ ckDataSetDB+"."+table+"', '{replica}')"+" ORDER BY " + data_columns.get(0).getName();
-        String vSql = "create table " + ckDataSetDB+".dis_"+table + " ON CLUSTER cm_ck_cluster ("+sql + ")ENGINE = Distributed('cm_ck_cluster', '"+ckDataSetDB+"', '"+table+"', rand())";
+        String tableSql = "create table " + ckDataSetDB + "." + table + " ON CLUSTER cm_ck_cluster (" + sql + ")ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/" + ckDataSetDB + "." + table + "', '{replica}')" + " ORDER BY " + data_columns.get(0).getName();
+        String vSql = "create table " + ckDataSetDB + ".dis_" + table + " ON CLUSTER cm_ck_cluster (" + sql + ")ENGINE = Distributed('cm_ck_cluster', '" + ckDataSetDB + "', '" + table + "', rand())";
 
-        return new String[]{tableSql,vSql};
+        return new String[]{tableSql, vSql};
     }
 
     public CommonResponse updateDataset(DataSetAddReq dataSet) {
@@ -457,8 +457,8 @@ public class DataSetService {
         }
 
         if (dataSet.getData_type() != 3) {
-            if(dataSet.getData_source_type()==null || (!dataSet.getData_source_type().equals("hive"))){
-                if (StringUtils.isEmpty(dataSet.getData_source_name())){
+            if (dataSet.getData_source_type() == null || (!dataSet.getData_source_type().equals("hive"))) {
+                if (StringUtils.isEmpty(dataSet.getData_source_name())) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("数据来源不能为空");
                     return commonResponse;
@@ -576,10 +576,10 @@ public class DataSetService {
                 String sql = "";
                 if (dataSet.getData_type() == 1) {
                     //删除表
-                    sql = "drop table " +ckDataSetDB+"."+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
+                    sql = "drop table " + ckDataSetDB + "." + oldDataSet.getMapping_ck_table() + " on cluster cm_ck_cluster";
                     pStemt = conn.prepareStatement(sql);
                     pStemt.execute();
-                    sql = "drop table " +ckDataSetDB+"."+"dis_"+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
+                    sql = "drop table " + ckDataSetDB + "." + "dis_" + oldDataSet.getMapping_ck_table() + " on cluster cm_ck_cluster";
                     pStemt = conn.prepareStatement(sql);
                     pStemt.execute();
                     deleteTable = true;
@@ -590,7 +590,7 @@ public class DataSetService {
                     pStemt = conn.prepareStatement(createSql[1]);
                     pStemt.execute();
                 } else {
-                    sql = "truncate table " +ckDataSetDB+"."+oldDataSet.getMapping_ck_table()+" on cluster cm_ck_cluster";
+                    sql = "truncate table " + ckDataSetDB + "." + oldDataSet.getMapping_ck_table() + " on cluster cm_ck_cluster";
                     pStemt = conn.prepareStatement(sql);
                     pStemt.execute();
                 }
@@ -633,7 +633,7 @@ public class DataSetService {
             //更新数据库状态
             dataSetMapper.updateDataSetState(0, "排队等待上传", dataSet.getId());
             dataSet.setData_rule(oldDataSet.getData_rule());
-            csvInsertData(dataSet, iterator,dataSet.getFile().getOriginalFilename(),dataSet.isCover());
+            csvInsertData(dataSet, iterator, dataSet.getFile().getOriginalFilename(), dataSet.isCover());
         }
         return commonResponse;
     }
@@ -658,7 +658,7 @@ public class DataSetService {
             return commonResponse;
         }
         List<DataSetTask> dataSetTasks = dataSetTaskMapper.findDataSetTaskByDatasetId(deleteReq.getId());
-        if (dataSetTasks != null && dataSetTasks.size()>0) {
+        if (dataSetTasks != null && dataSetTasks.size() > 0) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("数据集下面有任务,请先去详情里的同步状态里删除");
             return commonResponse;
@@ -675,9 +675,9 @@ public class DataSetService {
             PreparedStatement pStemt = null;
             try {
                 conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
-                pStemt = conn.prepareStatement("drop table " +ckDataSetDB+"."+dataSet.getMapping_ck_table()+" on cluster cm_ck_cluster");
+                pStemt = conn.prepareStatement("drop table " + ckDataSetDB + "." + dataSet.getMapping_ck_table() + " on cluster cm_ck_cluster");
                 pStemt.execute();
-                pStemt = conn.prepareStatement("drop table " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table()+" on cluster cm_ck_cluster");
+                pStemt = conn.prepareStatement("drop table " + ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table() + " on cluster cm_ck_cluster");
                 pStemt.execute();
             } catch (Exception ee) {
                 ee.printStackTrace();
@@ -853,13 +853,13 @@ public class DataSetService {
                     sql = sql.substring(0, 7) + "count(*) as total" + sql.substring(end);
                 }
             } else {
-                sql = "select count(*) as total from " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table();
+                sql = "select count(*) as total from " + ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table();
             }
         } else {
             if (dataSet.getData_connect_type() == 1) {
                 sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
             } else {
-                sql = "select * from " +ckDataSetDB+".dis_"+dataSet.getMapping_ck_table();
+                sql = "select * from " + ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table();
             }
             if (queryDataReq.getOrder() != null && queryDataReq.getOrder().size() > 0) {
                 List<Column> columns = dataSet.getData_columns();
@@ -1097,9 +1097,13 @@ public class DataSetService {
                     column.setName(column.getName().substring(column.getName().indexOf(".") + 1));
                 }
                 String type = resultSetMetaData.getColumnTypeName(i).toLowerCase();
-                if (type.startsWith("int") || type.startsWith("smallint") || type.startsWith("bigint") || type.startsWith("mediumint") || type.startsWith("integer") || type.startsWith("bit") || type.startsWith("serial") || type.startsWith("smallserial") || type.startsWith("bigserial")) {
+                if (type.startsWith("bigint") || type.startsWith("int64")) {
+                    type = "long";
+                } else if (type.startsWith("int") || type.startsWith("smallint") || type.startsWith("mediumint") || type.startsWith("integer") || type.startsWith("bit") || type.startsWith("serial") || type.startsWith("smallserial") || type.startsWith("bigserial")) {
                     type = "int";
-                } else if (type.startsWith("float") || type.startsWith("double") || type.startsWith("decimal") || type.startsWith("numeric") || type.startsWith("real")) {
+                } else if(type.startsWith("double") || type.startsWith("float64")){
+                    type = "double";
+                } else if (type.startsWith("float") || type.startsWith("decimal") || type.startsWith("numeric") || type.startsWith("real")) {
                     type = "float";
                 } else {
                     type = "String";
@@ -1412,8 +1416,8 @@ public class DataSetService {
 
     public CommonResponse querySysInfo() {
         CommonResponse commonResponse = new CommonResponse();
-        Map<String,Object> result = new HashMap<>();
-        result.put("ckDataSetDB",ckDataSetDB);
+        Map<String, Object> result = new HashMap<>();
+        result.put("ckDataSetDB", ckDataSetDB);
         commonResponse.setData(result);
         return commonResponse;
     }

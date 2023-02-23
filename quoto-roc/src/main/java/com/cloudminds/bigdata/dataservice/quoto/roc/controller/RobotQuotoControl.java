@@ -1,6 +1,5 @@
 package com.cloudminds.bigdata.dataservice.quoto.roc.controller;
 
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,16 +10,12 @@ import javax.servlet.http.HttpSession;
 
 import apijson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.cloudminds.bigdata.dataservice.quoto.roc.service.SaveAccessHistory;
+import com.cloudminds.bigdata.dataservice.quoto.roc.entitys.TokenInfo;
+import com.cloudminds.bigdata.dataservice.quoto.roc.service.ExtendFunctionService;
 import com.google.common.base.Joiner;
-import com.mysql.cj.xdevapi.JsonArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.quoto.roc.redis.RedisUtil;
@@ -39,7 +34,7 @@ public class RobotQuotoControl extends APIJSONController {
     private RedisUtil redisUtil;
     String serviceName = "roc";
     @Autowired
-    private SaveAccessHistory saveAccessHistory;
+    private ExtendFunctionService extendFunctionService;
 
     @Override
     public Parser<Long> newParser(HttpSession session, apijson.RequestMethod method) {
@@ -48,333 +43,333 @@ public class RobotQuotoControl extends APIJSONController {
 
     @PostMapping(value = "get")
     public String getHarixData(@RequestBody String request, HttpServletRequest session) {
-        return getData(request, session,"get");
+        return getData(request, session, "get");
     }
 
     @PostMapping(value = "cephMeta")
     public String getCephMetaData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'ceph_meta'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cephMeta");
+        return getData(request, session, "cephMeta");
     }
 
     @PostMapping(value = "sv")
     public String getSvData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'sv'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"sv");
+        return getData(request, session, "sv");
     }
 
     @PostMapping(value = "roc")
     public String getRocData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'roc'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"roc");
+        return getData(request, session, "roc");
     }
 
     @PostMapping(value = "vbn")
     public String getVbnData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'vbn'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"vbn");
+        return getData(request, session, "vbn");
     }
 
     @PostMapping(value = "maQiaoDb")
     public String getMaqiaodbData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'maqiaodb'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"maQiaoDb");
+        return getData(request, session, "maQiaoDb");
     }
 
     @PostMapping(value = "menJing")
     public String getMenjingData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'menjindb'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"menJing");
+        return getData(request, session, "menJing");
     }
 
     @PostMapping(value = "fangCangDb")
     public String getFangcangdbData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'fangcangdb'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"fangCangDb");
+        return getData(request, session, "fangCangDb");
     }
 
     @PostMapping(value = "cross")
     public String getCrossData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cross'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cross");
+        return getData(request, session, "cross");
     }
 
     @PostMapping(value = "cropsRedash")
     public String getcropsRedashData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'crops_redash'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cropsRedash");
+        return getData(request, session, "cropsRedash");
     }
 
     @PostMapping(value = "cms")
     public String getCmsData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cms'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cms");
+        return getData(request, session, "cms");
     }
 
     @PostMapping(value = "boss")
     public String getBossData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'boss'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"boss");
+        return getData(request, session, "boss");
     }
 
     @PostMapping(value = "omd")
     public String getOmdData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'omd'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"omd");
+        return getData(request, session, "omd");
     }
 
     @PostMapping(value = "cdmCo")
     public String getCdmCoData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cdm_co'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cdmCo");
+        return getData(request, session, "cdmCo");
     }
 
     @PostMapping(value = "cmd")
     public String getCmdData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cmd'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cmd");
+        return getData(request, session, "cmd");
     }
+
     @PostMapping(value = "cloud")
     public String getCloudData(@RequestBody String request, HttpServletRequest session) {
         request = "{'@schema':'cloud'," + request.substring(request.indexOf("{") + 1);
-        return getData(request, session,"cloud");
+        return getData(request, session, "cloud");
     }
 
     @PostMapping(value = "tag")
     public String getTagData(@RequestBody String request, HttpServletRequest session) {
         JSONObject requestJson = JSON.parseObject(JSON.parseObject(request));
-        String business ="cv";
+        String business = "cv";
         String page = "0";
         String count = "10";
-        String table="";
-        boolean queryCount=false;
-        String subSql="";
+        String table = "";
+        boolean queryCount = false;
+        String subSql = "";
         //得到真实的表名和库名
-        if(requestJson.containsKey("table_name")){
+        if (requestJson.containsKey("table_name")) {
             String tableName = requestJson.get("table_name").toString();
-            if(AbstractSQLConfig.TABLE_KEY_MAP.containsKey("tag."+tableName)){
-                table=AbstractSQLConfig.TABLE_KEY_MAP.get("tag."+tableName);
-                table="tag."+table;
+            if (AbstractSQLConfig.TABLE_KEY_MAP.containsKey("tag." + tableName)) {
+                table = AbstractSQLConfig.TABLE_KEY_MAP.get("tag." + tableName);
+                table = "tag." + table;
                 table.split("_");
-                if(table.split("_").length>1){
+                if (table.split("_").length > 1) {
                     business = table.split("_")[1];
                 }
 
-            }else{
-                JSONObject response=new JSONObject();
-                response.put("ok",false);
-                response.put("code",401);
-                response.put("msg","表tag."+tableName+"没有配置,请联系管理员");
+            } else {
+                JSONObject response = new JSONObject();
+                response.put("ok", false);
+                response.put("code", 401);
+                response.put("msg", "表tag." + tableName + "没有配置,请联系管理员");
                 return response.toString();
             }
 
-        }else{
+        } else {
             request = "{'@schema':'tag'," + request.substring(request.indexOf("{") + 1);
-            return getData(request, session,"tag");
+            return getData(request, session, "tag");
         }
 
         //是否请求count
-        if(requestJson.containsKey("query")&&requestJson.getObject("query",Integer.class)==1){
-            queryCount=true;
-            subSql="select count(*) as total from "+table+" where oid global in (select arrayJoin(";
-        }else if(requestJson.containsKey("column")){
-            subSql="select "+requestJson.getString("column")+" from "+table+" where oid global in (select arrayJoin(";
-        }else{
-            subSql="select * from "+table+" where oid global in (select arrayJoin(";
+        if (requestJson.containsKey("query") && requestJson.getObject("query", Integer.class) == 1) {
+            queryCount = true;
+            subSql = "select count(*) as total from " + table + " where oid global in (select arrayJoin(";
+        } else if (requestJson.containsKey("column")) {
+            subSql = "select " + requestJson.getString("column") + " from " + table + " where oid global in (select arrayJoin(";
+        } else {
+            subSql = "select * from " + table + " where oid global in (select arrayJoin(";
         }
 
         String sql = "WITH";
         //解析tag_str的sql
-        boolean tag_str=false;
-        String tag_str_sql="SELECT oids FROM tag.dis_"+business+"_tag_string WHERE ";
-        if(requestJson.containsKey("tag_str")){
+        boolean tag_str = false;
+        String tag_str_sql = "SELECT oids FROM tag.dis_" + business + "_tag_string WHERE ";
+        if (requestJson.containsKey("tag_str")) {
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_str").toString(), JSONObject.class);
-            for (JSONObject tagJson : tagJsons){
-                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
-                    if(tag_str){
-                        tag_str_sql = tag_str_sql+" and ";
+            for (JSONObject tagJson : tagJsons) {
+                if (tagJson.containsKey("column") && tagJson.containsKey("op") && tagJson.containsKey("value")) {
+                    if (tag_str) {
+                        tag_str_sql = tag_str_sql + " and ";
                     }
-                    tag_str_sql = tag_str_sql + tagJson.getString("column")+" "+tagJson.getString("op")+" '"+tagJson.getString("value")+"'";
+                    tag_str_sql = tag_str_sql + tagJson.getString("column") + " " + tagJson.getString("op") + " '" + tagJson.getString("value") + "'";
                     tag_str = true;
-                }else{
-                    JSONObject response=new JSONObject();
-                    response.put("ok",false);
-                    response.put("code",401);
-                    response.put("msg","tag_str column,op,value必须成对出现!");
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("ok", false);
+                    response.put("code", 401);
+                    response.put("msg", "tag_str column,op,value必须成对出现!");
                     return response.toString();
                 }
             }
         }
         //解析tag_int的sql
-        boolean tag_int=false;
-        String tag_int_sql="select oids from tag.dis_"+business+"_tag_int where ";
-        if(requestJson.containsKey("tag_int")){
+        boolean tag_int = false;
+        String tag_int_sql = "select oids from tag.dis_" + business + "_tag_int where ";
+        if (requestJson.containsKey("tag_int")) {
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_int").toString(), JSONObject.class);
-            for (JSONObject tagJson : tagJsons){
-                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
-                    if(tag_int){
-                        tag_int_sql = tag_int_sql+" and ";
+            for (JSONObject tagJson : tagJsons) {
+                if (tagJson.containsKey("column") && tagJson.containsKey("op") && tagJson.containsKey("value")) {
+                    if (tag_int) {
+                        tag_int_sql = tag_int_sql + " and ";
                     }
-                    tag_int_sql = tag_int_sql + tagJson.getString("column")+" "+tagJson.getString("op");
-                    if(tagJson.get("value") instanceof String){
-                        tag_int_sql = tag_int_sql+" '"+tagJson.getString("value")+"'";
-                    }else{
-                        tag_int_sql = tag_int_sql+" "+tagJson.getString("value");
+                    tag_int_sql = tag_int_sql + tagJson.getString("column") + " " + tagJson.getString("op");
+                    if (tagJson.get("value") instanceof String) {
+                        tag_int_sql = tag_int_sql + " '" + tagJson.getString("value") + "'";
+                    } else {
+                        tag_int_sql = tag_int_sql + " " + tagJson.getString("value");
                     }
                     tag_int = true;
-                }else{
-                    JSONObject response=new JSONObject();
-                    response.put("ok",false);
-                    response.put("code",401);
-                    response.put("msg","tag_int column,op,value必须成对出现!");
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("ok", false);
+                    response.put("code", 401);
+                    response.put("msg", "tag_int column,op,value必须成对出现!");
                     return response.toString();
                 }
             }
         }
         //解析tag_long的sql
-        boolean tag_long=false;
-        String tag_long_sql="select oids from tag.dis_"+business+"_tag_Long where ";
-        if(requestJson.containsKey("tag_long")){
+        boolean tag_long = false;
+        String tag_long_sql = "select oids from tag.dis_" + business + "_tag_Long where ";
+        if (requestJson.containsKey("tag_long")) {
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_long").toString(), JSONObject.class);
-            for (JSONObject tagJson : tagJsons){
-                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
-                    if(tag_long){
-                        tag_long_sql = tag_long_sql+" and ";
+            for (JSONObject tagJson : tagJsons) {
+                if (tagJson.containsKey("column") && tagJson.containsKey("op") && tagJson.containsKey("value")) {
+                    if (tag_long) {
+                        tag_long_sql = tag_long_sql + " and ";
                     }
-                    tag_long_sql = tag_long_sql + tagJson.getString("column")+" "+tagJson.getString("op");
-                    if(tagJson.get("value") instanceof String){
-                        tag_long_sql = tag_long_sql+" '"+tagJson.getString("value")+"'";
-                    }else{
-                        tag_long_sql = tag_long_sql+" "+tagJson.getString("value");
+                    tag_long_sql = tag_long_sql + tagJson.getString("column") + " " + tagJson.getString("op");
+                    if (tagJson.get("value") instanceof String) {
+                        tag_long_sql = tag_long_sql + " '" + tagJson.getString("value") + "'";
+                    } else {
+                        tag_long_sql = tag_long_sql + " " + tagJson.getString("value");
                     }
                     tag_long = true;
-                }else{
-                    JSONObject response=new JSONObject();
-                    response.put("ok",false);
-                    response.put("code",401);
-                    response.put("msg","tag_long column,op,value必须成对出现!");
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("ok", false);
+                    response.put("code", 401);
+                    response.put("msg", "tag_long column,op,value必须成对出现!");
                     return response.toString();
                 }
             }
         }
         //解析tag_date的sql
-        boolean tag_date=false;
-        String tag_date_sql="select oids from tag.dis_"+business+"_tag_date where ";
-        if(requestJson.containsKey("tag_date")){
+        boolean tag_date = false;
+        String tag_date_sql = "select oids from tag.dis_" + business + "_tag_date where ";
+        if (requestJson.containsKey("tag_date")) {
             List<JSONObject> tagJsons = JSONArray.parseArray(requestJson.get("tag_date").toString(), JSONObject.class);
-            for (JSONObject tagJson : tagJsons){
-                if(tagJson.containsKey("column")&&tagJson.containsKey("op")&&tagJson.containsKey("value")){
-                    if(tag_date){
-                        tag_date_sql = tag_date_sql+" and ";
+            for (JSONObject tagJson : tagJsons) {
+                if (tagJson.containsKey("column") && tagJson.containsKey("op") && tagJson.containsKey("value")) {
+                    if (tag_date) {
+                        tag_date_sql = tag_date_sql + " and ";
                     }
-                    tag_date_sql = tag_date_sql + tagJson.getString("column")+" "+tagJson.getString("op")+" '"+tagJson.getString("value")+"'";
+                    tag_date_sql = tag_date_sql + tagJson.getString("column") + " " + tagJson.getString("op") + " '" + tagJson.getString("value") + "'";
                     tag_date = true;
-                }else{
-                    JSONObject response=new JSONObject();
-                    response.put("ok",false);
-                    response.put("code",401);
-                    response.put("msg","tag_date column,op,value必须成对出现!");
+                } else {
+                    JSONObject response = new JSONObject();
+                    response.put("ok", false);
+                    response.put("code", 401);
+                    response.put("msg", "tag_date column,op,value必须成对出现!");
                     return response.toString();
                 }
             }
         }
 
         //组装整体sql
-        int i=0;
-        if(tag_str){
+        int i = 0;
+        if (tag_str) {
             i++;
-            sql=sql+"("+tag_str_sql+") AS bitmap"+i;
+            sql = sql + "(" + tag_str_sql + ") AS bitmap" + i;
         }
-        if(tag_int){
-            if(i>0){
-                sql=sql+",";
+        if (tag_int) {
+            if (i > 0) {
+                sql = sql + ",";
             }
             i++;
-            sql=sql+"("+tag_int_sql+") AS bitmap"+i;
+            sql = sql + "(" + tag_int_sql + ") AS bitmap" + i;
         }
-        if(tag_long){
-            if(i>0){
-                sql=sql+",";
+        if (tag_long) {
+            if (i > 0) {
+                sql = sql + ",";
             }
             i++;
-            sql=sql+"("+tag_long_sql+") AS bitmap"+i;
+            sql = sql + "(" + tag_long_sql + ") AS bitmap" + i;
         }
-        if(tag_date){
-            if(i>0){
-                sql=sql+",";
+        if (tag_date) {
+            if (i > 0) {
+                sql = sql + ",";
             }
             i++;
-            sql=sql+"("+tag_date_sql+") AS bitmap"+i;
+            sql = sql + "(" + tag_date_sql + ") AS bitmap" + i;
         }
-        if(i==0){
-            JSONObject response=new JSONObject();
-            response.put("ok",false);
-            response.put("code",401);
-            response.put("msg","筛选条件必须传入");
+        if (i == 0) {
+            JSONObject response = new JSONObject();
+            response.put("ok", false);
+            response.put("code", 401);
+            response.put("msg", "筛选条件必须传入");
             return response.toString();
-        }else if(i==1){
-            sql =sql+" "+subSql+"bitmapToArray(bitmap1)))";
-        }else if(i==2){
-            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmap1, bitmap2))))";
-        }else if(i==3){
-            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3))))";
-        }else if(i==4){
-            sql =sql+" "+subSql+"bitmapToArray(bitmapAnd(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3),bitmap4))))";
+        } else if (i == 1) {
+            sql = sql + " " + subSql + "bitmapToArray(bitmap1)))";
+        } else if (i == 2) {
+            sql = sql + " " + subSql + "bitmapToArray(bitmapAnd(bitmap1, bitmap2))))";
+        } else if (i == 3) {
+            sql = sql + " " + subSql + "bitmapToArray(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3))))";
+        } else if (i == 4) {
+            sql = sql + " " + subSql + "bitmapToArray(bitmapAnd(bitmapAnd(bitmapAnd(bitmap1, bitmap2),bitmap3),bitmap4))))";
         }
-        if(!queryCount){
-            if(requestJson.containsKey("count")&&Integer.parseInt(requestJson.getString("count"))>0){
+        if (!queryCount) {
+            if (requestJson.containsKey("count") && Integer.parseInt(requestJson.getString("count")) > 0) {
                 count = requestJson.getString("count");
             }
-            if(requestJson.containsKey("page")){
+            if (requestJson.containsKey("page")) {
                 page = requestJson.getString("page");
             }
-            sql=sql+" order by oid LIMIT "+count;
-            if(Integer.parseInt(page)>0){
-                sql=sql + " offset "+Integer.parseInt(count)*Integer.parseInt(page);
+            sql = sql + " order by oid LIMIT " + count;
+            if (Integer.parseInt(page) > 0) {
+                sql = sql + " offset " + Integer.parseInt(count) * Integer.parseInt(page);
             }
         }
-        request = "{\"@schema\":\"tag\",\"[]\":{\""+requestJson.getString("table_name")+"\": {\"@sql\":\""+sql+"\"},\"page\":"+page+",\"count\":"+count+"}}";
-        String result = getData(request, session,"tag");
-        JSONObject jsonResult=JSON.parseObject(result);
-        if(jsonResult.getString("msg").contains("DB::Exception: Scalar subquery returned empty result of type")){
-            JSONObject makeResult=new JSONObject();
-            makeResult.put("ok",true);
-            makeResult.put("code",200);
-            makeResult.put("msg","success");
-            if(queryCount){
-                makeResult.put("total",0);
+        request = "{\"@schema\":\"tag\",\"[]\":{\"" + requestJson.getString("table_name") + "\": {\"@sql\":\"" + sql + "\"},\"page\":" + page + ",\"count\":" + count + "}}";
+        String result = getData(request, session, "tag");
+        JSONObject jsonResult = JSON.parseObject(result);
+        if (jsonResult.getString("msg").contains("DB::Exception: Scalar subquery returned empty result of type")) {
+            JSONObject makeResult = new JSONObject();
+            makeResult.put("ok", true);
+            makeResult.put("code", 200);
+            makeResult.put("msg", "success");
+            if (queryCount) {
+                makeResult.put("total", 0);
             }
             return makeResult.toString();
         }
-        if(queryCount){
+        if (queryCount) {
 
-            if(jsonResult.containsKey("ok")&&jsonResult.getObject("ok",Boolean.class)){
+            if (jsonResult.containsKey("ok") && jsonResult.getObject("ok", Boolean.class)) {
                 Object total = JSONArray.parseArray(jsonResult.get("[]").toString(), JSONObject.class).get(0).getJSONObject(requestJson.getString("table_name")).get("total");
                 jsonResult.remove("[]");
-                jsonResult.put("total",total);
+                jsonResult.put("total", total);
                 return jsonResult.toString();
-            }else{
+            } else {
                 return result;
             }
-        }else{
+        } else {
             return result;
         }
     }
-
     public String getData(String request, HttpServletRequest httpServletRequest, String servicePath) {
-        JSONObject response=new JSONObject();
-        response.put("ok",false);
-        response.put("code",401);
+        JSONObject response = new JSONObject();
+        response.put("ok", false);
+        response.put("code", 401);
         //取表名
         List<String> tableNameList = new ArrayList<>();
         try {
             tableNameList = getTableNames(request);
-            if(tableNameList.isEmpty()){
-                response.put("msg","验证用户权限时解析表名出错,请检查请求参数是否合法!");
+            if (tableNameList.isEmpty()) {
+                response.put("msg", "验证用户权限时解析表名出错,请检查请求参数是否合法!");
                 return response.toString();
             }
-        }catch (Exception e){
-            response.put("msg","验证用户权限时解析表名出错,请检查请求参数是否合法!");
+        } catch (Exception e) {
+            response.put("msg", "验证用户权限时解析表名出错,请检查请求参数是否合法!");
             return response.toString();
         }
 
@@ -382,23 +377,23 @@ public class RobotQuotoControl extends APIJSONController {
         String token = httpServletRequest.getHeader("token");
         //第一步取token
         if (token == null) {
-            response.put("msg","token不能为空!");
+            response.put("msg", "token不能为空!");
             return response.toString();
         }
         //第二步验证token值对应的权限
-        Object token_map_object=redisUtil.get(serviceName+"_token");
-        if(token_map_object!=null){
-            Map<String, String> token_map = JSONObject.parseObject(JSONObject.toJSONString(token_map_object),
+        TokenInfo tokenInfo = extendFunctionService.getTokenMap();
+        if (tokenInfo.getToken() != null) {
+            Map<String, String> token_map = JSONObject.parseObject(JSONObject.toJSONString(tokenInfo.getToken()),
                     Map.class);
-            if(token_map!=null){
-                String tokenAccess=token_map.get(token);
-                if(tokenAccess==null){
-                    response.put("msg","用户没有此表的访问权限,请联系管理员!");
+            if (token_map != null) {
+                String tokenAccess = token_map.get(token);
+                if (tokenAccess == null) {
+                    response.put("msg", "用户没有此表的访问权限,请联系管理员!");
                     return response.toString();
                 }
                 if (!tokenAccess.equals("ALL")) {
                     String[] tokenAccessList = tokenAccess.toString().split(",");
-                    for(String tableName:tableNameList) {
+                    for (String tableName : tableNameList) {
                         boolean hasAccess = false;
                         for (String tokenAccessValue : tokenAccessList) {
                             if (tokenAccessValue.equals(servicePath + "." + tableName)) {
@@ -407,41 +402,49 @@ public class RobotQuotoControl extends APIJSONController {
                             }
                         }
                         if (!hasAccess) {
-                            response.put("msg","用户没有"+tableName+"表的访问权限,请联系管理员!");
+                            response.put("msg", "用户没有" + tableName + "表的访问权限,请联系管理员!");
                             return response.toString();
                         }
                     }
 
                 }
+            } else {
+                response.put("msg", "权限配置信息加载有问题,请联系大数据团队!");
+                return response.toString();
             }
+        } else {
+            response.put("msg", "权限配置信息加载有问题,请联系大数据团队!");
+            return response.toString();
         }
 
         // 从redis获取配置信息
-        try {
-            Object TABLE_KEY_MAP = redisUtil.get(serviceName + "_table_key_map");
-            Object TABLE_COLUMN_MAP = redisUtil.get(serviceName + "_table_column_map");
-            if (TABLE_KEY_MAP != null) {
-                @SuppressWarnings("unchecked")
-                Map<String, String> table_key_map = JSONObject.parseObject(JSONObject.toJSONString(TABLE_KEY_MAP),
-                        Map.class);
-                if (table_key_map != null) {
-                    AbstractSQLConfig.TABLE_KEY_MAP.clear();
-                    AbstractSQLConfig.TABLE_KEY_MAP = table_key_map;
+        if (tokenInfo.isRedis()) {
+            try {
+                Object TABLE_KEY_MAP = redisUtil.get(serviceName + "_table_key_map");
+                Object TABLE_COLUMN_MAP = redisUtil.get(serviceName + "_table_column_map");
+                if (TABLE_KEY_MAP != null) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> table_key_map = JSONObject.parseObject(JSONObject.toJSONString(TABLE_KEY_MAP),
+                            Map.class);
+                    if (table_key_map != null) {
+                        AbstractSQLConfig.TABLE_KEY_MAP.clear();
+                        AbstractSQLConfig.TABLE_KEY_MAP = table_key_map;
+                    }
                 }
-            }
-            if (TABLE_COLUMN_MAP != null) {
-                @SuppressWarnings("unchecked")
-                Map<String, Map<String, String>> table_column_map = JSONObject
-                        .parseObject(JSONObject.toJSONString(TABLE_COLUMN_MAP), Map.class);
-                if (table_column_map != null) {
-                    AbstractSQLConfig.tableColumnMap.clear();
-                    AbstractSQLConfig.tableColumnMap = table_column_map;
+                if (TABLE_COLUMN_MAP != null) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Map<String, String>> table_column_map = JSONObject
+                            .parseObject(JSONObject.toJSONString(TABLE_COLUMN_MAP), Map.class);
+                    if (table_column_map != null) {
+                        AbstractSQLConfig.tableColumnMap.clear();
+                        AbstractSQLConfig.tableColumnMap = table_column_map;
+                    }
                 }
-            }
 
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+            }
         }
 
         // 从redis获取查询数据
@@ -451,37 +454,41 @@ public class RobotQuotoControl extends APIJSONController {
         String item = DigestUtils.md5DigestAsHex(request.getBytes(StandardCharsets.UTF_8));
         Object value = null;
         boolean redisExce = false;
-        try {
-            value = redisUtil.hget(serviceName, item);
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            redisExce = true;
+        if (tokenInfo.isRedis()) {
+            try {
+                value = redisUtil.hget(serviceName, item);
+            } catch (Exception e) {
+                // TODO: handle exception
+                e.printStackTrace();
+                redisExce = true;
+            }
         }
         if (value != null) {
             String valueS = value.toString();
             if (!valueS.equals("")) {
-                accessHistory(token,servicePath,Joiner.on(",").join(tableNameList),valueS,session);
-                JSONObject jsonResult=JSON.parseObject(valueS);
+                accessHistory(token, servicePath, Joiner.on(",").join(tableNameList), valueS, session);
+                JSONObject jsonResult = JSON.parseObject(valueS);
                 jsonResult.remove("execute_sql");
                 return jsonResult.toString();
             }
 
         }
         String result = get(request, session);
-        accessHistory(token,servicePath,Joiner.on(",").join(tableNameList),result,session);
+        accessHistory(token, servicePath, Joiner.on(",").join(tableNameList), result, session);
         if (redisExce) {
-            JSONObject jsonResult=JSON.parseObject(result);
+            JSONObject jsonResult = JSON.parseObject(result);
             jsonResult.remove("execute_sql");
             return jsonResult.toString();
         }
-        if (result.contains("\"code\":200,\"msg\":\"success\"")) {
-            if (!redisUtil.hset(serviceName, item, result, 10)) {
-                System.err.println(
-                        "\n\n\n redis数据存储失败,存储的value:" + result + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+        if (tokenInfo.isRedis()) {
+            if (result.contains("\"code\":200,\"msg\":\"success\"")) {
+                if (!redisUtil.hset(serviceName, item, result, 10)) {
+                    System.err.println(
+                            "\n\n\n redis数据存储失败,存储的value:" + result + "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+                }
             }
         }
-        JSONObject jsonResult=JSON.parseObject(result);
+        JSONObject jsonResult = JSON.parseObject(result);
         jsonResult.remove("execute_sql");
         return jsonResult.toString();
     }
@@ -505,8 +512,8 @@ public class RobotQuotoControl extends APIJSONController {
         return commonResponse;
     }
 
-    public void accessHistory(String token,String service_path,String table_alias,String response, HttpSession session){
-        saveAccessHistory.saveAccessHistory(token,service_path,table_alias,response,session);
+    public void accessHistory(String token, String service_path, String table_alias, String response, HttpSession session) {
+        extendFunctionService.saveAccessHistory(token, service_path, table_alias, response, session);
         //Thread t = new Thread(new SaveAccessHistory(token,service_path,table_alias,response,session));
         //t.start();
     }
