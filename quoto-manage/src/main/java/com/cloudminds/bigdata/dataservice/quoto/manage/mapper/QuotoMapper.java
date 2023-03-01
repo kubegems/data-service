@@ -117,7 +117,7 @@ public interface QuotoMapper {
 	@Select("select * from Table_info where is_delete=0 and (theme_id=#{theme_id} or theme_id is null)")
 	public List<TableInfo> queryAllDataServiceByThemeId(int theme_id);
 
-	@Select("select * from Quoto_info where table_id=#{tableId} and is_delete=0 and quoto_name not in (select metric from quoto where table_id=#{tableId} and deleted=0)")
+	@Select("select * from (select * from Quoto_info where table_id=#{tableId} and is_delete=0 union select id,table_id,column_alias as quoto_name,column_name as quoto_sql,state,des,is_delete from Column_alias where table_id=#{tableId} and is_delete=0 and metric=1) a where quoto_name not in (select metric from quoto where table_id=#{tableId} and deleted=0)")
 	public List<QuotoInfo> queryUsableQuotoInfoByTableId(int tableId);
 
 	@Update("update quoto set deleted=null where id=#{id}")
@@ -194,7 +194,7 @@ public interface QuotoMapper {
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoByField(String field);
 
-	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName} and table_id=#{table_id}")
+	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName} and table_id=#{table_id} and is_delete=0 union select id,table_id,column_name as quoto_name,column_alias as quoto_sql,state,des,is_delete from Column_alias where table_id=#{table_id} and is_delete=0 and metric=1 and column_alias=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName,int table_id);
 
 	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")

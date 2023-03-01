@@ -76,6 +76,16 @@ public class DataServiceConfig {
             commonResponse.setSuccess(false);
             return commonResponse;
         }
+        if(columnAlias.isMetric()) {
+            if (status == 0 && columnAlias.getState() == 1) {
+                String name = quotoInfoMapper.getQuotoByMetric(columnAlias.getColumn_alias(), columnAlias.getTable_id());
+                if (!StringUtils.isEmpty(name)) {
+                    commonResponse.setMessage("有激活的指标(" + name + ")运行,不能禁用！");
+                    commonResponse.setSuccess(false);
+                    return commonResponse;
+                }
+            }
+        }
         if (columnAliasMapper.updateColumnAliasStatus(id, status) != 1) {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
@@ -92,6 +102,15 @@ public class DataServiceConfig {
             commonResponse.setMessage("列不存在");
             commonResponse.setSuccess(false);
             return commonResponse;
+        }
+        if (columnAlias.isMetric()) {
+            //判断是否有原址指标在使用
+            String name = quotoInfoMapper.getQuotoByMetric(columnAlias.getColumn_alias(), columnAlias.getTable_id());
+            if (!StringUtils.isEmpty(name)) {
+                commonResponse.setMessage("有激活的指标(" + name + ")运行,不能取消！");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
         }
         if (columnAliasMapper.updateColumnAliasDelete(id, 1) != 1) {
             commonResponse.setMessage("删除失败,请稍后再试！");
@@ -162,6 +181,10 @@ public class DataServiceConfig {
             commonResponse.setMessage("更新失败,请稍后再试！");
             commonResponse.setSuccess(false);
             return commonResponse;
+        }
+        if(oldColumnAlias.isMetric()&&(!columnAlias.getColumn_alias().equals(oldColumnAlias.getColumn_alias()))){
+            //更新原子指标里面的字段
+            quotoInfoMapper.updateAtomQuotoMetric(oldColumnAlias.getColumn_alias(), columnAlias.getColumn_alias(), columnAlias.getTable_id());
         }
         refreshDataService(oldColumnAlias.getTable_id());
         return commonResponse;
@@ -249,7 +272,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         if (status == 0 && quotoInfo.getState() == 1) {
-            String name = quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+            String name = quotoInfoMapper.getQuotoByMetric(quotoInfo.getQuoto_name(), quotoInfo.getTable_id());
             if (!StringUtils.isEmpty(name)) {
                 commonResponse.setMessage("有激活的指标(" + name + ")运行,不能禁用！");
                 commonResponse.setSuccess(false);
@@ -275,7 +298,7 @@ public class DataServiceConfig {
             return commonResponse;
         }
         if (quotoInfo.getState() == 1) {
-            String name = quotoInfoMapper.getQuotoByField(quotoInfo.getQuoto_name());
+            String name = quotoInfoMapper.getQuotoByMetric(quotoInfo.getQuoto_name(), quotoInfo.getTable_id());
             if (!StringUtils.isEmpty(name)) {
                 commonResponse.setMessage("有激活的指标(" + name + ")运行,不能删除！");
                 commonResponse.setSuccess(false);
@@ -373,7 +396,7 @@ public class DataServiceConfig {
         }
         if (!oldQuotoInfo.getQuoto_name().equals(quotoInfo.getQuoto_name())) {
             //更新原子指标里面的字段
-            quotoInfoMapper.updateAtomQuotoMetric(oldQuotoInfo.getQuoto_name(),quotoInfo.getQuoto_name(),oldQuotoInfo.getTable_id());
+            quotoInfoMapper.updateAtomQuotoMetric(oldQuotoInfo.getQuoto_name(), quotoInfo.getQuoto_name(), oldQuotoInfo.getTable_id());
         }
         refreshDataService(oldQuotoInfo.getTable_id());
         return commonResponse;
@@ -1123,5 +1146,33 @@ public class DataServiceConfig {
             return true;
         }
         return false;
+    }
+
+    public CommonResponse markMetricColumn(ColumnAlias columnAlias) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (columnAlias == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("入参不能为空");
+            return commonResponse;
+        }
+        ColumnAlias oldColumnAlias = columnAliasMapper.getColumnAliasById(columnAlias.getId());
+        if (columnAlias.isMetric() == oldColumnAlias.isMetric()) {
+            return commonResponse;
+        }
+        if (oldColumnAlias.isMetric()) {
+            //判断是否有原址指标在使用
+            String name = quotoInfoMapper.getQuotoByMetric(oldColumnAlias.getColumn_alias(), oldColumnAlias.getTable_id());
+            if (!StringUtils.isEmpty(name)) {
+                commonResponse.setMessage("有激活的指标(" + name + ")运行,不能取消！");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+        }
+        if (columnAliasMapper.updateColumnMetric(columnAlias.getId(), columnAlias.isMetric()) < 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("标记为度量失败,请联系管理员");
+            return commonResponse;
+        }
+        return commonResponse;
     }
 }

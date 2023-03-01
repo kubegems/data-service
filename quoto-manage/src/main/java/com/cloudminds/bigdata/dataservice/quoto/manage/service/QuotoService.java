@@ -1240,7 +1240,7 @@ public class QuotoService {
         }
         if (quotoInfo.getState() == 0) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("数据服务此指标不可用,请前往数据服务-服务管理页启用此指标");
+            commonResponse.setMessage("数据服务此度量不可用,请前往数据服务-服务管理页启用此度量");
             return commonResponse;
         }
 
