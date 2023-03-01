@@ -41,6 +41,11 @@ public class DataServiceControl {
 		return dataServiceConfig.updateColumnAlias(columnAlias);
 	}
 
+	@RequestMapping(value = "markMetricColumn", method = RequestMethod.POST)
+	public CommonResponse markMetricColumn(@RequestBody ColumnAlias columnAlias){
+		return dataServiceConfig.markMetricColumn(columnAlias);
+	}
+
 	// dbInfo
 	@RequestMapping(value = "getDbInfo", method = RequestMethod.GET)
 	public CommonResponse getDbInfo() {

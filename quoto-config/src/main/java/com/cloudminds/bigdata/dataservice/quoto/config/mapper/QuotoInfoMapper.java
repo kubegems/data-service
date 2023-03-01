@@ -41,6 +41,6 @@ public interface QuotoInfoMapper {
 	@Update("insert into Quoto_info(table_id,quoto_name,quoto_sql,des) VALUES(#{table_id},#{quoto_name},#{quoto_sql},#{des})")
 	public int insertQuotoInfo(QuotoInfo quotoInfo);
 	
-	@Select("SELECT name from quoto where field=#{field} and deleted=0 and state=1 limit 1")
-	public String getQuotoByField(String field);
+	@Select("SELECT name from quoto where metric=#{metric} and table_id=#{table_id} and deleted=0 and state=1 limit 1")
+	public String getQuotoByMetric(String metric,int table_id);
 }

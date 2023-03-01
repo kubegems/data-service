@@ -37,4 +37,7 @@ public interface ColumnAliasMapper {
 	
 	@Update("insert into Column_alias(table_id,column_name,column_alias,data_type,des) VALUES(#{table_id},#{column_name},#{column_alias},#{data_type},#{des})")
 	public int insertColumnAlias(ColumnAlias columnAlias);
+
+	@Update("update Column_alias set metric=#{metric} where id=#{id}")
+	public int updateColumnMetric(int id,boolean metric);
 }
