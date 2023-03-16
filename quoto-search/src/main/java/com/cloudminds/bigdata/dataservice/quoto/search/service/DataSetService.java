@@ -693,11 +693,18 @@ public class DataSetService {
         return commonResponse;
     }
 
-    public CommonResponse queryAllDateSet(String creator, int directory_id) {
+    public CommonResponse queryAllDateSet(String creator, int directory_id, Integer data_type) {
         CommonResponse commonResponse = new CommonResponse();
         String condition = "deleted=0";
         if (directory_id != -1) {
             condition = condition + " and directory_id=" + directory_id;
+        }
+        if (data_type != null && data_type != -1) {
+            if (data_type == 4) {
+                condition = condition + " and data_type!=2";
+            } else {
+                condition = condition + " and data_type=" + data_type;
+            }
         }
         if (!StringUtils.isEmpty(creator)) {
             condition = condition + " and creator='" + creator + "'";
@@ -799,18 +806,31 @@ public class DataSetService {
             return commonResponse;
         }
         if (queryDataReq.getQuery() != 1) {
-            if (queryDataReq.getCount() <= 0) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("查数据count需大于0");
-                return commonResponse;
-            }
-            if (queryDataReq.getPage() < 0) {
-                commonResponse.setSuccess(false);
-                commonResponse.setMessage("page需大于0");
-                return commonResponse;
+            if (!StringUtils.isEmpty(queryDataReq.getSql())) {
+                String sql = queryDataReq.getSql().toLowerCase(Locale.ROOT);
+                CommonResponse checkCommonResponse = checkSql(queryDataReq.getSql());
+                if (!checkCommonResponse.isSuccess()) {
+                    return checkCommonResponse;
+                }
+            } else {
+                if (queryDataReq.getCount() <= 0) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("查数据count需大于0");
+                    return commonResponse;
+                }
+                if (queryDataReq.getPage() < 0) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("page需大于0");
+                    return commonResponse;
+                }
             }
         }
         if (dataSet.getData_type() == 1 || dataSet.getData_type() == 3) {
+            if ((!StringUtils.isEmpty(queryDataReq.getSql())) && queryDataReq.getQuery() == 1) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("透传了sql的数据集不能查询总数");
+                return commonResponse;
+            }
             if (queryDataReq.getCount() > 50000) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("查数据count不能超过50000");
@@ -819,6 +839,11 @@ public class DataSetService {
             //查询数据服务
             return queryDataService(queryDataReq, dataSet);
         } else if (dataSet.getData_type() == 2) {
+            if (StringUtils.isEmpty(queryDataReq.getSql())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("标签类的数据集不能传sql");
+                return commonResponse;
+            }
             if (queryDataReq.getCount() > 5000) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("查数据count不能超过5000");
@@ -858,35 +883,43 @@ public class DataSetService {
         } else {
             if (dataSet.getData_connect_type() == 1) {
                 sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
+                if (!StringUtils.isEmpty(queryDataReq.getSql())) {
+                    sql = queryDataReq.getSql().replaceAll("source_table", "(" + sql + ")");
+                }
             } else {
                 sql = "select * from " + ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table();
-            }
-            if (queryDataReq.getOrder() != null && queryDataReq.getOrder().size() > 0) {
-                List<Column> columns = dataSet.getData_columns();
-                Set<String> columnName = new HashSet<>();
-                if (columns != null && columns.size() > 0) {
-                    for (int i = 0; i < columns.size(); i++) {
-                        Map<String, String> column = (Map<String, String>) columns.get(i);
-                        columnName.add(column.get("name"));
-                    }
-                    for (String order : queryDataReq.getOrder()) {
-                        if (!columnName.contains(order)) {
-                            commonResponse.setSuccess(false);
-                            commonResponse.setMessage("不支持排序字段：" + order);
-                            return commonResponse;
-                        }
-                    }
-                    sql = sql + " order by " + StringUtils.join(queryDataReq.getOrder().toArray(), ",");
-                } else {
-                    commonResponse.setSuccess(false);
-                    commonResponse.setMessage("此数据集不支持排序列");
-                    return commonResponse;
+                if (!StringUtils.isEmpty(queryDataReq.getSql())) {
+                    sql = queryDataReq.getSql().replaceAll("source_table", ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table());
                 }
-
             }
-            sql = sql + " limit " + queryDataReq.getCount();
-            if (queryDataReq.getPage() > 0) {
-                sql = sql + " offset " + queryDataReq.getCount() * queryDataReq.getPage();
+            if (StringUtils.isEmpty(queryDataReq.getSql())) {
+                if (queryDataReq.getOrder() != null && queryDataReq.getOrder().size() > 0) {
+                    List<Column> columns = dataSet.getData_columns();
+                    Set<String> columnName = new HashSet<>();
+                    if (columns != null && columns.size() > 0) {
+                        for (int i = 0; i < columns.size(); i++) {
+                            Map<String, String> column = (Map<String, String>) columns.get(i);
+                            columnName.add(column.get("name"));
+                        }
+                        for (String order : queryDataReq.getOrder()) {
+                            if (!columnName.contains(order)) {
+                                commonResponse.setSuccess(false);
+                                commonResponse.setMessage("不支持排序字段：" + order);
+                                return commonResponse;
+                            }
+                        }
+                        sql = sql + " order by " + StringUtils.join(queryDataReq.getOrder().toArray(), ",");
+                    } else {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("此数据集不支持排序列");
+                        return commonResponse;
+                    }
+
+                }
+                sql = sql + " limit " + queryDataReq.getCount();
+                if (queryDataReq.getPage() > 0) {
+                    sql = sql + " offset " + queryDataReq.getCount() * queryDataReq.getPage();
+                }
             }
         }
         ServicePathInfo servicePathInfo = new ServicePathInfo();
@@ -1101,7 +1134,7 @@ public class DataSetService {
                     type = "long";
                 } else if (type.startsWith("int") || type.startsWith("smallint") || type.startsWith("mediumint") || type.startsWith("integer") || type.startsWith("bit") || type.startsWith("serial") || type.startsWith("smallserial") || type.startsWith("bigserial")) {
                     type = "int";
-                } else if(type.startsWith("double") || type.startsWith("float64")){
+                } else if (type.startsWith("double") || type.startsWith("float64")) {
                     type = "double";
                 } else if (type.startsWith("float") || type.startsWith("decimal") || type.startsWith("numeric") || type.startsWith("real")) {
                     type = "float";
@@ -1420,5 +1453,76 @@ public class DataSetService {
         result.put("ckDataSetDB", ckDataSetDB);
         commonResponse.setData(result);
         return commonResponse;
+    }
+
+    /**
+     * 校验sql是否合法
+     *
+     * @param sql
+     * @return
+     */
+    public CommonResponse checkSql(String sql) {
+        CommonResponse commonResponse = new CommonResponse();
+        int MAX_QUERY_COUNT = 100000;
+        String sqlLower = sql.toLowerCase().trim().replaceAll("\n"," ");
+        if (sqlLower.contains(" limit ")) {
+            int limitLocation = sqlLower.indexOf(" limit ");
+            sqlLower = sqlLower.substring(limitLocation + 7);
+            while (true) {
+                if (sqlLower.startsWith(" ")) {
+                    sqlLower = sqlLower.substring(1);
+                } else {
+                    break;
+                }
+            }
+            String limitNumStr = sqlLower;
+            if (sqlLower.indexOf(" ") > 0) {
+                limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
+            }
+            try {
+                int limitNum = Integer.parseInt(limitNumStr);
+                if (limitNum <= 0 || limitNum > MAX_QUERY_COUNT) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("指标sql limit的数据量在1到" + MAX_QUERY_COUNT);
+                    return commonResponse;
+                }
+            } catch (Exception e) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql limit后要接数字");
+                return commonResponse;
+            }
+            return commonResponse;
+        } else {
+            int fromLocation = sqlLower.indexOf(" from");
+            if (fromLocation < 0) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql没有from");
+                return commonResponse;
+            }
+            sqlLower = sqlLower.substring(0, fromLocation);
+            if (!sqlLower.startsWith("select ")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("指标sql不以select 开头");
+                return commonResponse;
+            } else {
+                sqlLower = sqlLower.substring(6).replace(" ", "");
+                for (String columnName : sqlLower.split(",")) {
+                    int parenthesesLocation = columnName.indexOf("(");
+                    if (parenthesesLocation < 0) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("指标sql需要limit做数据限制");
+                        return commonResponse;
+                    }
+                    String functionName = columnName.substring(0, parenthesesLocation);
+                    if (!(functionName.equals("count") || functionName.equals("countdistinct") || functionName.equals("sum") || functionName.equals("avg") || functionName.equals("max") || functionName.equals("min") || functionName.equals("count_big") || functionName.equals("grouping")
+                            || functionName.equals("binary_checksum") || functionName.equals("checksum_agg") || functionName.equals("checksum") || functionName.equals("stdev") || functionName.equals("stdevp") || functionName.equals("var") || functionName.equals("varp"))) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("指标sql需要limit做数据限制");
+                        return commonResponse;
+                    }
+                }
+                return commonResponse;
+            }
+        }
     }
 }

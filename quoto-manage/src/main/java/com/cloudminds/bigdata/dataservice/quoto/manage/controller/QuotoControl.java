@@ -64,10 +64,22 @@ public class QuotoControl {
 		return quotoService.queryAllBusinessProcess(theme_id);
 	}
 
+	// 获取主题
+	@RequestMapping(value = "queryBusinessProcess", method = RequestMethod.GET)
+	public CommonResponse queryBusinessProcess(Integer theme_id,String search_key,int page,int size,String order_name,boolean desc) {
+		return quotoService.queryBusinessProcess(theme_id,search_key,page,size,order_name,desc);
+	}
+
 	// 增加业务过程
 	@RequestMapping(value = "addBusinessProcess", method = RequestMethod.POST)
 	public CommonResponse addBusinessProcess(@RequestBody BusinessProcess businessProcess) {
 		return quotoService.addBusinessProcess(businessProcess);
+	}
+
+	// 增加业务过程
+	@RequestMapping(value = "updateBusinessProcess", method = RequestMethod.POST)
+	public CommonResponse updateBusinessProcess(@RequestBody BusinessProcess businessProcess) {
+		return quotoService.updateBusinessProcess(businessProcess);
 	}
 
 	//删除业务过程
