@@ -72,8 +72,8 @@ public class DataSetControl {
 
     //全量查询数据集
     @RequestMapping(value = "queryAll", method = RequestMethod.GET)
-    public CommonResponse queryAllDateSet(String creator, int directory_id) {
-        return dataSetService.queryAllDateSet(creator, directory_id);
+    public CommonResponse queryAllDateSet(String creator, int directory_id,Integer data_type) {
+        return dataSetService.queryAllDateSet(creator, directory_id, data_type);
     }
 
     //查询数据集的总数和数据

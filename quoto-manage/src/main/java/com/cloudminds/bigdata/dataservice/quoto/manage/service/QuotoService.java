@@ -248,7 +248,7 @@ public class QuotoService {
         // TODO Auto-generated method stub
         CommonQueryResponse commonResponse = new CommonQueryResponse();
         String condition = "t.deleted=0";
-        if (business_id != null) {
+        if (business_id != null && business_id != -1) {
             Business business = quotoMapper.queryBusinessById(business_id);
             if (business == null) {
                 commonResponse.setSuccess(false);
@@ -488,6 +488,46 @@ public class QuotoService {
         return commonResponse;
     }
 
+    public CommonResponse queryBusinessProcess(Integer theme_id, String search_key, int page, int size, String order_name, boolean desc) {
+        // TODO Auto-generated method stub
+        CommonQueryResponse commonResponse = new CommonQueryResponse();
+        String condition = "deleted=0";
+        if (theme_id != null && theme_id != -1) {
+            Theme theme = quotoMapper.queryThemeById(theme_id);
+            if (theme == null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("主题不存在!");
+                return commonResponse;
+            }
+            condition = condition + " and theme_id=" + theme_id;
+        }
+        if (page < 1 || size < 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("page和size必须大于0!");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(order_name)) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("排序的名字不能为空");
+            return commonResponse;
+        }
+        if (!StringUtils.isEmpty(search_key)) {
+            condition = condition + " and name like '" + search_key + "%'";
+        }
+
+        condition = condition + " order by " + order_name;
+        if (desc) {
+            condition = condition + " desc";
+        } else {
+            condition = condition + " asc";
+        }
+        int startLine = (page - 1) * size;
+        commonResponse.setCurrentPage(page);
+        commonResponse.setData(quotoMapper.queryBusinessProcessPage(condition, startLine, size));
+        commonResponse.setTotal(quotoMapper.queryBusinessProcessCount(condition));
+        return commonResponse;
+    }
+
     public synchronized CommonResponse addBusinessProcess(BusinessProcess businessProcess) {
         // TODO Auto-generated method stub
         CommonResponse commonResponse = new CommonResponse();
@@ -508,6 +548,39 @@ public class QuotoService {
             e.printStackTrace();
             commonResponse.setSuccess(false);
             commonResponse.setMessage("数据插入失败,请稍后再试");
+            return commonResponse;
+        }
+        return commonResponse;
+    }
+
+    public CommonResponse updateBusinessProcess(BusinessProcess businessProcess) {
+        CommonResponse commonResponse = new CommonResponse();
+        // TODO Auto-generated method stub
+        BusinessProcess oldBusinessProcess = quotoMapper.queryBusinessProcessById(businessProcess.getId());
+        if (oldBusinessProcess == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("业务过程不存在");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(businessProcess.getName())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("业务过程名字不能为空");
+            return commonResponse;
+        }
+        if ((!businessProcess.getName().equals(oldBusinessProcess.getName())) || businessProcess.getTheme_id() != oldBusinessProcess.getTheme_id()) {
+            if (quotoMapper.queryBusinessProcess(businessProcess.getName(), businessProcess.getTheme_id()) != null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("业务过程已存在,请不要重复添加");
+                return commonResponse;
+            }
+        }
+        try {
+            quotoMapper.updateBusinessProcess(businessProcess);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("编辑失败,请稍后再试");
             return commonResponse;
         }
         return commonResponse;
@@ -812,7 +885,7 @@ public class QuotoService {
     public CommonResponse checkSql(String sql) {
         CommonResponse commonResponse = new CommonResponse();
         int MAX_QUERY_COUNT = 100000;
-        String sqlLower = sql.toLowerCase().trim();
+        String sqlLower = sql.toLowerCase().trim().replaceAll("\n"," ");
         if (sqlLower.contains(" limit ")) {
             int limitLocation = sqlLower.indexOf(" limit ");
             sqlLower = sqlLower.substring(limitLocation + 7);
@@ -862,7 +935,7 @@ public class QuotoService {
                         return commonResponse;
                     }
                     String functionName = columnName.substring(0, parenthesesLocation);
-                    if (!(functionName.equals("count") || functionName.equals("sum") || functionName.equals("avg") || functionName.equals("max") || functionName.equals("min") || functionName.equals("count_big") || functionName.equals("grouping")
+                    if (!(functionName.equals("count") || functionName.equals("countdistinct") || functionName.equals("sum") || functionName.equals("avg") || functionName.equals("max") || functionName.equals("min") || functionName.equals("count_big") || functionName.equals("grouping")
                             || functionName.equals("binary_checksum") || functionName.equals("checksum_agg") || functionName.equals("checksum") || functionName.equals("stdev") || functionName.equals("stdevp") || functionName.equals("var") || functionName.equals("varp"))) {
                         commonResponse.setSuccess(false);
                         commonResponse.setMessage("指标sql需要limit做数据限制");
@@ -1793,7 +1866,7 @@ public class QuotoService {
 
                 LocalDate localDateLastMonday = LocalDate.now().with(LastMonday);
                 String start = localDateLastMonday.toString();
-                if(timeType==1) {
+                if (timeType == 1) {
                     start = start + " 00:00:00";
                 }
                 try {
@@ -1802,11 +1875,11 @@ public class QuotoService {
                     cal.setTime(date);
                     cal.add(Calendar.DATE, 7);
                     String end = format.format(cal.getTime());
-                    if(timeType==1) {
+                    if (timeType == 1) {
                         end = end + " 00:00:00";
                     }
                     result = result + "&{}':'>=\\'" + start + "\\',<\\'" + end + "\\''";
-                }catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     return result;
                 }
@@ -2116,9 +2189,9 @@ public class QuotoService {
     }
 
     public Map<String, Set<String>> getColumnAndGroup(String sql) {
-        String sqlLower = sql.toLowerCase();
+        String sqlLower = sql.toLowerCase().replaceAll("\n"," ");
         Map<String, Set<String>> result = new HashMap<>();
-        Map<String,String> columnAlias = new HashMap<>();
+        Map<String, String> columnAlias = new HashMap<>();
         Set<String> columns = new HashSet<>();
         Set<String> groups = new HashSet<>();
         if (sqlLower.indexOf("select ") != -1 && sqlLower.indexOf(" from ") != -1) {
@@ -2138,7 +2211,7 @@ public class QuotoService {
                 column = column.trim();
                 if (column.toLowerCase().contains(" as ")) {
                     String alias = column.substring(column.toLowerCase().indexOf(" as ") + 4).trim().replace("\"", "");
-                    columnAlias.put(column.substring(0,column.toLowerCase().indexOf(" as ")),alias);
+                    columnAlias.put(column.substring(0, column.toLowerCase().indexOf(" as ")), alias);
                     column = alias;
                 } else if (column.equals("*") || StringUtils.isEmpty(column)) {
                     continue;
@@ -2162,9 +2235,9 @@ public class QuotoService {
                 group = group.substring(0, index).trim();
             }
             for (String groupValue : group.split(",")) {
-                if(columns.contains(groupValue)) {
+                if (columns.contains(groupValue)) {
                     groups.add(groupValue);
-                }else if(columnAlias.containsKey(groupValue)){
+                } else if (columnAlias.containsKey(groupValue)) {
                     groups.add(columnAlias.get(groupValue));
                 }
             }

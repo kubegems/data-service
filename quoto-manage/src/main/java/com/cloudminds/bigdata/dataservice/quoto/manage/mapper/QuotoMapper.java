@@ -101,12 +101,21 @@ public interface QuotoMapper {
 	@Select("select * from business_process where deleted=0 and theme_id=#{theme_id} and name=#{name} limit 1")
 	public BusinessProcess queryBusinessProcess(String name, int theme_id);
 
+	@Select("select * from business_process where ${condition} limit #{startLine},#{size}")
+	public List<BusinessProcess> queryBusinessProcessPage(String condition, int startLine, int size);
+
+	@Select("select count(*) from business_process where ${condition}")
+	public int queryBusinessProcessCount(String condition);
+
 	@Select("select * from business_process where deleted=0 and id=#{id}")
 	public BusinessProcess queryBusinessProcessById(int id);
 
 	@Insert("insert into business_process(name,theme_id,create_time,update_time, creator,descr) "
 			+ "values(#{name},#{theme_id},now(),now(), #{creator}, #{descr})")
 	public int addBusinessProcess(BusinessProcess businessProcess);
+
+	@Insert("update business_process set name=#{name},theme_id=#{theme_id},descr=#{descr} where id=#{id}")
+	public int updateBusinessProcess(BusinessProcess businessProcess);
 
 	@Update("update business_process set deleted=null where id=#{id}")
 	public int deleteBusinessProcess(int id);

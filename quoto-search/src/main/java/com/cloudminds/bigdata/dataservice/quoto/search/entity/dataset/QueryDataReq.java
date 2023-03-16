@@ -13,4 +13,5 @@ public class QueryDataReq {
     private String scroll_id;
     private boolean scroll_search=true;
     private Set<String> order;
+    private String sql;
 }
