@@ -1,18 +1,23 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.api.utils.StringUtils;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.cloudminds.bigdata.dataservice.quoto.config.amazons3.OssUtils;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.redis.RedisUtil;
@@ -35,10 +40,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.nacos.api.utils.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.*;
+import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class DataServiceConfig {
@@ -60,6 +71,16 @@ public class DataServiceConfig {
     RestTemplate restTemplate;
     @Value("${dataServiceUrl}")
     private String dataServiceUrl;
+    @Value("${spring.profiles.active}")
+    private String env;
+    @Value("${accessKey}")
+    private String accessKey;
+    @Value("${secretKey}")
+    private String secretKey;
+    @Value("${endpoint}")
+    private String endpoint;
+    @Value("${bucketName}")
+    private String bucketName;
 
     // columnAlias
     public CommonResponse getColumnAlias(int tableId) {
@@ -76,7 +97,7 @@ public class DataServiceConfig {
             commonResponse.setSuccess(false);
             return commonResponse;
         }
-        if(columnAlias.isMetric()) {
+        if (columnAlias.isMetric()) {
             if (status == 0 && columnAlias.getState() == 1) {
                 String name = quotoInfoMapper.getQuotoByMetric(columnAlias.getColumn_alias(), columnAlias.getTable_id());
                 if (!StringUtils.isEmpty(name)) {
@@ -182,7 +203,7 @@ public class DataServiceConfig {
             commonResponse.setSuccess(false);
             return commonResponse;
         }
-        if(oldColumnAlias.isMetric()&&(!columnAlias.getColumn_alias().equals(oldColumnAlias.getColumn_alias()))){
+        if (oldColumnAlias.isMetric() && (!columnAlias.getColumn_alias().equals(oldColumnAlias.getColumn_alias()))) {
             //更新原子指标里面的字段
             quotoInfoMapper.updateAtomQuotoMetric(oldColumnAlias.getColumn_alias(), columnAlias.getColumn_alias(), columnAlias.getTable_id());
         }
@@ -1173,6 +1194,72 @@ public class DataServiceConfig {
             commonResponse.setMessage("标记为度量失败,请联系管理员");
             return commonResponse;
         }
+        return commonResponse;
+    }
+
+    public CommonResponse uploadFile(MultipartFile file, String project) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(file==null||file.isEmpty()||StringUtils.isEmpty(project)){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("file和project不能为空");
+            return commonResponse;
+        }
+        File tmpFile = toFile(file);
+        long nowTime = System.currentTimeMillis();
+        String fileKey = project + "/" + nowTime + "_" + file.getOriginalFilename();
+        PutObjectResult result = OssUtils.uploadFile(bucketName, fileKey, tmpFile);
+        tmpFile.delete();
+        commonResponse.setData(endpoint+"/bigdata/"+fileKey);
+        return commonResponse;
+    }
+
+    private File toFile(MultipartFile file) {
+        File toFile = null;
+        if ("".equals(file) || file.getSize() <= 0) {
+            return null;
+        } else {
+            InputStream ins = null;
+            try {
+                ins = file.getInputStream();
+                toFile = new File(file.getOriginalFilename());
+                inputStreamToFile(ins, toFile);
+                ins.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return toFile;
+    }
+
+    private void inputStreamToFile(InputStream ins, File file) {
+        try {
+            OutputStream os = new FileOutputStream(file);
+            int bytesRead = 0;
+            byte[] buffer = new byte[8192];
+            while ((bytesRead = ins.read(buffer, 0, 8192)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            os.close();
+            ins.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public CommonResponse deleteFile(String url) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(StringUtils.isEmpty(url)){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("url和project不能为空");
+            return commonResponse;
+        }
+        if(!url.contains(endpoint+"/"+bucketName+"/")){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("url不是通过上传接口生成的,不支持删除");
+            return commonResponse;
+        }
+        String fileName = url.replace(endpoint+"/"+bucketName+"/","");
+        OssUtils.deleteFile(bucketName,fileName);
         return commonResponse;
     }
 }
