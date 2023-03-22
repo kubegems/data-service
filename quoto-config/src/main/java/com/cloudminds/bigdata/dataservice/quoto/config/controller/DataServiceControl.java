@@ -166,7 +166,7 @@ public class DataServiceControl {
 		return dataServiceConfig.updateTableInfo(tableInfo);
 	}
 
-	// quotoInfo
+	//quotoInfo
 	@RequestMapping(value = "getApiDoc", method = RequestMethod.GET)
 	public CommonResponse getApiDoc() {
 		return dataServiceConfig.getApiDoc();
