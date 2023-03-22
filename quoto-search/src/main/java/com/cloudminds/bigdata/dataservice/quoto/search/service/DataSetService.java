@@ -1463,8 +1463,8 @@ public class DataSetService {
      */
     public CommonResponse checkSql(String sql) {
         CommonResponse commonResponse = new CommonResponse();
-        int MAX_QUERY_COUNT = 100000;
-        String sqlLower = sql.toLowerCase().trim().replaceAll("\n"," ");
+        int MAX_QUERY_COUNT = 50000;
+        String sqlLower = sql.toLowerCase().trim().replaceAll("\n", " ");
         if (sqlLower.contains(" limit ")) {
             int limitLocation = sqlLower.indexOf(" limit ");
             sqlLower = sqlLower.substring(limitLocation + 7);
@@ -1476,11 +1476,34 @@ public class DataSetService {
                 }
             }
             String limitNumStr = sqlLower;
+            String start = null;
+            String end = null;
             if (sqlLower.indexOf(" ") > 0) {
                 limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
+                if (limitNumStr.contains(",")) {
+                    start = limitNumStr.substring(0, limitNumStr.indexOf(",")).trim();
+                    sqlLower = sqlLower.substring(sqlLower.indexOf(",")+1).trim();
+                    if (sqlLower.contains(" ")) {
+                        end = sqlLower.substring(0, sqlLower.indexOf(" "));
+                    } else {
+                        end = sqlLower;
+                    }
+                }
+            } else if (sqlLower.contains(",")) {
+                String[] tmp = limitNumStr.split(",");
+                start = tmp[0];
+                end = tmp[1];
             }
             try {
-                int limitNum = Integer.parseInt(limitNumStr);
+                int limitNum = 0;
+                if (start != null && end != null) {
+                    limitNum = Integer.parseInt(end) - Integer.parseInt(start);
+                    if (Integer.parseInt(start) != 0) {
+                        limitNum = limitNum + 1;
+                    }
+                } else {
+                    limitNum = Integer.parseInt(limitNumStr);
+                }
                 if (limitNum <= 0 || limitNum > MAX_QUERY_COUNT) {
                     commonResponse.setSuccess(false);
                     commonResponse.setMessage("指标sql limit的数据量在1到" + MAX_QUERY_COUNT);

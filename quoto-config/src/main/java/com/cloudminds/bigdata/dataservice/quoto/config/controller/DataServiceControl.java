@@ -2,12 +2,12 @@ package com.cloudminds.bigdata.dataservice.quoto.config.controller;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.service.DataServiceConfig;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/dataservice/config")
@@ -242,5 +242,15 @@ public class DataServiceControl {
 	@RequestMapping(value = "getApiAccessTop", method = RequestMethod.GET)
 	public CommonResponse getApiAccessTop(String startDate,String endDate,int top) {
 		return dataServiceConfig.getApiAccessTop(startDate,endDate,top);
+	}
+
+	@PostMapping(value = "/upload/file/s3")
+	public CommonResponse uploadFile(MultipartFile file,String project) throws IOException {
+		return dataServiceConfig.uploadFile(file,project);
+	}
+
+	@PostMapping(value ="/delete/file/s3")
+	public CommonResponse deleteFile(String url){
+		return dataServiceConfig.deleteFile(url);
 	}
 }
