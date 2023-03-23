@@ -1138,6 +1138,8 @@ public class DataSetService {
                     type = "double";
                 } else if (type.startsWith("float") || type.startsWith("decimal") || type.startsWith("numeric") || type.startsWith("real")) {
                     type = "float";
+                } else if (type.startsWith("datetime")) {
+                    type = "datetime";
                 } else {
                     type = "String";
                 }
@@ -1482,7 +1484,7 @@ public class DataSetService {
                 limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
                 if (limitNumStr.contains(",")) {
                     start = limitNumStr.substring(0, limitNumStr.indexOf(",")).trim();
-                    sqlLower = sqlLower.substring(sqlLower.indexOf(",")+1).trim();
+                    sqlLower = sqlLower.substring(sqlLower.indexOf(",") + 1).trim();
                     if (sqlLower.contains(" ")) {
                         end = sqlLower.substring(0, sqlLower.indexOf(" "));
                     } else {
