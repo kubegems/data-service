@@ -23,4 +23,6 @@ public class MetaDataTable extends NewBaseEntity{
     private String ddl;
     private List<Column> columns;
     private List<Partition_field> partition_field;
+    private String[] order_field;
+    private String mapping_instance_table;
 }

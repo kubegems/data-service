@@ -2,7 +2,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.146:8848
+        server-addr: 172.16.31.162:8848
         group: bigdata
   datasource:
     url: jdbc:mysql://172.16.31.145:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
@@ -21,3 +21,6 @@ hivePassword: Cm@456123
 hiveMetastoreUrl: jdbc:mysql://172.16.31.145:3306/metastore?characterEncoding=utf8&useSSL=false
 hiveMetastoreUser: root
 hiveMetastorePassword: root
+ckUrl: jdbc:clickhouse://172.16.31.147:8123
+ckUser: default
+ckPassword: 123456

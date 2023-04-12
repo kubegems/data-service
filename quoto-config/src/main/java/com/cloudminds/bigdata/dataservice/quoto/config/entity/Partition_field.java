@@ -10,4 +10,5 @@ public class Partition_field {
     private String format;
     private String type_detail;
     private String desc;
+    private String default_value;
 }
