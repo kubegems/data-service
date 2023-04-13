@@ -32,6 +32,10 @@ public interface MetaDataTableMapper {
             + "values(#{database_name},#{name},#{table_type},#{storage_format},#{external_table},#{system_storage_location},#{storage_location},#{system_delimiter},#{delimiter},#{partition},#{model_level},#{life_cycle},#{data_domain},#{theme_id},#{ddl},#{columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.JsonListTypeHandler},#{partition_field,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.JsonListTypeHandler},#{creator},#{descr},#{create_time},now())")
     public int insertMetaDataTableHaveCreateTime(MetaDataTable metaDataTable);
 
+    @Insert("insert into metadata_table(database_name,name,table_type,storage_format,`partition`,life_cycle,data_domain,theme_id,ddl,columns,partition_field,order_field,creator,descr,create_time,update_time) "
+            + "values(#{database_name},#{name},#{table_type},#{storage_format},#{partition},#{life_cycle},#{data_domain},#{theme_id},#{ddl},#{columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.JsonListTypeHandler},#{partition_field,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.JsonListTypeHandler},#{order_field,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.ArrayVarcharHandlerSpecial},#{creator},#{descr},#{create_time},#{update_time})")
+    public int insertMetaDataTableHistoryCk(MetaDataTable metaDataTable);
+
     @Update("update metadata_table set name=#{name},model_level=#{model_level},life_cycle=#{life_cycle},data_domain=#{data_domain},theme_id=#{theme_id},ddl=#{ddl},columns=#{columns,typeHandler=com.cloudminds.bigdata.dataservice.quoto.config.handler.JsonListTypeHandler},descr=#{descr} where id=#{id}")
     public int updateMetaDataTable(MetaDataTable metaDataTable);
 

@@ -1,5 +1,7 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.MetaDataTableMapper;
 import com.linkedin.common.*;
@@ -259,7 +261,7 @@ public class MetaDataService {
         String sql = "";
         for (int i = 0; i < metaDataTable.getColumns().size(); i++) {
             Column column = metaDataTable.getColumns().get(i);
-            sql = sql + "`" + column.getName() + "` " + column.getType();
+            sql = sql + "`" + column.getName() + "` " + getCKType(column);
             if (!StringUtils.isEmpty(column.getDefault_value())) {
                 sql = sql + " DEFAULT " + column.getDefault_value();
             }
@@ -277,6 +279,47 @@ public class MetaDataService {
             vSql = vSql + "\nCOMMENT '" + metaDataTable.getDescr() + "'";
         }
         return new String[]{tableSql, vSql};
+    }
+
+    public String getCKType(Column column) {
+        String type = column.getType();
+        if (type.toLowerCase().equals("decimal")) {
+            JSONObject typeDetail = JSONArray.parseArray(column.getType_detail()).getJSONObject(0);
+            type = type + "(" + typeDetail.getIntValue("precision") + "," + typeDetail.getIntValue("scale") + ")";
+        } else if (type.toLowerCase().equals("enum")) {
+            JSONObject typeDetail = JSONArray.parseArray(column.getType_detail()).getJSONObject(0);
+            JSONArray enumValues = typeDetail.getJSONArray("enumValues");
+            type = type + "(";
+            for (int j = 0; j < enumValues.size(); j++) {
+                JSONObject enumValue = enumValues.getJSONObject(j);
+                type = type + "'" + enumValue.getString("key") + "'=" + enumValue.getIntValue("value");
+                if (j != enumValues.size() - 1) {
+                    type = type + ",";
+                }
+            }
+            type = type + ")";
+        } else if (type.toLowerCase().equals("array")) {
+            JSONObject typeDetail = JSONArray.parseArray(column.getType_detail()).getJSONObject(0);
+            JSONObject innerTypeDetail = typeDetail.getJSONArray("nested").getJSONObject(0);
+            String innerType = innerTypeDetail.getString("type");
+            type = type + "(" + innerType;
+            if (innerType.toLowerCase().equals("decimal")) {
+                type = type + "(" + innerTypeDetail.getIntValue("precision") + "," + innerTypeDetail.getIntValue("scale") + ")";
+            } else if (innerType.toLowerCase().equals("enum")) {
+                JSONArray enumValues = innerTypeDetail.getJSONArray("enumValues");
+                type = type + "(";
+                for (int j = 0; j < enumValues.size(); j++) {
+                    JSONObject enumValue = enumValues.getJSONObject(j);
+                    type = type + "'" + enumValue.getString("key") + "'=" + enumValue.getIntValue("value");
+                    if (j != enumValues.size() - 1) {
+                        type = type + ",";
+                    }
+                }
+                type = type + ")";
+            }
+            type = type + ")";
+        }
+        return type;
     }
 
 
@@ -414,7 +457,7 @@ public class MetaDataService {
                 }
                 if (metaDataTable.getInsertColumn() != null && metaDataTable.getInsertColumn().size() > 0) {
                     for (Column column : metaDataTable.getInsertColumn()) {
-                        String sql = "alter table " + metaDataTable.getDatabase_name() + "." + metaDataTable.getName() + " on cluster cm_ck_cluster " + " add column `" + column.getName() + "` " + column.getType();
+                        String sql = "alter table " + metaDataTable.getDatabase_name() + "." + metaDataTable.getName() + " on cluster cm_ck_cluster " + " add column `" + column.getName() + "` " + getCKType(column);
                         if (!StringUtils.isEmpty(column.getDefault_value())) {
                             sql = sql + " DEFAULT " + column.getDefault_value();
                         }
@@ -448,8 +491,8 @@ public class MetaDataService {
                         if (StringUtils.isEmpty(newDefaultValue)) {
                             newDefaultValue = "";
                         }
-                        if ((!oldColumn.getType().equals(newColumn.getType())) || (!oldDefaultValue.equals(newDefaultValue))) {
-                            sql = "alter table " + metaDataTable.getDatabase_name() + "." + metaDataTable.getName() + " on cluster cm_ck_cluster modify column `" + oldColumn.getName() + "` " + newColumn.getType();
+                        if ((!getCKType(oldColumn).equals(getCKType(newColumn))) || (!oldDefaultValue.equals(newDefaultValue))) {
+                            sql = "alter table " + metaDataTable.getDatabase_name() + "." + metaDataTable.getName() + " on cluster cm_ck_cluster modify column `" + oldColumn.getName() + "` " + getCKType(newColumn);
                             oldColumn.setType(newColumn.getType());
                             if (!StringUtils.isEmpty(newColumn.getDefault_value())) {
                                 if (StringUtils.isEmpty(oldColumn.getDefault_value()) || (!oldColumn.getDefault_value().equals(newColumn.getDefault_value()))) {
@@ -713,17 +756,22 @@ public class MetaDataService {
 
     public CommonResponse historyDataAddDataBase(HistoryDataAddDataBase historyDataAddDataBase) {
         CommonResponse commonResponse = new CommonResponse();
-        if (historyDataAddDataBase == null || StringUtils.isEmpty(historyDataAddDataBase.getDatabase_name()) || StringUtils.isEmpty(historyDataAddDataBase.getModel_level())) {
+        if (historyDataAddDataBase == null || StringUtils.isEmpty(historyDataAddDataBase.getDatabase_name())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("库名和层级不能为空");
+            commonResponse.setMessage("库名不能为空");
             return commonResponse;
         }
-        if (historyDataAddDataBase.getTable_type() != 1) {
+        if (historyDataAddDataBase.getTable_type() != 1 & historyDataAddDataBase.getTable_type() != 2) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("目前只支持录入hive表");
+            commonResponse.setMessage("不支持的表类型");
             return commonResponse;
         }
         if (historyDataAddDataBase.getTable_type() == 1) {
+            if (StringUtils.isEmpty(historyDataAddDataBase.getModel_level())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("层级不能为空");
+                return commonResponse;
+            }
             Connection conn = null;
             PreparedStatement pStemt = null;
             try {
@@ -784,8 +832,8 @@ public class MetaDataService {
                     List<Partition_field> partition_fields = new ArrayList<>();
                     int tableId = set.getInt("TBL_ID");
                     sql = "select p.* from TBLS t left join PARTITION_KEYS p ON t.TBL_ID=p.TBL_ID where t.TBL_ID=" + tableId;
-                    PreparedStatement pStemtTmp = conn.prepareStatement(sql);
-                    ResultSet setTmp = pStemtTmp.executeQuery();
+                    pStemt = conn.prepareStatement(sql);
+                    ResultSet setTmp = pStemt.executeQuery();
                     boolean ispaquet = false;
                     while (setTmp.next()) {
                         ispaquet = true;
@@ -811,8 +859,8 @@ public class MetaDataService {
                     //查询列信息
                     List<Column> columns = new ArrayList<>();
                     sql = "select c.* from TBLS t left join SDS s on t.SD_ID=s.SD_ID LEFT JOIN COLUMNS_V2 c on s.CD_ID=c.CD_ID where t.TBL_ID=" + tableId;
-                    pStemtTmp = conn.prepareStatement(sql);
-                    setTmp = pStemtTmp.executeQuery();
+                    pStemt = conn.prepareStatement(sql);
+                    setTmp = pStemt.executeQuery();
                     while (setTmp.next()) {
                         Column column = new Column();
                         String comment = setTmp.getString("COMMENT");
@@ -878,6 +926,223 @@ public class MetaDataService {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                try {
+                    pStemt.close();
+                    conn.close();
+                } catch (Exception tt) {
+                    tt.printStackTrace();
+                }
+            }
+        } else {
+            if (StringUtils.isEmpty(historyDataAddDataBase.getTable_name())) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("拉ck的历史数据表名不能为空");
+                return commonResponse;
+            }
+            Connection conn = null;
+            PreparedStatement pStemt = null;
+            try {
+                int tableNum = 1;
+                conn = DriverManager.getConnection(ckUrl, ckUser, ckPassword);
+                String sql = "select * from `system`.tables where database='" + historyDataAddDataBase.getDatabase_name() + "' and name in ('" + historyDataAddDataBase.getTable_name() + "'";
+                if (!StringUtils.isEmpty(historyDataAddDataBase.getMapping_instance_table())) {
+                    sql = sql + ",'" + historyDataAddDataBase.getMapping_instance_table() + "')";
+                    tableNum = 2;
+                } else {
+                    sql = sql + ")";
+                }
+                System.out.println("查询表信息sql：" + sql);
+                pStemt = conn.prepareStatement(sql);
+                ResultSet set = pStemt.executeQuery();
+                MetaDataTable metaDataTable = new MetaDataTable();
+                metaDataTable.setMapping_instance_table(historyDataAddDataBase.getMapping_instance_table());
+                metaDataTable.setData_domain(historyDataAddDataBase.getData_domain());
+                metaDataTable.setLife_cycle(0);
+                metaDataTable.setDatabase_name(historyDataAddDataBase.getDatabase_name());
+                metaDataTable.setTable_type(2);
+                metaDataTable.setName(historyDataAddDataBase.getTable_name());
+                metaDataTable.setTheme_id(historyDataAddDataBase.getTheme_id());
+                metaDataTable.setCreator("hive");
+                int realTable = 0;
+                while (set.next()) {
+                    realTable++;
+                    if (tableNum == 1 || set.getString("name").equals(historyDataAddDataBase.getMapping_instance_table())) {
+                        metaDataTable.setDescr(set.getString("comment"));
+                        metaDataTable.setStorage_format(set.getString("engine"));
+                        if (!StringUtils.isEmpty(set.getString("sorting_key"))) {
+                            metaDataTable.setOrder_field(set.getString("sorting_key").split(", "));
+                        }
+                        List<Partition_field> partition_fields = new ArrayList<>();
+                        Partition_field partition_field = new Partition_field();
+                        partition_field.setName(set.getString("partition_key"));
+                        partition_fields.add(partition_field);
+                        metaDataTable.setPartition_field(partition_fields);
+                        metaDataTable.setUpdate_time(new Date(set.getLong("metadata_modification_time") * 1000));
+                        metaDataTable.setCreate_time(new Date(915148800000L));
+                    }
+                    if (StringUtils.isEmpty(metaDataTable.getDdl())) {
+                        metaDataTable.setDdl(set.getString("create_table_query"));
+                    } else {
+                        metaDataTable.setDdl(metaDataTable.getDdl() + ";\n" + set.getString("create_table_query"));
+                    }
+                }
+                if (realTable != tableNum) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage("需要查出" + tableNum + "个表,实际数量为" + realTable);
+                    return commonResponse;
+                }
+
+                //查询列信息
+                List<Column> columns = new ArrayList<>();
+                sql = "select * from `system`.columns where database='" + historyDataAddDataBase.getDatabase_name() + "' and table='" + historyDataAddDataBase.getTable_name() + "'";
+                pStemt = conn.prepareStatement(sql);
+                ResultSet setTmp = pStemt.executeQuery();
+                while (setTmp.next()) {
+                    Column column = new Column();
+                    String comment = setTmp.getString("COMMENT");
+                    if (!StringUtils.isEmpty(comment)) {
+                        comment = comment.replaceAll("\r\n", "");
+                    }
+                    column.setDesc(comment);
+                    column.setDefault_value(setTmp.getString("default_expression"));
+                    column.setName(setTmp.getString("name"));
+                    column.setZh_name(setTmp.getString("name"));
+                    column.setLength(100);
+                    String detailType = setTmp.getString("type");
+                    String type;
+                    if (detailType.contains("(")) {
+                        type = detailType.substring(0, detailType.indexOf("("));
+                        if (type.toLowerCase().equals("nullable")) {
+                            detailType = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")"));
+                            if (detailType.contains("(")) {
+                                type = detailType.substring(0, detailType.indexOf("("));
+                            } else {
+                                type = detailType;
+                            }
+                        }
+                    } else {
+                        type = detailType;
+                    }
+                    column.setType(type);
+                    String lowerType = type.toLowerCase();
+                    JSONArray jsonArray = new JSONArray();
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("comment",column.getDesc());
+                    jsonObject.put("name",column.getName());
+                    jsonObject.put("type",column.getType());
+                    jsonObject.put("length",100);
+                    if (lowerType.startsWith("int") || lowerType.startsWith("string") || lowerType.startsWith("date") || lowerType.startsWith("float") || lowerType.startsWith("uint")) {
+                        jsonObject.put("nested",new JSONArray());
+                        jsonObject.put("precision",0);
+                        jsonObject.put("scale",0);
+                        jsonObject.put("enumValues",new JSONArray());
+                    }else if (lowerType.startsWith("decimal")){
+                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
+                        jsonObject.put("nested",new JSONArray());
+                        jsonObject.put("precision",Integer.parseInt(keyValues[0]));
+                        jsonObject.put("scale",Integer.parseInt(keyValues[1]));
+                        jsonObject.put("enumValues",new JSONArray());
+                    }else if(lowerType.startsWith("enum")){
+                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
+                        jsonObject.put("nested",new JSONArray());
+                        jsonObject.put("precision",0);
+                        jsonObject.put("scale",0);
+                        JSONArray enumValues = new JSONArray();
+                        for(String keyValue:keyValues){
+                            JSONObject enumValue = new JSONObject();
+                            String[] keyValueTmp = keyValue.split("=");
+                            enumValue.put("key",keyValueTmp[0].replaceAll("'",""));
+                            enumValue.put("value",Integer.parseInt(keyValueTmp[1]));
+                            enumValues.add(enumValue);
+                        }
+                        jsonObject.put("enumValues",enumValues);
+                    }else if(lowerType.startsWith("array")){
+                        jsonObject.put("precision",0);
+                        jsonObject.put("scale",0);
+                        jsonObject.put("enumValues",new JSONArray());
+                        JSONArray innerJsonArray = new JSONArray();
+                        JSONObject innerJsonObject = new JSONObject();
+                        String innerType = "";
+                        detailType = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")"));
+                        if(detailType.contains("(")){
+                            innerType = detailType.substring(0, detailType.indexOf("("));
+                        }else{
+                            innerType = detailType;
+                        }
+                        innerJsonObject.put("comment","");
+                        innerJsonObject.put("name","");
+                        innerJsonObject.put("type",innerType);
+                        innerJsonObject.put("length",100);
+                        innerJsonObject.put("nested",new JSONArray());
+                        String lowerInnerType = innerType.toLowerCase();
+                        if (lowerInnerType.startsWith("int") || lowerInnerType.startsWith("string") || lowerInnerType.startsWith("date") || lowerInnerType.startsWith("float") || lowerInnerType.startsWith("uint")) {
+                            innerJsonObject.put("enumValues",new JSONArray());
+                            innerJsonObject.put("precision",0);
+                            innerJsonObject.put("scale",0);
+                        }else if (lowerInnerType.startsWith("decimal")){
+                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
+                            innerJsonObject.put("precision",Integer.parseInt(keyValues[0]));
+                            innerJsonObject.put("scale",Integer.parseInt(keyValues[1]));
+                            innerJsonObject.put("enumValues",new JSONArray());
+                        }else if(lowerInnerType.startsWith("enum")){
+                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
+                            innerJsonObject.put("precision",0);
+                            innerJsonObject.put("scale",0);
+                            JSONArray enumValues = new JSONArray();
+                            for(String keyValue:keyValues){
+                                JSONObject enumValue = new JSONObject();
+                                String[] keyValueTmp = keyValue.split("=");
+                                enumValue.put("key",keyValueTmp[0].replaceAll("'",""));
+                                enumValue.put("value",Integer.parseInt(keyValueTmp[1]));
+                                enumValues.add(enumValue);
+                            }
+                            innerJsonObject.put("enumValues",enumValues);
+                        }else{
+                            commonResponse.setSuccess(false);
+                            commonResponse.setMessage("array里含有不支持的数据类型" + innerType);
+                            return commonResponse;
+                        }
+                        innerJsonArray.add(innerJsonObject);
+                        jsonObject.put("nested",innerJsonArray);
+                    }else{
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("不支持的数据类型" + type);
+                        return commonResponse;
+                    }
+                    jsonArray.add(jsonObject);
+                    column.setType_detail(jsonArray.toJSONString());
+                    columns.add(column);
+                }
+                metaDataTable.setColumns(columns);
+                //判断这个表是否已经存在,存在就跳过
+                if (metaDataTableMapper.findMetaDataTableByName(metaDataTable.getDatabase_name(), metaDataTable.getName(), metaDataTable.getTable_type()) == null) {
+                    if (metaDataTableMapper.insertMetaDataTableHistoryCk(metaDataTable) < 1) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("插入数据失败,请联系管理员");
+                        return commonResponse;
+                    }
+                    //关联数据域
+                    DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), clickhouseInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                    if (!StringUtils.isEmpty(metaDataTable.getData_domain())) {
+                        Domains domains = new Domains();
+                        UrnArray urnArray = new UrnArray();
+                        urnArray.add(new Urn(metaDataTable.getData_domain()));
+                        domains.setDomains(urnArray);
+                        addMetadata("dataset", datasetUrn, domains, emitter);
+                    }
+                    //关联用户
+                    Ownership ownership = new Ownership();
+                    OwnerArray ownerArray = new OwnerArray();
+                    ownerArray.add(new Owner().setOwner(new Urn("urn:li:corpuser:" + metaDataTable.getCreator())).setType(OwnershipType.DATA_STEWARD));
+                    ownership.setOwners(ownerArray);
+                    addMetadata("dataset", datasetUrn, ownership, emitter);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
             } finally {
                 try {
                     pStemt.close();
