@@ -10,4 +10,5 @@ public class Column {
     private String type_detail;
     private int length;
     private String desc;
+    private String default_value;
 }

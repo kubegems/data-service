@@ -10,4 +10,5 @@ public class HistoryDataAddDataBase {
     private String model_level;
     private int theme_id;
     private String data_domain;
+    private String mapping_instance_table;
 }

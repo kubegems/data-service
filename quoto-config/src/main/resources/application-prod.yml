@@ -22,3 +22,6 @@ hivePassword: dataserver
 hiveMetastoreUrl: jdbc:mysql://172.16.23.37:3306/metastore?autoReconnect=true
 hiveMetastoreUser: hive
 hiveMetastorePassword: hive
+ckUrl: jdbc:clickhouse://clickhouse.cloudminds.com:9090
+ckUser: distributed-write
+ckPassword: CloudMinds#

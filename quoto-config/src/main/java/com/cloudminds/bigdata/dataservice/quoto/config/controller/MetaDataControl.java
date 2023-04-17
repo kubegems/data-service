@@ -2,6 +2,7 @@ package com.cloudminds.bigdata.dataservice.quoto.config.controller;
 
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.service.MetaDataService;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,11 @@ public class MetaDataControl {
     @RequestMapping(value = "addTable", method = RequestMethod.POST)
     public CommonResponse addTable(@RequestBody MetaDataTable metaDataTable) {
         return metaDataService.addTable(metaDataTable);
+    }
+
+    @RequestMapping(value = "precomputationDdl", method = RequestMethod.POST)
+    public CommonResponse precomputationDdl(@RequestBody MetaDataTable metaDataTable) {
+        return metaDataService.precomputationDdl(metaDataTable);
     }
 
     //更新table
