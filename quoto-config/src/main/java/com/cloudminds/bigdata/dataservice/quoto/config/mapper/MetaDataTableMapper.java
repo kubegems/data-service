@@ -19,6 +19,11 @@ public interface MetaDataTableMapper {
     public MetaDataTableExtendInfo findMetaDataTableByName(String database_name, String name, int table_type);
 
     @Select("select * from metadata_table where deleted=0 and id=#{id}")
+    @Results({
+            @Result(column = "columns", property = "columns", typeHandler = JsonListTypeHandler.class),
+            @Result(column = "partition_field", property = "partition_field", typeHandler = JsonListTypeHandler.class),
+            @Result(column = "order_field", property = "order_field", typeHandler = ArrayVarcharHandlerSpecial.class)
+    })
     public MetaDataTable findMetaDataTableById(int id);
 
     @Update("update metadata_table set deleted=null where id=#{id}")

@@ -257,6 +257,54 @@ public class MetaDataService {
         }
     }
 
+    public CommonResponse precomputationDdl(MetaDataTable metaDataTable){
+        CommonResponse commonResponse = new CommonResponse();
+        MetaDataTable oldMetaDataTable = null;
+        if(metaDataTable.getId()>0){
+            oldMetaDataTable = metaDataTableMapper.findMetaDataTableById(metaDataTable.getId());
+            if(oldMetaDataTable==null){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("原始表不存在,请刷新后再查看ddl");
+                return commonResponse;
+            }
+            if(StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())){
+                oldMetaDataTable.setMapping_instance_table("");
+            }
+        }
+        if (metaDataTable == null || StringUtils.isEmpty(metaDataTable.getName()) || StringUtils.isEmpty(metaDataTable.getDatabase_name()) || StringUtils.isEmpty(metaDataTable.getStorage_format())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("表名,库名,存储格式");
+            return commonResponse;
+        }
+        if (!metaDataTable.getStorage_format().equals("ReplicatedMergeTree")) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("引擎只支持ReplicatedMergeTree");
+            return commonResponse;
+        }
+        if (metaDataTable.getPartition_field() == null || metaDataTable.getPartition_field().size() == 0 || metaDataTable.getPartition_field().size() > 1) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("分区必须有值,且必须只有一个值");
+            return commonResponse;
+        }
+        if (metaDataTable.getOrder_field() == null || metaDataTable.getOrder_field().length == 0) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("排序的字段不能未空");
+            return commonResponse;
+        }
+        String[] createSql =  createCKTableSql(metaDataTable);
+        String sql="";
+        if(oldMetaDataTable==null||oldMetaDataTable.getMapping_instance_table().equals(oldMetaDataTable.getName()+"_instance")){
+            sql = createSql[0]+";\n"+createSql[1];
+        }else if(StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())){
+            sql = createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
+        }else{
+           String[] oldSql = metaDataTable.getDdl().split(";\n");
+            sql = createSql[0].substring(0,createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName()+"_instance",oldMetaDataTable.getMapping_instance_table())+oldSql[0].substring(oldSql[0].indexOf("ENGINE"))+";\n"+createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+oldSql[1].substring(oldSql[1].indexOf("ENGINE"));
+        }
+        commonResponse.setData(sql);
+        return commonResponse;
+    }
+
     public String[] createCKTableSql(MetaDataTable metaDataTable) {
         String sql = "";
         for (int i = 0; i < metaDataTable.getColumns().size(); i++) {
@@ -374,9 +422,9 @@ public class MetaDataService {
         }
 
         //执行sql
-        // Map<String, Column> updateColumn = new HashMap<>();
-        //List<Column> deleteColumn = new ArrayList<>();
-        //List<Column> insertColumn = new ArrayList<>();
+         Map<String, Column> updateColumn = new HashMap<>();
+        Set<String> deleteColumn = new HashSet<>();
+        List<Column> insertColumn = new ArrayList<>();
         if (metaDataTable.getTable_type() == 1) {
             if (metaDataTable.getUpdateSql() != null && metaDataTable.getUpdateSql().length > 0) {
                 Connection conn = null;
@@ -451,7 +499,7 @@ public class MetaDataService {
                         System.out.println("去ck执行sql:" + sql);
                         pStemt = conn.prepareStatement(sql);
                         pStemt.execute();
-                        //deleteColumn.add(column);
+                        deleteColumn.add(column.getName());
                     }
 
                 }
@@ -473,7 +521,7 @@ public class MetaDataService {
                         System.out.println("去ck执行sql:" + sql);
                         pStemt = conn.prepareStatement(sql);
                         pStemt.execute();
-                        //insertColumn.add(column);
+                        insertColumn.add(column);
                     }
 
                 }
@@ -509,7 +557,7 @@ public class MetaDataService {
                             System.out.println("去ck执行sql:" + sql);
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
-                            //updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName,oldColumn);
                         }
                         String oldDesc = oldColumn.getDesc();
                         String newDesc = newColumn.getDesc();
@@ -532,7 +580,7 @@ public class MetaDataService {
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
                             oldColumn.setDesc(newColumn.getDesc());
-                            //updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName,oldColumn);
                         }
 
                         if (!oldColumn.getName().equals(newColumn.getName())) {
@@ -547,7 +595,7 @@ public class MetaDataService {
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
                             oldColumn.setName(newColumn.getName());
-                            //updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName,oldColumn);
                         }
                     }
 
@@ -556,6 +604,7 @@ public class MetaDataService {
             } catch (Exception e) {
                 e.printStackTrace();
                 commonResponse.setMessage("列信息更新失败：" + e.getMessage());
+                commonResponse.setSuccess(false);
             } finally {
                 try {
                     pStemt.close();
@@ -566,15 +615,55 @@ public class MetaDataService {
             }
 
         }
+        //更新列信息
+        if(!commonResponse.isSuccess()) {
+            List<Column> oldColumn = new ArrayList<>();
+            List<Column> columns = oldMetaDataTable.getColumns();
+            if (columns != null && columns.size() > 0) {
+                for (int i = 0; i < columns.size(); i++) {
+                    Map<String, Object> column = (Map<String, Object>) columns.get(i);
+                    Column columnNew = new Column();
+                    columnNew.setName((String)column.get("name"));
+                    columnNew.setType((String)column.get("type"));
+                    columnNew.setZh_name((String)column.get("zh_name"));
+                    columnNew.setType_detail((String)column.get("type_detail"));
+                    if(column.containsKey("length")) {
+                        columnNew.setLength((int)column.get("length"));
+                    }else{
+                        columnNew.setLength(100);
+                    }
+                    columnNew.setDesc((String)column.get("desc"));
+                    columnNew.setDefault_value((String)column.get("default_value"));
+                    oldColumn.add(columnNew);
+                }
+            }
+            if ((!deleteColumn.isEmpty()) || (!updateColumn.isEmpty())) {
+                for(int j =0;j<oldColumn.size();j++){
+                    String columnName = oldColumn.get(j).getName();
+                    if(deleteColumn.contains(columnName)){
+                        oldColumn.remove(j);
+                        j--;
+                    }else if (updateColumn.containsKey(columnName)){
+                        oldColumn.set(j,updateColumn.get(columnName));
+                    }
+                }
+
+            }
+
+            if (!insertColumn.isEmpty()) {
+                oldColumn.addAll(insertColumn);
+            }
+            metaDataTable.setColumns(oldColumn);
+        }
         //生成新的ddl
         if (metaDataTable.getTable_type() == 2) {
-            metaDataTable.setDdl(createCKTableSql(metaDataTable)[0].replace("_instance", ""));
+            metaDataTable.setDdl(precomputationDdl(metaDataTable).getData().toString());
         }
 
         //更新表
         if (metaDataTableMapper.updateMetaDataTable(metaDataTable) < 1) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("更新失败,请联系管理员");
+            commonResponse.setMessage("更新信息入库失败,请联系管理员"+commonResponse.getMessage());
             return commonResponse;
         }
         DatasetUrn datasetUrn = null;
