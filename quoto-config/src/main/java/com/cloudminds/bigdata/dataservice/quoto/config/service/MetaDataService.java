@@ -375,9 +375,9 @@ public class MetaDataService {
         CommonResponse commonResponse = new CommonResponse();
         //校验参数是否为空
         if (metaDataTable == null || StringUtils.isEmpty(metaDataTable.getName()) || StringUtils.isEmpty(metaDataTable.getStorage_format())
-                || StringUtils.isEmpty(metaDataTable.getModel_level()) || StringUtils.isEmpty(metaDataTable.getData_domain())) {
+                || StringUtils.isEmpty(metaDataTable.getData_domain())) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("表名,存储格式,模型层级,数据域,不能为空");
+            commonResponse.setMessage("表名,存储格式,数据域,不能为空");
             return commonResponse;
         }
         //查询原始表
@@ -391,6 +391,11 @@ public class MetaDataService {
             if (StringUtils.isEmpty(metaDataTable.getDdl())) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("生成的ddl不能为空");
+                return commonResponse;
+            }
+            if(StringUtils.isEmpty(metaDataTable.getModel_level())){
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("模型层级不能为空");
                 return commonResponse;
             }
         } else {
@@ -1066,6 +1071,7 @@ public class MetaDataService {
                         Partition_field partition_field = new Partition_field();
                         partition_field.setName(set.getString("partition_key"));
                         partition_fields.add(partition_field);
+                        metaDataTable.setPartition(true);
                         metaDataTable.setPartition_field(partition_fields);
                         metaDataTable.setUpdate_time(new Date(set.getLong("metadata_modification_time") * 1000));
                         metaDataTable.setCreate_time(new Date(915148800000L));
