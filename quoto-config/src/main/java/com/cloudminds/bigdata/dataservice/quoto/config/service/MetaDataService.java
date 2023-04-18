@@ -23,7 +23,14 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -43,7 +50,9 @@ public class MetaDataService {
     @Autowired
     private RestEmitter emitter;
     private String hiveInstance = "prod_hive";
+    private String hiveDataHubIngestionSource = "12e00861-b21d-42fa-8a3c-0d5a048c7151";
     private String clickhouseInstance = "prod_ck_1";
+    private String clickhouseDataHubIngestionSource = "e8701455-d174-4285-bad1-ab2792c6580e";
     @Value("${hiveUrl}")
     private String hiveUrl;
     @Value("${hiveUser}")
@@ -62,6 +71,14 @@ public class MetaDataService {
     private String ckUser;
     @Value("${ckPassword}")
     private String ckPassword;
+    @Value("${datahubToken}")
+    private String datahubToken;
+    @Value("${datahubGraphqlUrl}")
+    private String datahubGraphqlUrl;
+    @Value("${spring.profiles.active}")
+    private String env;
+    @Autowired
+    RestTemplate restTemplate;
 
     public CommonResponse addTable(MetaDataTable metaDataTable) {
         CommonResponse commonResponse = new CommonResponse();
@@ -209,8 +226,6 @@ public class MetaDataService {
                 customerPro.put("metadata_modification_time", dateFormat.format(new Date()));
                 customerPro.put("partition_key", metaDataTable.getPartition_field().get(0).getName());
                 customerPro.put("sorting_key", StringUtils.join(metaDataTable.getOrder_field(), ","));
-            } else {
-                return commonResponse;
             }
             DatasetProperties datasetProperties = new DatasetProperties().setName(metaDataTable.getName()).setCustomProperties(customerPro);
             addMetadata("dataset", datasetUrn, datasetProperties, emitter);
@@ -234,7 +249,9 @@ public class MetaDataService {
             addMetadata("dataset", datasetUrn, ownership, emitter);
         } catch (Exception e) {
             e.printStackTrace();
-            return commonResponse;
+        }
+        if (env.equals("prod")){
+            executionIngestionDatahub(metaDataTable.getTable_type());
         }
 
         return commonResponse;
@@ -257,17 +274,17 @@ public class MetaDataService {
         }
     }
 
-    public CommonResponse precomputationDdl(MetaDataTable metaDataTable){
+    public CommonResponse precomputationDdl(MetaDataTable metaDataTable) {
         CommonResponse commonResponse = new CommonResponse();
         MetaDataTable oldMetaDataTable = null;
-        if(metaDataTable.getId()>0){
+        if (metaDataTable.getId() > 0) {
             oldMetaDataTable = metaDataTableMapper.findMetaDataTableById(metaDataTable.getId());
-            if(oldMetaDataTable==null){
+            if (oldMetaDataTable == null) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("原始表不存在,请刷新后再查看ddl");
                 return commonResponse;
             }
-            if(StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())){
+            if (StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())) {
                 oldMetaDataTable.setMapping_instance_table("");
             }
         }
@@ -291,15 +308,15 @@ public class MetaDataService {
             commonResponse.setMessage("排序的字段不能未空");
             return commonResponse;
         }
-        String[] createSql =  createCKTableSql(metaDataTable);
-        String sql="";
-        if(oldMetaDataTable==null||oldMetaDataTable.getMapping_instance_table().equals(oldMetaDataTable.getName()+"_instance")){
-            sql = createSql[0]+";\n"+createSql[1];
-        }else if(StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())){
-            sql = createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
-        }else{
-           String[] oldSql = metaDataTable.getDdl().split(";\n");
-            sql = createSql[0].substring(0,createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName()+"_instance",oldMetaDataTable.getMapping_instance_table())+oldSql[1].substring(oldSql[1].indexOf("ENGINE"))+";\n"+createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+oldSql[0].substring(oldSql[0].indexOf("ENGINE"));
+        String[] createSql = createCKTableSql(metaDataTable);
+        String sql = "";
+        if (oldMetaDataTable == null || oldMetaDataTable.getMapping_instance_table().equals(oldMetaDataTable.getName() + "_instance")) {
+            sql = createSql[0] + ";\n" + createSql[1];
+        } else if (StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())) {
+            sql = createSql[1].substring(0, createSql[1].indexOf("ENGINE")) + metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
+        } else {
+            String[] oldSql = metaDataTable.getDdl().split(";\n");
+            sql = createSql[0].substring(0, createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName() + "_instance", oldMetaDataTable.getMapping_instance_table()) + oldSql[1].substring(oldSql[1].indexOf("ENGINE")) + ";\n" + createSql[1].substring(0, createSql[1].indexOf("ENGINE")) + oldSql[0].substring(oldSql[0].indexOf("ENGINE"));
         }
         commonResponse.setData(sql);
         return commonResponse;
@@ -393,7 +410,7 @@ public class MetaDataService {
                 commonResponse.setMessage("生成的ddl不能为空");
                 return commonResponse;
             }
-            if(StringUtils.isEmpty(metaDataTable.getModel_level())){
+            if (StringUtils.isEmpty(metaDataTable.getModel_level())) {
                 commonResponse.setSuccess(false);
                 commonResponse.setMessage("模型层级不能为空");
                 return commonResponse;
@@ -427,7 +444,7 @@ public class MetaDataService {
         }
 
         //执行sql
-         Map<String, Column> updateColumn = new HashMap<>();
+        Map<String, Column> updateColumn = new HashMap<>();
         Set<String> deleteColumn = new HashSet<>();
         List<Column> insertColumn = new ArrayList<>();
         if (metaDataTable.getTable_type() == 1) {
@@ -562,7 +579,7 @@ public class MetaDataService {
                             System.out.println("去ck执行sql:" + sql);
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
-                            updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName, oldColumn);
                         }
                         String oldDesc = oldColumn.getDesc();
                         String newDesc = newColumn.getDesc();
@@ -585,7 +602,7 @@ public class MetaDataService {
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
                             oldColumn.setDesc(newColumn.getDesc());
-                            updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName, oldColumn);
                         }
 
                         if (!oldColumn.getName().equals(newColumn.getName())) {
@@ -600,7 +617,7 @@ public class MetaDataService {
                             pStemt = conn.prepareStatement(sql);
                             pStemt.execute();
                             oldColumn.setName(newColumn.getName());
-                            updateColumn.put(oldColumnName,oldColumn);
+                            updateColumn.put(oldColumnName, oldColumn);
                         }
                     }
 
@@ -621,35 +638,35 @@ public class MetaDataService {
 
         }
         //更新列信息
-        if(!commonResponse.isSuccess()) {
+        if (!commonResponse.isSuccess()) {
             List<Column> oldColumn = new ArrayList<>();
             List<Column> columns = oldMetaDataTable.getColumns();
             if (columns != null && columns.size() > 0) {
                 for (int i = 0; i < columns.size(); i++) {
                     Map<String, Object> column = (Map<String, Object>) columns.get(i);
                     Column columnNew = new Column();
-                    columnNew.setName((String)column.get("name"));
-                    columnNew.setType((String)column.get("type"));
-                    columnNew.setZh_name((String)column.get("zh_name"));
-                    columnNew.setType_detail((String)column.get("type_detail"));
-                    if(column.containsKey("length")) {
-                        columnNew.setLength((int)column.get("length"));
-                    }else{
+                    columnNew.setName((String) column.get("name"));
+                    columnNew.setType((String) column.get("type"));
+                    columnNew.setZh_name((String) column.get("zh_name"));
+                    columnNew.setType_detail((String) column.get("type_detail"));
+                    if (column.containsKey("length")) {
+                        columnNew.setLength((int) column.get("length"));
+                    } else {
                         columnNew.setLength(100);
                     }
-                    columnNew.setDesc((String)column.get("desc"));
-                    columnNew.setDefault_value((String)column.get("default_value"));
+                    columnNew.setDesc((String) column.get("desc"));
+                    columnNew.setDefault_value((String) column.get("default_value"));
                     oldColumn.add(columnNew);
                 }
             }
             if ((!deleteColumn.isEmpty()) || (!updateColumn.isEmpty())) {
-                for(int j =0;j<oldColumn.size();j++){
+                for (int j = 0; j < oldColumn.size(); j++) {
                     String columnName = oldColumn.get(j).getName();
-                    if(deleteColumn.contains(columnName)){
+                    if (deleteColumn.contains(columnName)) {
                         oldColumn.remove(j);
                         j--;
-                    }else if (updateColumn.containsKey(columnName)){
-                        oldColumn.set(j,updateColumn.get(columnName));
+                    } else if (updateColumn.containsKey(columnName)) {
+                        oldColumn.set(j, updateColumn.get(columnName));
                     }
                 }
 
@@ -668,7 +685,7 @@ public class MetaDataService {
         //更新表
         if (metaDataTableMapper.updateMetaDataTable(metaDataTable) < 1) {
             commonResponse.setSuccess(false);
-            commonResponse.setMessage("更新信息入库失败,请联系管理员"+commonResponse.getMessage());
+            commonResponse.setMessage("更新信息入库失败,请联系管理员" + commonResponse.getMessage());
             return commonResponse;
         }
         DatasetUrn datasetUrn = null;
@@ -1123,84 +1140,84 @@ public class MetaDataService {
                     String lowerType = type.toLowerCase();
                     JSONArray jsonArray = new JSONArray();
                     JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("comment",column.getDesc());
-                    jsonObject.put("name",column.getName());
-                    jsonObject.put("type",column.getType());
-                    jsonObject.put("length",100);
+                    jsonObject.put("comment", column.getDesc());
+                    jsonObject.put("name", column.getName());
+                    jsonObject.put("type", column.getType());
+                    jsonObject.put("length", 100);
                     if (lowerType.startsWith("int") || lowerType.startsWith("string") || lowerType.startsWith("date") || lowerType.startsWith("float") || lowerType.startsWith("uint")) {
-                        jsonObject.put("nested",new JSONArray());
-                        jsonObject.put("precision",0);
-                        jsonObject.put("scale",0);
-                        jsonObject.put("enumValues",new JSONArray());
-                    }else if (lowerType.startsWith("decimal")){
-                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
-                        jsonObject.put("nested",new JSONArray());
-                        jsonObject.put("precision",Integer.parseInt(keyValues[0]));
-                        jsonObject.put("scale",Integer.parseInt(keyValues[1]));
-                        jsonObject.put("enumValues",new JSONArray());
-                    }else if(lowerType.startsWith("enum")){
-                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
-                        jsonObject.put("nested",new JSONArray());
-                        jsonObject.put("precision",0);
-                        jsonObject.put("scale",0);
+                        jsonObject.put("nested", new JSONArray());
+                        jsonObject.put("precision", 0);
+                        jsonObject.put("scale", 0);
+                        jsonObject.put("enumValues", new JSONArray());
+                    } else if (lowerType.startsWith("decimal")) {
+                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ", "").split(",");
+                        jsonObject.put("nested", new JSONArray());
+                        jsonObject.put("precision", Integer.parseInt(keyValues[0]));
+                        jsonObject.put("scale", Integer.parseInt(keyValues[1]));
+                        jsonObject.put("enumValues", new JSONArray());
+                    } else if (lowerType.startsWith("enum")) {
+                        String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ", "").split(",");
+                        jsonObject.put("nested", new JSONArray());
+                        jsonObject.put("precision", 0);
+                        jsonObject.put("scale", 0);
                         JSONArray enumValues = new JSONArray();
-                        for(String keyValue:keyValues){
+                        for (String keyValue : keyValues) {
                             JSONObject enumValue = new JSONObject();
                             String[] keyValueTmp = keyValue.split("=");
-                            enumValue.put("key",keyValueTmp[0].replaceAll("'",""));
-                            enumValue.put("value",Integer.parseInt(keyValueTmp[1]));
+                            enumValue.put("key", keyValueTmp[0].replaceAll("'", ""));
+                            enumValue.put("value", Integer.parseInt(keyValueTmp[1]));
                             enumValues.add(enumValue);
                         }
-                        jsonObject.put("enumValues",enumValues);
-                    }else if(lowerType.startsWith("array")){
-                        jsonObject.put("precision",0);
-                        jsonObject.put("scale",0);
-                        jsonObject.put("enumValues",new JSONArray());
+                        jsonObject.put("enumValues", enumValues);
+                    } else if (lowerType.startsWith("array")) {
+                        jsonObject.put("precision", 0);
+                        jsonObject.put("scale", 0);
+                        jsonObject.put("enumValues", new JSONArray());
                         JSONArray innerJsonArray = new JSONArray();
                         JSONObject innerJsonObject = new JSONObject();
                         String innerType = "";
                         detailType = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")"));
-                        if(detailType.contains("(")){
+                        if (detailType.contains("(")) {
                             innerType = detailType.substring(0, detailType.indexOf("("));
-                        }else{
+                        } else {
                             innerType = detailType;
                         }
-                        innerJsonObject.put("comment","");
-                        innerJsonObject.put("name","");
-                        innerJsonObject.put("type",innerType);
-                        innerJsonObject.put("length",100);
-                        innerJsonObject.put("nested",new JSONArray());
+                        innerJsonObject.put("comment", "");
+                        innerJsonObject.put("name", "");
+                        innerJsonObject.put("type", innerType);
+                        innerJsonObject.put("length", 100);
+                        innerJsonObject.put("nested", new JSONArray());
                         String lowerInnerType = innerType.toLowerCase();
                         if (lowerInnerType.startsWith("int") || lowerInnerType.startsWith("string") || lowerInnerType.startsWith("date") || lowerInnerType.startsWith("float") || lowerInnerType.startsWith("uint")) {
-                            innerJsonObject.put("enumValues",new JSONArray());
-                            innerJsonObject.put("precision",0);
-                            innerJsonObject.put("scale",0);
-                        }else if (lowerInnerType.startsWith("decimal")){
-                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
-                            innerJsonObject.put("precision",Integer.parseInt(keyValues[0]));
-                            innerJsonObject.put("scale",Integer.parseInt(keyValues[1]));
-                            innerJsonObject.put("enumValues",new JSONArray());
-                        }else if(lowerInnerType.startsWith("enum")){
-                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ","").split(",");
-                            innerJsonObject.put("precision",0);
-                            innerJsonObject.put("scale",0);
+                            innerJsonObject.put("enumValues", new JSONArray());
+                            innerJsonObject.put("precision", 0);
+                            innerJsonObject.put("scale", 0);
+                        } else if (lowerInnerType.startsWith("decimal")) {
+                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ", "").split(",");
+                            innerJsonObject.put("precision", Integer.parseInt(keyValues[0]));
+                            innerJsonObject.put("scale", Integer.parseInt(keyValues[1]));
+                            innerJsonObject.put("enumValues", new JSONArray());
+                        } else if (lowerInnerType.startsWith("enum")) {
+                            String[] keyValues = detailType.substring(detailType.indexOf("(") + 1, detailType.lastIndexOf(")")).replaceAll(" ", "").split(",");
+                            innerJsonObject.put("precision", 0);
+                            innerJsonObject.put("scale", 0);
                             JSONArray enumValues = new JSONArray();
-                            for(String keyValue:keyValues){
+                            for (String keyValue : keyValues) {
                                 JSONObject enumValue = new JSONObject();
                                 String[] keyValueTmp = keyValue.split("=");
-                                enumValue.put("key",keyValueTmp[0].replaceAll("'",""));
-                                enumValue.put("value",Integer.parseInt(keyValueTmp[1]));
+                                enumValue.put("key", keyValueTmp[0].replaceAll("'", ""));
+                                enumValue.put("value", Integer.parseInt(keyValueTmp[1]));
                                 enumValues.add(enumValue);
                             }
-                            innerJsonObject.put("enumValues",enumValues);
-                        }else{
+                            innerJsonObject.put("enumValues", enumValues);
+                        } else {
                             commonResponse.setSuccess(false);
                             commonResponse.setMessage("array里含有不支持的数据类型" + innerType);
                             return commonResponse;
                         }
                         innerJsonArray.add(innerJsonObject);
-                        jsonObject.put("nested",innerJsonArray);
-                    }else{
+                        jsonObject.put("nested", innerJsonArray);
+                    } else {
                         commonResponse.setSuccess(false);
                         commonResponse.setMessage("不支持的数据类型" + type);
                         return commonResponse;
@@ -1248,5 +1265,28 @@ public class MetaDataService {
             }
         }
         return commonResponse;
+    }
+
+    public void executionIngestionDatahub(int tableType) {
+        String dataHubIngestionSource = "";
+        if (tableType == 2) {
+            dataHubIngestionSource = clickhouseDataHubIngestionSource;
+        } else if (tableType == 1) {
+            dataHubIngestionSource = hiveDataHubIngestionSource;
+        } else {
+            System.out.println("不支持的表类型：" + tableType);
+        }
+        String bodyRequest = "{\"operationName\":\"createIngestionExecutionRequest\",\"variables\":{\"input\":{\"ingestionSourceUrn\":\"urn:li:dataHubIngestionSource:"+dataHubIngestionSource+"\"}},\"query\":\"mutation createIngestionExecutionRequest($input: CreateIngestionExecutionRequestInput!) {\\n  createIngestionExecutionRequest(input: $input)\\n}\\n\"}";
+        System.out.println(bodyRequest);
+        // 请求数据服务
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("Authorization", "Bearer "+datahubToken);
+        // 将请求头部和参数合成一个请求
+        HttpEntity<String> requestEntity = new HttpEntity<>(bodyRequest, headers);
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(datahubGraphqlUrl, requestEntity, String.class);
+        if (!responseEntity.getStatusCode().is2xxSuccessful()) {
+            System.out.println("datahub ingestion不可用");
+        }
     }
 }
