@@ -293,11 +293,6 @@ public class MetaDataService {
             commonResponse.setMessage("表名,库名,存储格式");
             return commonResponse;
         }
-        if (!metaDataTable.getStorage_format().equals("ReplicatedMergeTree")) {
-            commonResponse.setSuccess(false);
-            commonResponse.setMessage("引擎只支持ReplicatedMergeTree");
-            return commonResponse;
-        }
         if (metaDataTable.getPartition_field() == null || metaDataTable.getPartition_field().size() == 0 || metaDataTable.getPartition_field().size() > 1) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("分区必须有值,且必须只有一个值");
@@ -312,10 +307,20 @@ public class MetaDataService {
         String sql = "";
         if (oldMetaDataTable == null || oldMetaDataTable.getMapping_instance_table().equals(oldMetaDataTable.getName() + "_instance")) {
             sql = createSql[0] + ";\n" + createSql[1];
+            if (!metaDataTable.getStorage_format().equals("ReplicatedMergeTree")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("引擎只支持ReplicatedMergeTree");
+                return commonResponse;
+            }
         } else if (StringUtils.isEmpty(oldMetaDataTable.getMapping_instance_table())) {
             sql = createSql[1].substring(0, createSql[1].indexOf("ENGINE")) + metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
         } else {
             String[] oldSql = metaDataTable.getDdl().split(";\n");
+            if(oldSql[0].contains("Distributed")){
+                String tmp = oldSql[0];
+                oldSql[0] = oldSql[1];
+                oldSql[1] = tmp;
+            }
             sql = createSql[0].substring(0, createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName() + "_instance", oldMetaDataTable.getMapping_instance_table()) + oldSql[1].substring(oldSql[1].indexOf("ENGINE")) + ";\n" + createSql[1].substring(0, createSql[1].indexOf("ENGINE")) + oldSql[0].substring(oldSql[0].indexOf("ENGINE"));
         }
         commonResponse.setData(sql);
