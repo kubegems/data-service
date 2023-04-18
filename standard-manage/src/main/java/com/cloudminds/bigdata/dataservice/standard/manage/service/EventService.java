@@ -313,7 +313,7 @@ public class EventService {
                 commonResponse.setMessage("申请失败,请稍后再试");
                 return commonResponse;
             } else {
-                if (!env.equals("online"))
+                if (!env.equals("prod"))
                     return commonResponse;
                 //邮件通知审核人
                 EmailInfo emailInfo = eventMapper.queryReviewerEmail();

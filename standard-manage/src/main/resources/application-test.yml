@@ -2,7 +2,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.146:8848
+        server-addr: 172.16.31.162:8848
         group: bigdata
   datasource:
     url: jdbc:mysql://172.16.31.145:3306/bigdata_rule?characterEncoding=utf8&useSSL=true
