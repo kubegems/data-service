@@ -299,7 +299,7 @@ public class MetaDataService {
             sql = createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
         }else{
            String[] oldSql = metaDataTable.getDdl().split(";\n");
-            sql = createSql[0].substring(0,createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName()+"_instance",oldMetaDataTable.getMapping_instance_table())+oldSql[0].substring(oldSql[0].indexOf("ENGINE"))+";\n"+createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+oldSql[1].substring(oldSql[1].indexOf("ENGINE"));
+            sql = createSql[0].substring(0,createSql[0].indexOf("ENGINE")).replace(metaDataTable.getName()+"_instance",oldMetaDataTable.getMapping_instance_table())+oldSql[1].substring(oldSql[1].indexOf("ENGINE"))+";\n"+createSql[1].substring(0,createSql[1].indexOf("ENGINE"))+oldSql[0].substring(oldSql[0].indexOf("ENGINE"));
         }
         commonResponse.setData(sql);
         return commonResponse;
