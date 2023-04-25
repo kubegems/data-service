@@ -1478,6 +1478,11 @@ public class QuotoService {
         }
         Set<String> fileds = new HashSet<>();
         fileds.add(atomicQuoto.getMetric());
+        boolean quotoIsColumn = false;
+        QuotoInfo quotoInfo= quotoMapper.queryQuotoInfo(atomicQuoto.getMetric(),atomicQuoto.getTable_id());
+        if(quotoInfo!=null && quotoInfo.is_column()){
+            quotoIsColumn = true;
+        }
         commonResponse.setFields(fileds);
         commonResponse.setCycle(atomicQuoto.getCycle());
         // 查询数据服务对应的信息
@@ -1582,7 +1587,9 @@ public class QuotoService {
                         i++;
                     }
                     commonResponse.setDimensions(dimensionSet);
-                    bodyRequest = bodyRequest + "," + group;
+                    if(!quotoIsColumn) {
+                        bodyRequest = bodyRequest + "," + group;
+                    }
                 } else {
                     bodyRequest = bodyRequest + "'";
                 }
