@@ -10,4 +10,5 @@ public class QuotoInfo extends BaseEntity{
 	private String quoto_name;
 	private String quoto_sql;
 	private int state;
+	private boolean is_column;
 }

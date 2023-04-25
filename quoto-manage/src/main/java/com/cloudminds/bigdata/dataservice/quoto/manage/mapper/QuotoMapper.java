@@ -203,7 +203,7 @@ public interface QuotoMapper {
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoByField(String field);
 
-	@Select("SELECT * from Quoto_info where is_delete=0 and quoto_name=#{QuotoName} and table_id=#{table_id} and is_delete=0 union select id,table_id,column_name as quoto_name,column_alias as quoto_sql,state,des,is_delete from Column_alias where table_id=#{table_id} and is_delete=0 and metric=1 and column_alias=#{QuotoName}")
+	@Select("SELECT *,0 as is_column from Quoto_info where is_delete=0 and quoto_name=#{QuotoName} and table_id=#{table_id} and is_delete=0 union select id,table_id,column_name as quoto_name,column_alias as quoto_sql,state,des,is_delete,1 as is_column from Column_alias where table_id=#{table_id} and is_delete=0 and metric=1 and column_alias=#{QuotoName}")
 	public QuotoInfo queryQuotoInfo(String QuotoName,int table_id);
 
 	@Select("select t.table_alias as tableName,CONCAT(db.service_path,d.service_path) as path from Table_info t LEFT JOIN Database_info d ON t.database_id=d.id LEFT JOIN Db_info db ON d.db_id=db.id where t.id=#{id}")
