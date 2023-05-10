@@ -1197,11 +1197,11 @@ public class QuotoService {
         }
 
         if (quotoQuery.getName() != null && (!quotoQuery.getName().equals(""))) {
-            condition = condition + " and q.name like '" + quotoQuery.getName() + "%'";
+            condition = condition + " and q.name like '%" + quotoQuery.getName() + "%'";
         }
 
         if (quotoQuery.getField() != null && (!quotoQuery.getField().equals(""))) {
-            condition = condition + " and q.field like '" + quotoQuery.getField() + "%'";
+            condition = condition + " and q.field like '%" + quotoQuery.getField() + "%'";
         }
 
         if (quotoQuery.getTheme_id() != -1) {
@@ -1265,24 +1265,24 @@ public class QuotoService {
     public CommonResponse queryAllQuoto(QuotoQuery quotoQuery) {
         // TODO Auto-generated method stub
         CommonResponse commonResponse = new CommonResponse();
-        String condition = "deleted=0 and state=1";
+        String condition = "q.deleted=0 and q.state=1";
         if (quotoQuery.getType() != -1) {
             if (quotoQuery.getType() == 3) {
-                condition = condition + " and type!=0";
+                condition = condition + " and q.type!=0";
             } else {
-                condition = condition + " and type=" + quotoQuery.getType();
+                condition = condition + " and q.type=" + quotoQuery.getType();
             }
         }
 
         if (quotoQuery.getBusiness_process_id() != -1) {
-            condition = condition + " and business_process_id=" + quotoQuery.getBusiness_process_id();
+            condition = condition + " and q.business_process_id=" + quotoQuery.getBusiness_process_id();
         }
 
         if (quotoQuery.getTheme_id() != -1) {
-            condition = condition + " and theme_id=" + quotoQuery.getTheme_id();
+            condition = condition + " and q.theme_id=" + quotoQuery.getTheme_id();
         }
 
-        condition = condition + " order by name asc";
+        condition = condition + " order by q.name asc";
 
         commonResponse.setData(quotoMapper.queryAllQuoto(condition));
         return commonResponse;
