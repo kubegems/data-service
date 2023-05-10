@@ -2,7 +2,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.146:8848
+        server-addr: 172.16.31.162:8848
         group: bigdata
   datasource:
     url: jdbc:mysql://172.16.31.145:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
@@ -13,7 +13,7 @@ elasticsearch:
   host: 10.51.202.2
   port: 9400
 hbase:
-  quorum: 172.16.23.37:2181,172.16.23.38:2181,172.16.23.39:2181
+  quorum: 10.51.202.37:2181,10.51.202.38:2181,10.51.202.39:2181
 dataServiceUrl: http://172.16.31.96:30515
 ckDataSetDB: dataset
 ckUrl: jdbc:clickhouse://172.16.31.147:8123
