@@ -160,7 +160,7 @@ public interface QuotoMapper {
 	@Select("SELECT * from Table_info where is_delete=0 and theme_id=#{theme_id}")
 	public List<TableInfo> queryTableByTheme(int theme_id);
 
-	@Select("SELECT * from quoto where ${condition}")
+	@Select("SELECT q.*,tt.*,p.name as business_process_name,#{creator} as query_creator from quoto q left join business_process p on q.business_process_id=p.id LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where ${condition}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public List<Quoto> queryAllQuoto(String condition);
