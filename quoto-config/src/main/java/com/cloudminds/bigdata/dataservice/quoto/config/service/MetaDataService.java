@@ -1,24 +1,35 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.service;
 
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.hive.visitor.HiveSchemaStatVisitor;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.stat.TableStat;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.config.mapper.MetaDataTableMapper;
 import com.linkedin.common.*;
+import com.linkedin.common.urn.DataFlowUrn;
+import com.linkedin.common.urn.DataJobUrn;
 import com.linkedin.common.urn.DataPlatformUrn;
 import com.linkedin.common.urn.DatasetUrn;
 import com.linkedin.common.urn.Urn;
 import com.linkedin.data.template.RecordTemplate;
 import com.linkedin.data.template.StringArray;
 import com.linkedin.data.template.StringMap;
-import com.linkedin.dataset.DatasetProperties;
+import com.linkedin.datajob.DataFlowInfo;
+import com.linkedin.datajob.DataJobInfo;
+import com.linkedin.datajob.DataJobInputOutput;
+import com.linkedin.datajob.azkaban.AzkabanJobType;
+import com.linkedin.dataset.*;
 import com.linkedin.domain.Domains;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import datahub.client.MetadataWriteResponse;
 import datahub.client.rest.RestEmitter;
 import datahub.event.MetadataChangeProposalWrapper;
-import datahub.shaded.org.checkerframework.checker.units.qual.C;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +38,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,7 +45,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.sql.*;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
@@ -52,6 +64,8 @@ public class MetaDataService {
     private String hiveInstance = "prod_hive";
     private String hiveDataHubIngestionSource = "12e00861-b21d-42fa-8a3c-0d5a048c7151";
     private String clickhouseInstance = "prod_ck_1";
+    private String hdfsInstance = "prod_hdfs";
+    private String workFlowPlat = "oozie";
     private String clickhouseDataHubIngestionSource = "e8701455-d174-4285-bad1-ab2792c6580e";
     @Value("${hiveUrl}")
     private String hiveUrl;
@@ -250,14 +264,14 @@ public class MetaDataService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (env.equals("prod")){
+        if (env.equals("prod")) {
             executionIngestionDatahub(metaDataTable.getTable_type());
         }
 
         return commonResponse;
     }
 
-    public void addMetadata(String entityType, Urn urn, RecordTemplate recordTemplate, RestEmitter emitter) throws IOException, ExecutionException, InterruptedException {
+    public boolean addMetadata(String entityType, Urn urn, RecordTemplate recordTemplate, RestEmitter emitter) throws IOException, ExecutionException, InterruptedException {
         MetadataChangeProposalWrapper mcpw = MetadataChangeProposalWrapper.builder()
                 .entityType(entityType)
                 .entityUrn(urn)
@@ -271,7 +285,9 @@ public class MetaDataService {
             HttpResponse httpResponse = (HttpResponse) mwr.getUnderlyingResponse();
             System.out.println(String.format("失败发送元数据事件: %s, aspect: %s 状态码是: %d",
                     mcpw.getEntityUrn(), mcpw.getAspectName(), httpResponse.getStatusLine().getStatusCode()));
+            return false;
         }
+        return true;
     }
 
     public CommonResponse precomputationDdl(MetaDataTable metaDataTable) {
@@ -316,7 +332,7 @@ public class MetaDataService {
             sql = createSql[1].substring(0, createSql[1].indexOf("ENGINE")) + metaDataTable.getDdl().substring(metaDataTable.getDdl().indexOf("ENGINE"));
         } else {
             String[] oldSql = metaDataTable.getDdl().split(";\n");
-            if(oldSql[0].contains("Distributed")){
+            if (oldSql[0].contains("Distributed")) {
                 String tmp = oldSql[0];
                 oldSql[0] = oldSql[1];
                 oldSql[1] = tmp;
@@ -950,21 +966,24 @@ public class MetaDataService {
                     sql = "select p.* from TBLS t left join PARTITION_KEYS p ON t.TBL_ID=p.TBL_ID where t.TBL_ID=" + tableId;
                     pStemt = conn.prepareStatement(sql);
                     ResultSet setTmp = pStemt.executeQuery();
+                    int rows = setTmp.getRow();
                     boolean ispaquet = false;
-                    while (setTmp.next()) {
-                        ispaquet = true;
-                        Partition_field partition_field = new Partition_field();
-                        String comment = setTmp.getString("PKEY_COMMENT");
-                        if (!StringUtils.isEmpty(comment)) {
-                            comment = comment.replaceAll("\r\n", "");
+                    if(rows>0) {
+                        while (setTmp.next()) {
+                            ispaquet = true;
+                            Partition_field partition_field = new Partition_field();
+                            String comment = setTmp.getString("PKEY_COMMENT");
+                            if (!StringUtils.isEmpty(comment)) {
+                                comment = comment.replaceAll("\r\n", "");
+                            }
+                            partition_field.setDesc(comment);
+                            partition_field.setName(setTmp.getString("PKEY_NAME"));
+                            partition_field.setLength(100);
+                            partition_field.setType(setTmp.getString("PKEY_TYPE"));
+                            partition_field.setType_detail("[{\"operations\":[],\"comment\":\"" + partition_field.getDesc() + "\",\"nested\":[],\"name\":\"" + partition_field.getName() + "\",\"level\":0,\"keyType\":\"string\",\"required\":false,\"precision\":10,\"keep\":true,\"isPartition\":false,\"length\":100,\"partitionValue\":\"\",\"multiValued\":false,\"unique\":false,\"type\":\"" + partition_field.getType() + "\",\"showProperties\":false,\"scale\":0}]");
+                            partition_field.setFormat("dt=yyyy-MM-dd");
+                            partition_fields.add(partition_field);
                         }
-                        partition_field.setDesc(comment);
-                        partition_field.setName(setTmp.getString("PKEY_NAME"));
-                        partition_field.setLength(100);
-                        partition_field.setType(setTmp.getString("PKEY_TYPE"));
-                        partition_field.setType_detail("[{\"operations\":[],\"comment\":\"" + partition_field.getDesc() + "\",\"nested\":[],\"name\":\"" + partition_field.getName() + "\",\"level\":0,\"keyType\":\"string\",\"required\":false,\"precision\":10,\"keep\":true,\"isPartition\":false,\"length\":100,\"partitionValue\":\"\",\"multiValued\":false,\"unique\":false,\"type\":\"" + partition_field.getType() + "\",\"showProperties\":false,\"scale\":0}]");
-                        partition_field.setFormat("dt=yyyy-MM-dd");
-                        partition_fields.add(partition_field);
                     }
                     if (ispaquet) {
                         metaDataTable.setPartition(true);
@@ -1281,17 +1300,447 @@ public class MetaDataService {
         } else {
             System.out.println("不支持的表类型：" + tableType);
         }
-        String bodyRequest = "{\"operationName\":\"createIngestionExecutionRequest\",\"variables\":{\"input\":{\"ingestionSourceUrn\":\"urn:li:dataHubIngestionSource:"+dataHubIngestionSource+"\"}},\"query\":\"mutation createIngestionExecutionRequest($input: CreateIngestionExecutionRequestInput!) {\\n  createIngestionExecutionRequest(input: $input)\\n}\\n\"}";
+        String bodyRequest = "{\"operationName\":\"createIngestionExecutionRequest\",\"variables\":{\"input\":{\"ingestionSourceUrn\":\"urn:li:dataHubIngestionSource:" + dataHubIngestionSource + "\"}},\"query\":\"mutation createIngestionExecutionRequest($input: CreateIngestionExecutionRequestInput!) {\\n  createIngestionExecutionRequest(input: $input)\\n}\\n\"}";
         System.out.println(bodyRequest);
         // 请求数据服务
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("Authorization", "Bearer "+datahubToken);
+        headers.add("Authorization", "Bearer " + datahubToken);
         // 将请求头部和参数合成一个请求
         HttpEntity<String> requestEntity = new HttpEntity<>(bodyRequest, headers);
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(datahubGraphqlUrl, requestEntity, String.class);
         if (!responseEntity.getStatusCode().is2xxSuccessful()) {
             System.out.println("datahub ingestion不可用");
         }
+    }
+
+    public CommonResponse getDatahubUrn(HueDataSource hueDataSource) {
+        CommonResponse commonResponse = new CommonResponse();
+        return commonResponse;
+    }
+
+    public CommonResponse hdfsToHiveTableTransformed(HdfsToHiveTableLineReq hdfsToHiveTableLineReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (hdfsToHiveTableLineReq == null || hdfsToHiveTableLineReq.getHdfs() == null || hdfsToHiveTableLineReq.getHdfs().isEmpty() || StringUtils.isEmpty(hdfsToHiveTableLineReq.getDatabase()) || StringUtils.isEmpty(hdfsToHiveTableLineReq.getTable())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("hdfs和hive的库和表不能为空");
+            return commonResponse;
+        }
+        try {
+            String tableName = hdfsToHiveTableLineReq.getDatabase() + "." + hdfsToHiveTableLineReq.getTable();
+            UpstreamArray srcUpstreams = new UpstreamArray();
+            for (String hdfsLocation : hdfsToHiveTableLineReq.getHdfs()) {
+                //入hdfs节点
+                hdfsLocation = getHdfsUrn(hdfsLocation);
+                DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("hdfs"), hdfsInstance + "/" + hdfsLocation, FabricType.PROD);
+                addMetadata("dataset", datasetUrn, new DatasetProperties().setName("hdfs://nameservice1/" + hdfsLocation), emitter);
+                //加入transformed集合
+                Upstream upstream = new Upstream();
+                upstream.setDataset(datasetUrn);
+                upstream.setType(DatasetLineageType.TRANSFORMED);
+                srcUpstreams.add(upstream);
+            }
+            UpstreamLineage upstreamLineage = new UpstreamLineage();
+            upstreamLineage.setUpstreams(srcUpstreams);
+            MetadataChangeProposalWrapper mcpw = MetadataChangeProposalWrapper.builder()
+                    .entityType("dataset")
+                    .entityUrn(new DatasetUrn(new DataPlatformUrn("hive"), hiveInstance + "." + tableName, FabricType.PROD))
+                    .upsert()
+                    .aspect(upstreamLineage)
+                    .build();
+            // Blocking call using future
+            Future<MetadataWriteResponse> requestFuture = emitter.emit(mcpw, null);
+            MetadataWriteResponse mwr = requestFuture.get();
+            if (!mwr.isSuccess()) {
+                HttpResponse httpResponse = (HttpResponse) mwr.getUnderlyingResponse();
+                System.out.println(String.format("失败发送元数据事件: %s, aspect: %s 状态码是: %d",
+                        mcpw.getEntityUrn(), mcpw.getAspectName(), httpResponse.getStatusLine().getStatusCode()));
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(String.format("失败发送元数据事件: %s, aspect: %s 状态码是: %d",
+                        mcpw.getEntityUrn(), mcpw.getAspectName(), httpResponse.getStatusLine().getStatusCode()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+        }
+        return commonResponse;
+    }
+
+    public String getHdfsUrn(String hdfsPath) {
+        if (hdfsPath.indexOf("hdfs:") >= 0) {
+            hdfsPath = hdfsPath.substring(hdfsPath.indexOf("hdfs:") + 5);
+        }
+        if (hdfsPath.indexOf("${") > 0) {
+            hdfsPath = hdfsPath.substring(0, hdfsPath.indexOf("${"));
+            if (hdfsPath.lastIndexOf("/") > 0) {
+                hdfsPath = hdfsPath.substring(0, hdfsPath.lastIndexOf("/"));
+            }
+        }
+        if (hdfsPath.length() == 0) {
+            return "";
+        }
+        hdfsPath = hdfsPath.replaceAll("nameservice1", "");
+        while (hdfsPath.charAt(0) == '/') {
+            hdfsPath = hdfsPath.substring(1);
+            if (hdfsPath.length() == 0) {
+                return "";
+            }
+        }
+        if (hdfsPath.length() == 0) {
+            return "";
+        }
+        while (hdfsPath.charAt(hdfsPath.length() - 1) == '/') {
+            hdfsPath = hdfsPath.substring(0, hdfsPath.length() - 1);
+            if (hdfsPath.length() == 0) {
+                return "";
+            }
+        }
+        hdfsPath = hdfsPath.toLowerCase();
+        return hdfsPath;
+    }
+
+    public CommonResponse addDataJobInputAndOutput(JobBloodLineReq jobBloodLineReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        //创建dataJobUrn
+        if (jobBloodLineReq == null || jobBloodLineReq.getHueDataSourceSrc() == null || jobBloodLineReq.getHueDataSourceSrc().isEmpty() || jobBloodLineReq.getHueDataSourceDest() == null
+                || jobBloodLineReq.getHueDataSourceDest().isEmpty() || StringUtils.isEmpty(jobBloodLineReq.getName()) || StringUtils.isEmpty(jobBloodLineReq.getCreator()) || StringUtils.isEmpty(jobBloodLineReq.getType())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("job的src和dest,名字,创建者,类型不能为空");
+            return commonResponse;
+        }
+        try {
+            //创建源和目的地的节点
+            DatasetUrnArray srcUrns = new DatasetUrnArray();
+            DatasetUrnArray destUrns = new DatasetUrnArray();
+            for (HueDataSource hueDataSource : jobBloodLineReq.getHueDataSourceSrc()) {
+                DatasetUrn datasetUrn = addDataSourceMetaData(hueDataSource);
+                if (datasetUrn == null) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(hueDataSource.toString() + ":未生成urn");
+                    return commonResponse;
+                }
+                srcUrns.add(datasetUrn);
+            }
+            for (HueDataSource hueDataSource : jobBloodLineReq.getHueDataSourceDest()) {
+                DatasetUrn datasetUrn = addDataSourceMetaData(hueDataSource);
+                if (datasetUrn == null) {
+                    commonResponse.setSuccess(false);
+                    commonResponse.setMessage(hueDataSource.toString() + ":未生成urn");
+                    return commonResponse;
+                }
+                destUrns.add(datasetUrn);
+            }
+            //创建flow
+            StringMap customerPro = new StringMap();
+            StringMap customerProJob = new StringMap();
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Calendar calendar = java.util.Calendar.getInstance();
+            String nowDayDate = dateFormat.format(calendar.getTime());
+            customerPro.put("name", jobBloodLineReq.getName());
+            customerPro.put("owner", jobBloodLineReq.getCreator());
+            customerPro.put("description", jobBloodLineReq.getDescription());
+            customerPro.put("status", "manual");
+            customerPro.put("scheduleTask", jobBloodLineReq.isScheduleTask() + "");
+            customerPro.put("updateTime", nowDayDate);
+
+            customerProJob.put("name", jobBloodLineReq.getName());
+            customerProJob.put("owner", jobBloodLineReq.getCreator());
+            customerProJob.put("description", jobBloodLineReq.getDescription());
+            customerProJob.put("status", "manual");
+            customerProJob.put("scheduleTask", jobBloodLineReq.isScheduleTask() + "");
+            customerProJob.put("updateTime", nowDayDate);
+
+            com.linkedin.common.urn.DataFlowUrn dataFlowUrn = new DataFlowUrn(workFlowPlat, "workflowManualId" + jobBloodLineReq.getId(), "prod");
+            if (!addMetadata("dataFlow", dataFlowUrn, new DataFlowInfo().setDescription(jobBloodLineReq.getDescription()).setCustomProperties(customerPro).setName(jobBloodLineReq.getName()), emitter)) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("Pipeline入数据失败,请联系后端开发");
+                return commonResponse;
+            }
+
+            //创建job
+            customerProJob.put("type", jobBloodLineReq.getType());
+            customerProJob.put("realTimeTask", jobBloodLineReq.isRealTimeTask() + "");
+            if (!StringUtils.isEmpty(jobBloodLineReq.getLastRunTime())) {
+                customerProJob.put("lastRunTime", jobBloodLineReq.getLastRunTime());
+            }
+
+            DataJobInfo.Type type = DataJobInfo.Type.create(AzkabanJobType.HADOOP_JAVA);
+            com.linkedin.common.urn.DataJobUrn dataJobUrn = new DataJobUrn(dataFlowUrn, "taskManualId" + jobBloodLineReq.getId());
+            addMetadata("dataJob", dataJobUrn, new DataJobInfo().setDescription(jobBloodLineReq.getDescription()).setCustomProperties(customerProJob).setName(jobBloodLineReq.getName()).setType(type), emitter);
+
+            Ownership ownership = new Ownership();
+            OwnerArray ownerArray = new OwnerArray();
+            ownerArray.add(new Owner().setOwner(new Urn("urn:li:corpuser:" + jobBloodLineReq.getCreator())).setType(OwnershipType.DATA_STEWARD));
+            ownership.setOwners(ownerArray);
+            addMetadata("dataJob", dataJobUrn, ownership, emitter);
+
+
+            //给datajob入关系
+            DataJobInputOutput dataJobInputOutput = new DataJobInputOutput();
+            dataJobInputOutput.setInputDatasets(srcUrns);
+            dataJobInputOutput.setOutputDatasets(destUrns);
+            MetadataChangeProposalWrapper mcpw = MetadataChangeProposalWrapper.builder()
+                    .entityType("dataJob")
+                    .entityUrn(dataJobUrn)
+                    .upsert()
+                    .aspect(dataJobInputOutput)
+                    .aspectName("dataJobInputOutput")
+                    .build();
+            // Blocking call using future
+            Future<MetadataWriteResponse> requestFuture = emitter.emit(mcpw, null);
+            MetadataWriteResponse mwr = requestFuture.get();
+            if (!mwr.isSuccess()) {
+                HttpResponse httpResponse = (HttpResponse) mwr.getUnderlyingResponse();
+                System.out.println(String.format("失败发送元数据事件: %s, aspect: %s 状态码是: %d",
+                        mcpw.getEntityUrn(), mcpw.getAspectName(), httpResponse.getStatusLine().getStatusCode()));
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(String.format("失败发送元数据事件: %s, aspect: %s 状态码是: %d",
+                        mcpw.getEntityUrn(), mcpw.getAspectName(), httpResponse.getStatusLine().getStatusCode()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage(e.getMessage());
+        }
+        return commonResponse;
+    }
+
+    public DatasetUrn addDataSourceMetaData(HueDataSource hueDataSource) throws IOException, ExecutionException, InterruptedException {
+        //根据url查询出来模块model,env,instance,
+        FabricType fabricType = FabricType.PROD;
+        String model = hueDataSource.getModel();
+        String env = hueDataSource.getEnv();
+        String instanceName = hueDataSource.getInstanceName();
+        boolean isExistDataHub = hueDataSource.isJoinDatahub();
+        if (StringUtils.isEmpty(env)) {
+            return null;
+        }
+        if (env.contains("prod")) {
+            fabricType = FabricType.PROD;
+        } else if (env.contains("sit")) {
+            fabricType = FabricType.TEST;
+        } else if (env.contains("fit") || env.contains("uit")) {
+            fabricType = FabricType.DEV;
+        } else {
+            fabricType = FabricType.$UNKNOWN;
+        }
+        String platform = hueDataSource.getType();
+        if (platform.equals("mqtt")) {
+            platform = "Mqtt";
+        } else if (platform.equals("hive")) {
+            isExistDataHub = true;
+            instanceName = hiveInstance;
+        } else if (platform.equals("clickhouse")) {
+            isExistDataHub = true;
+            instanceName = clickhouseInstance;
+        } else if (platform.equals("hdfs")) {
+            isExistDataHub = true;
+            instanceName = hdfsInstance;
+        }
+        String srcUrn = "";
+        if ((!StringUtils.isEmpty(hueDataSource.getDatabase())) && (!StringUtils.isEmpty(hueDataSource.getTable()))) {
+            srcUrn = hueDataSource.getDatabase() + "." + hueDataSource.getTable();
+        } else if (!StringUtils.isEmpty(hueDataSource.getTopic())) {
+            srcUrn = hueDataSource.getTopic();
+        } else if (!StringUtils.isEmpty(hueDataSource.getHdfsPath())) {
+            srcUrn = getHdfsUrn(hueDataSource.getHdfsPath());
+        } else {
+            return null;
+        }
+
+        if (!isExistDataHub) {
+            instanceName = model + "_" + env;
+        }
+        DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn(platform), instanceName + "." + srcUrn, fabricType);
+        if (platform.equals("hdfs")) {
+            datasetUrn = new DatasetUrn(new DataPlatformUrn("hdfs"), hdfsInstance + "/" + srcUrn, FabricType.PROD);
+            addMetadata("dataset", datasetUrn, new DatasetProperties().setName("hdfs://nameservice1/" + srcUrn), emitter);
+        }
+        if (!isExistDataHub) {
+            //先入datahub节点
+            String name = srcUrn;
+            if (srcUrn.lastIndexOf(".") > -1) {
+                name = srcUrn.substring(srcUrn.lastIndexOf(".") + 1);
+            }
+            addMetadata("dataset", datasetUrn, new DatasetProperties().setDescription(hueDataSource.getHost() + ":" + hueDataSource.getPort()).setName(name), emitter);
+            StringArray types = new StringArray();
+            if (platform.equals("mysql")) {
+                types.add("Table");
+            } else if (platform.equals("mongodb")) {
+                types.add("Collections");
+            } else if (platform.equals("kafka") || platform.equals("Mqtt")) {
+                types.add("Topic");
+            }
+            SubTypes subTypes = new SubTypes();
+            subTypes.setTypeNames(types);
+            if (!types.isEmpty()) {
+                addMetadata("dataset", datasetUrn, subTypes, emitter);
+            }
+        }
+        return datasetUrn;
+    }
+
+    public CommonResponse hiveScriptBloodLine(HiveScriptBloodLineReq hiveScriptBloodLineReq) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (StringUtils.isEmpty(hiveScriptBloodLineReq.getHiveScript())) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("hive脚本不能为空");
+            return commonResponse;
+        }
+        Map<String, Set<String>> hdfsToHiveTable = new HashMap<>();
+        String sql = hiveScriptBloodLineReq.getHiveScript();
+        sql = sql.toLowerCase();
+        if (sql.contains("alter table") && sql.contains("partition") && sql.contains("location")) {
+            String[] alterSqls = sql.split(";");
+            for (String alterSql : alterSqls) {
+                alterSql = alterSql.trim();
+                if ((!StringUtils.isEmpty(alterSql)) && (!alterSql.contains("--alter table")) && alterSql.indexOf("alter table") > -1 && alterSql.indexOf("location ") > -1 && alterSql.indexOf("partition") > -1 && alterSql.indexOf(")") > -1) {
+                    String tableName = alterSql.substring(alterSql.indexOf("alter table") + 11);
+                    String location = alterSql.substring(alterSql.indexOf("location ") + 10).replaceAll("\"", "'");
+                    String partion = alterSql.substring(alterSql.indexOf("partition") + 9, alterSql.indexOf(")")).trim();
+                    partion = partion.substring(1).replaceAll(" ", "");
+                    int partionRuleNum = partion.split(",").length;
+                    if (tableName.indexOf(" add") > -1 && location.indexOf("'") > -1) {
+                        tableName = tableName.substring(0, tableName.indexOf(" add")).replaceAll("`", "").trim();
+                        location = location.substring(0, location.indexOf("'"));
+                        if (location.charAt(location.length() - 1) == '/') {
+                            location = location.substring(0, location.length() - 1);
+                        }
+                        if (partionRuleNum == 1) {
+                            location = getHdfsUrn(location);
+                        } else if (partionRuleNum == 2 || tableName.equals("sv.asr_ctrl") || tableName.equals("cdmods.ods_rcu_event_02_i_d")) {
+                            //移除后两个
+                            location = getHdfsUrn(removeTailPath(2, location));
+                        } else {
+                            location = getHdfsUrn(removeTailPath(partionRuleNum, location));
+                        }
+                        if (hdfsToHiveTable.containsKey(tableName)) {
+                            Set<String> hdfs = hdfsToHiveTable.get(tableName);
+                            hdfs.add(location);
+                            hdfsToHiveTable.put(tableName, hdfs);
+                        } else {
+                            Set<String> hdfs = new HashSet<>();
+                            hdfs.add(location);
+                            hdfsToHiveTable.put(tableName, hdfs);
+                        }
+                    }
+                }
+            }
+            //hdfsToHiveTable 入datahub
+            System.out.println("\nhdfs加载到hive表的血缘关联");
+            for (Map.Entry<String, Set<String>> entry : hdfsToHiveTable.entrySet()) {
+                String mapKey = entry.getKey();
+                Set<String> mapValue = entry.getValue();
+                System.out.println("hdfs:" + mapValue + "     to     hive:" + mapKey);
+                HdfsToHiveTableLineReq hdfsToHiveTableLineReq = new HdfsToHiveTableLineReq();
+                hdfsToHiveTableLineReq.setHdfs(mapValue);
+                String[] tableInfo = mapKey.split("\\.");
+                hdfsToHiveTableLineReq.setDatabase(tableInfo[0]);
+                hdfsToHiveTableLineReq.setTable(tableInfo[1]);
+                CommonResponse tmpCommonResponse = hdfsToHiveTableTransformed(hdfsToHiveTableLineReq);
+                if (!tmpCommonResponse.isSuccess()) {
+                    return tmpCommonResponse;
+                }
+            }
+        } else {
+            //解析输入
+            JobBloodLineReq jobBloodLineReq = new JobBloodLineReq();
+            jobBloodLineReq.setName("手动执行hive脚本");
+            jobBloodLineReq.setCreator(hiveScriptBloodLineReq.getCreator());
+            jobBloodLineReq.setType("hive");
+            jobBloodLineReq.setRealTimeTask(false);
+            jobBloodLineReq.setScheduleTask(false);
+            jobBloodLineReq.setDescription("手动执行hive脚本");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Calendar calendar = java.util.Calendar.getInstance();
+            String nowDayDate = dateFormat.format(calendar.getTime());
+            jobBloodLineReq.setLastRunTime(nowDayDate);
+            jobBloodLineReq.setId(System.currentTimeMillis() + "");
+            List<HueDataSource> hueDataSourceSrc = new ArrayList<>();
+            List<HueDataSource> hueDataSourceDest = new ArrayList<>();
+            sql = sql.toLowerCase();
+            String[] sqlArray = sql.split(";");
+            sql = "";
+            for (String sqlRow : sqlArray) {
+                sqlRow = sqlRow.trim();
+                if (!(sqlRow.startsWith("set ") || (sqlRow.startsWith("--")) && sqlRow.contains("\r\nset "))) {
+                    sql = sql + sqlRow + ";";
+                }
+            }
+            HiveSchemaStatVisitor visitor = null;
+            try {
+                SQLStatementParser hive = SQLParserUtils.createSQLStatementParser(sql, DbType.hive);
+                SQLStatement statement = hive.parseStatement();
+                visitor = new HiveSchemaStatVisitor();
+                statement.accept(visitor);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("错误,sql解析异常");
+            }
+            Map<TableStat.Name, TableStat> tables = visitor.getTables();
+            Set<TableStat.Name> tableNameSet = tables.keySet();
+            for (Map.Entry<TableStat.Name, TableStat> entry : tables.entrySet()) {
+                String name = entry.getKey().getName();
+                TableStat tableStat = entry.getValue();
+                HueDataSource hueDataSource = new HueDataSource();
+                hueDataSource.setEnv("prod");
+                hueDataSource.setType("hive");
+                hueDataSource.setJoinDatahub(true);
+                if (tableStat.getInsertCount() > 0) {
+                    if (name.contains(".")) {
+                        String[] tableInfo = name.split("\\.");
+                        hueDataSource.setDatabase(tableInfo[0]);
+                        hueDataSource.setTable(tableInfo[1]);
+                        hueDataSourceDest.add(hueDataSource);
+                    } else {
+                        System.out.println("表名不合法：" + name);
+                        commonResponse.setMessage("表名不合法：" + name);
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
+                    }
+                } else {
+                    if (name.contains(".")) {
+                        String[] tableInfo = name.split("\\.");
+                        hueDataSource.setDatabase(tableInfo[0]);
+                        hueDataSource.setTable(tableInfo[1]);
+                        hueDataSourceSrc.add(hueDataSource);
+                    } else {
+                        System.out.println("表名不合法：" + name);
+                        commonResponse.setMessage("表名不合法：" + name);
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
+                    }
+                }
+            }
+            if (hueDataSourceDest.isEmpty() || hueDataSourceSrc.isEmpty()) {
+                commonResponse.setMessage("此脚本没有血缘信息");
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            }
+            jobBloodLineReq.setHueDataSourceSrc(hueDataSourceSrc);
+            jobBloodLineReq.setHueDataSourceDest(hueDataSourceDest);
+            //入datahub
+            return addDataJobInputAndOutput(jobBloodLineReq);
+        }
+
+        return commonResponse;
+    }
+
+    public String removeTailPath(int num, String path) {
+        if (num <= 0) {
+            return path;
+        }
+        while (num > 0) {
+            int lastLocation = path.lastIndexOf("/");
+            if (lastLocation > -1) {
+                path = path.substring(0, lastLocation);
+                num--;
+            } else {
+                break;
+            }
+
+        }
+        return path;
     }
 }

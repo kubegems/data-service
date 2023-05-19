@@ -50,7 +50,6 @@ public class MetaDataControl {
         return metaDataService.findTableByTableName(table_type, database_name, table_name);
     }
 
-
     //上传文件获取字典信息
     @RequestMapping(value = "analysisFile", method = RequestMethod.POST)
     public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request) {
@@ -61,4 +60,20 @@ public class MetaDataControl {
     public CommonResponse historyDataAddDataBase(@RequestBody HistoryDataAddDataBase historyDataAddDataBase) {
         return metaDataService.historyDataAddDataBase(historyDataAddDataBase);
     }
+
+    @RequestMapping(value = "hdfsToHiveTableTransformed", method = RequestMethod.POST)
+    public CommonResponse hdfsToHiveTableTransformed(@RequestBody HdfsToHiveTableLineReq hdfsToHiveTableLineReq){
+        return metaDataService.hdfsToHiveTableTransformed(hdfsToHiveTableLineReq);
+    }
+
+    @RequestMapping(value = "jobBloodLine", method = RequestMethod.POST)
+    public CommonResponse jobBloodLine(@RequestBody JobBloodLineReq jobBloodLineReq){
+        return metaDataService.addDataJobInputAndOutput(jobBloodLineReq);
+    }
+
+    @RequestMapping(value="hiveScriptBloodLine", method = RequestMethod.POST)
+    public CommonResponse hiveScriptBloodLine(@RequestBody HiveScriptBloodLineReq hiveScriptBloodLineReq){
+        return metaDataService.hiveScriptBloodLine(hiveScriptBloodLineReq);
+    }
+
 }
