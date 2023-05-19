@@ -244,6 +244,12 @@ public class DataServiceControl {
 		return dataServiceConfig.getApiAccessTop(startDate,endDate,top);
 	}
 
+	// 查询api的访问top信息
+	@RequestMapping(value = "getApiActiveUserTop", method = RequestMethod.GET)
+	public CommonResponse getApiActiveUserTop(String startDate,String endDate,int top) {
+		return dataServiceConfig.getApiActiveUserTop(startDate,endDate,top);
+	}
+
 	@PostMapping(value = "/upload/file/s3")
 	public CommonResponse uploadFile(MultipartFile file,String project) throws IOException {
 		return dataServiceConfig.uploadFile(file,project);

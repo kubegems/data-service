@@ -1262,4 +1262,10 @@ public class DataServiceConfig {
         OssUtils.deleteFile(bucketName,fileName);
         return commonResponse;
     }
+
+    public CommonResponse getApiActiveUserTop(String startDate, String endDate, int top) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getApiActiveUserTop(startDate, endDate, top));
+        return commonResponse;
+    }
 }

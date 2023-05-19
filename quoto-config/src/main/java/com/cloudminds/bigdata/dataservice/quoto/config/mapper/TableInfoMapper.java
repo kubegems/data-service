@@ -1,15 +1,11 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 import java.util.List;
 
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAccessTop;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableAccessTotalByDay;
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableExtendInfo;
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
-
-import com.cloudminds.bigdata.dataservice.quoto.config.entity.TableInfo;
 
 
 @Mapper
@@ -59,6 +55,9 @@ public interface TableInfoMapper {
 
 	@Select("select tb.des,tb.id,tb.table_alias,tb.table_name,count(*) as total from dataservice_access_history d left join (select * from Table_info where is_delete=0) tb on d.table_alias=tb.table_alias where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} and tb.id is not null group by tb.des,tb.id,tb.table_alias,tb.table_name order by total desc limit #{top}")
 	public List<TableAccessTop> getApiAccessTop(String startDate, String endDate, int top);
+
+	@Select("select a.cnt as access_cnt,u.user_name as user_name from (select token,count(*) as cnt from dataservice_access_history where date(create_time)>=#{startDate} and date(create_time)<=#{endDate} group by token order by cnt desc limit #{top}) a left join user_token u on a.token=u.token")
+	public List<ActiveUser> getApiActiveUserTop(String startDate, String endDate, int top);
 
 	@Select("select db.service_path from (select * from Table_info where id=#{tableId}) t LEFT JOIN Database_info d on t.database_id=d.id LEFT JOIN Db_info db on d.db_id=db.id")
 	public String getDataServicePathByTableId(int tableId);
