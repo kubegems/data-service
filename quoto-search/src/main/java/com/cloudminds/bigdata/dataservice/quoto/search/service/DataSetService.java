@@ -863,11 +863,11 @@ public class DataSetService {
         String sql = "";
         if (queryDataReq.getQuery() == 1) {
             if (dataSet.getData_connect_type() == 1) {
-                sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
-                if (sql.contains(" group by") || whereHasAlias(sql)) {
+                sql = dataSet.getData_rule().replaceAll("\n", " ");
+                String lowerSql = sql.replaceAll("\n", " ").toLowerCase();
+                if (lowerSql.contains(" group by") || whereHasAlias(lowerSql)) {
                     sql = "select count(*) as total from (" + sql + ") source";
                 } else {
-                    String lowerSql = sql.toLowerCase();
                     int start = lowerSql.indexOf("select ");
                     int end = lowerSql.indexOf(" from ");
                     if (start == -1 || end == -1) {
@@ -882,7 +882,7 @@ public class DataSetService {
             }
         } else {
             if (dataSet.getData_connect_type() == 1) {
-                sql = dataSet.getData_rule().toLowerCase().replaceAll("\n", " ");
+                sql = dataSet.getData_rule().replaceAll("\n", " ");
                 if (!StringUtils.isEmpty(queryDataReq.getSql())) {
                     sql = queryDataReq.getSql().replaceAll("source_table", "(" + sql + ")");
                 }
