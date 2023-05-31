@@ -72,4 +72,8 @@ public interface AdjectiveMapper {
 			"<script> select * from adjective where deleted=0 and id in <foreach collection='array' item='ids' index='no' open='(' separator=',' close=')'> #{ids} </foreach></script>" })
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
 	public List<Adjective> queryAdjectiveByIds(int[] ids);
+
+	@Select("select * from adjective where deleted=0 and req_parm_type=1 and id in (${adjective})")
+	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
+	public List<Adjective> queryNeedParmAdjectiveByIds(String adjective);
 }

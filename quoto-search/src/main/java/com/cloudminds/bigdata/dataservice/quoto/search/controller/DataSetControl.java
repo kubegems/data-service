@@ -70,6 +70,11 @@ public class DataSetControl {
         return dataSetService.queryDateSetById(id);
     }
 
+    @RequestMapping(value = "queryDateSetsByIds", method = RequestMethod.POST)
+    public CommonResponse queryDateSetsByIds(@RequestBody DeleteReq deleteReq) {
+        return dataSetService.queryDateSetsByIds(deleteReq.getIds());
+    }
+
     //全量查询数据集
     @RequestMapping(value = "queryAll", method = RequestMethod.GET)
     public CommonResponse queryAllDateSet(String creator, int directory_id,Integer data_type) {

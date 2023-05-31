@@ -885,7 +885,7 @@ public class QuotoService {
     public CommonResponse checkSql(String sql) {
         CommonResponse commonResponse = new CommonResponse();
         int MAX_QUERY_COUNT = 100000;
-        String sqlLower = sql.toLowerCase().trim().replaceAll("\n"," ");
+        String sqlLower = sql.toLowerCase().trim().replaceAll("\n", " ");
         if (sqlLower.contains(" limit ")) {
             int limitLocation = sqlLower.indexOf(" limit ");
             sqlLower = sqlLower.substring(limitLocation + 7);
@@ -903,7 +903,7 @@ public class QuotoService {
                 limitNumStr = sqlLower.substring(0, sqlLower.indexOf(" "));
                 if (limitNumStr.contains(",")) {
                     start = limitNumStr.substring(0, limitNumStr.indexOf(",")).trim();
-                    sqlLower = sqlLower.substring(sqlLower.indexOf(",")+1).trim();
+                    sqlLower = sqlLower.substring(sqlLower.indexOf(",") + 1).trim();
                     if (sqlLower.contains(" ")) {
                         end = sqlLower.substring(0, sqlLower.indexOf(" "));
                     } else {
@@ -1479,8 +1479,8 @@ public class QuotoService {
         Set<String> fileds = new HashSet<>();
         fileds.add(atomicQuoto.getMetric());
         boolean quotoIsColumn = false;
-        QuotoInfo quotoInfo= quotoMapper.queryQuotoInfo(atomicQuoto.getMetric(),atomicQuoto.getTable_id());
-        if(quotoInfo!=null && quotoInfo.is_column()){
+        QuotoInfo quotoInfo = quotoMapper.queryQuotoInfo(atomicQuoto.getMetric(), atomicQuoto.getTable_id());
+        if (quotoInfo != null && quotoInfo.is_column()) {
             quotoIsColumn = true;
         }
         commonResponse.setFields(fileds);
@@ -1587,7 +1587,7 @@ public class QuotoService {
                         i++;
                     }
                     commonResponse.setDimensions(dimensionSet);
-                    if(!quotoIsColumn) {
+                    if (!quotoIsColumn) {
                         bodyRequest = bodyRequest + "," + group;
                     }
                 } else {
@@ -1960,7 +1960,6 @@ public class QuotoService {
                 }
                 // 用当前取得的运算符与栈顶运算符比较优先级：若高于，则因为会先运算，放入栈顶；若等于，因为出现在后面，所以会后计算，所以栈顶元素出栈，取出操作数运算；
                 // 若小于，则同理，取出栈顶元素运算，将结果入操作数栈。
-
                 // 判断当前运算符与栈顶元素优先级，取出元素，进行计算(因为优先级可能小于栈顶元素，还小于第二个元素等等，需要用循环判断)
                 while (!QuotoCaculateUtils.compare(temp.charAt(0), priStack) && (!priStack.empty())) {
                     DataCommonResponse a = numStack.pop();// 第二个运算数
@@ -2045,22 +2044,77 @@ public class QuotoService {
             commonResponse.setMessage("指标不存在,请稍后再试");
             return commonResponse;
         }
-        if (quoto.getAdjective() == null || quoto.getAdjective().length == 0) {
+        if (quoto.getType() != 2 && (quoto.getAdjective() == null || quoto.getAdjective().length == 0)) {
             return commonResponse;
         }
-        List<Adjective> adjectives = adjectiveMapper.queryAdjectiveByIds(quoto.getAdjective());
+        List<Adjective> adjectives = new ArrayList<>();
+        if (quoto.getType() == 2) {
+            if (quoto.getQuotos() == null || quoto.getQuotos().length <= 0) {
+                return commonResponse;
+            }
+            String quotos = "";
+            for (int i = 0; i < quoto.getQuotos().length; i++) {
+                quotos = quotos + quoto.getQuotos()[i];
+                if (i < quoto.getQuotos().length - 1) {
+                    quotos = quotos + ",";
+                }
+            }
+            adjectives = quotoMapper.queryNeedParmAdjectiveByIds(quotos);
+        } else {
+            String adjectiveIds = "";
+            for (int i = 0; i < quoto.getAdjective().length; i++) {
+                adjectiveIds = adjectiveIds + quoto.getAdjective()[i];
+                if (i < quoto.getAdjective().length - 1) {
+                    adjectiveIds = adjectiveIds + ",";
+                }
+            }
+            adjectives = adjectiveMapper.queryNeedParmAdjectiveByIds(adjectiveIds);
+        }
+        if(adjectives==null||adjectives.size()==0){
+            return commonResponse;
+        }
         List<Field> fileds = new ArrayList<>();
         for (Adjective adjective : adjectives) {
-            if (adjective.getReq_parm_type() == 1) {
-                if (adjective.getFields() != null && adjective.getFields().size() > 0) {
-                    fileds.addAll(adjective.getFields());
-                }
+            if (adjective.getFields() != null && adjective.getFields().size() > 0) {
+                fileds.addAll(adjective.getFields());
             }
         }
         if (fileds.size() == 0) {
             return commonResponse;
         }
         commonResponse.setData(fileds);
+        return commonResponse;
+    }
+
+    public CommonResponse queryQuotosNeedParm(int[] ids) {
+        CommonResponse commonResponse = new CommonResponse();
+        if (ids == null || ids.length == 0) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("参数不能为空");
+            return commonResponse;
+        }
+        String idsString = "(";
+        for (int i = 0; i < ids.length; i++) {
+            idsString = idsString + ids[i];
+            if (i != ids.length - 1) {
+                idsString = idsString + ",";
+            }
+        }
+        idsString = idsString + ")";
+        List<QuotoNeedParmResponse> result = new ArrayList<>();
+        List<QuotoNeedParmResponse> needParmTypeIsNotTwoResult = quotoMapper.queryQuotoNeedParmAndTypeIsNotTwo(idsString);
+        List<QuotoNeedParmResponse> typeIsTwoResult = quotoMapper.queryQuotoNeedParmAndTypeIsTwo(idsString);
+        List<QuotoNeedParmResponse> NotneedParmTypeIsNotTwoResult = quotoMapper.queryQuotoNotNeedParmAndTypeIsNotTwo(idsString);
+        if (needParmTypeIsNotTwoResult != null && needParmTypeIsNotTwoResult.size() > 0) {
+            result.addAll(needParmTypeIsNotTwoResult);
+        }
+        if (typeIsTwoResult != null && typeIsTwoResult.size() > 0) {
+            result.addAll(typeIsTwoResult);
+        }
+        if (NotneedParmTypeIsNotTwoResult != null && NotneedParmTypeIsNotTwoResult.size() > 0) {
+            result.addAll(NotneedParmTypeIsNotTwoResult);
+        }
+        commonResponse.setData(result);
         return commonResponse;
     }
 
@@ -2124,9 +2178,9 @@ public class QuotoService {
                 String desc = "";
                 for (int i = 0; i < fields.size(); i++) {
                     JSONObject jsonObject = (JSONObject) JSONObject.toJSON(fields.get(i));
-                    if (jsonObject.get("type").equals("string")) {
+                    if (jsonObject.get("type").equals("string")||jsonObject.get("type").equals("date")) {
                         parm_value.put(jsonObject.get("name").toString(), "XXXX");
-                    } else if (jsonObject.get("type").equals("string")) {
+                    } else if (jsonObject.get("type").equals("string[]")) {
                         String[] sample = {"XXX", "XXX"};
                         parm_value.put(jsonObject.get("name").toString(), sample);
                     } else if (jsonObject.get("type").equals("int")) {
@@ -2219,7 +2273,7 @@ public class QuotoService {
     }
 
     public Map<String, Set<String>> getColumnAndGroup(String sql) {
-        String sqlLower = sql.toLowerCase().replaceAll("\n"," ");
+        String sqlLower = sql.toLowerCase().replaceAll("\n", " ");
         Map<String, Set<String>> result = new HashMap<>();
         Map<String, String> columnAlias = new HashMap<>();
         Set<String> columns = new HashSet<>();

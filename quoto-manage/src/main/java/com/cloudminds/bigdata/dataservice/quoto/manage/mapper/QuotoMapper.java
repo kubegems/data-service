@@ -7,6 +7,8 @@ import com.cloudminds.bigdata.dataservice.quoto.manage.entity.*;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.AdjectiveExtend;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.BusinessProcess;
 import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.DimensionExtend;
+import com.cloudminds.bigdata.dataservice.quoto.manage.entity.response.QuotoNeedParmResponse;
+import com.cloudminds.bigdata.dataservice.quoto.manage.handler.JsonListTypeHandler;
 import com.sun.org.apache.xpath.internal.operations.Quo;
 import org.apache.ibatis.annotations.*;
 import org.apache.ibatis.type.JdbcType;
@@ -186,6 +188,7 @@ public interface QuotoMapper {
 	@Select("SELECT * from quoto q LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where q.deleted=0 and q.id=#{id}")
 	@Result(column = "dimension", property = "dimension", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	@Result(column = "adjective", property = "adjective", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+	@Result(column = "quotos", property = "quotos", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
 	public Quoto queryQuotoById(int id);
 
 	@Select("SELECT * from quoto_update_history q LEFT JOIN (select t.id, t.name as theme_name,b.`name` as business_name_three_level,b.id as business_id_three_level,bb.id as business_id_two_level,bb.`name` as business_name_two_level,bbb.id as business_id_one_level,bbb.`name` as business_name_one_level from theme t left join business b on t.business_id=b.id left join business bb on b.pid=bb.id left join business bbb on bb.pid = bbb.id) as tt on q.theme_id=tt.id where q.deleted=0 and q.id=#{id} order by q.update_time desc")
@@ -218,4 +221,22 @@ public interface QuotoMapper {
 	@Select("select tt.name from (select a.name, substring_index(substring_index(a.quotos,',',b.help_topic_id+1),',',-1) as id  from  quoto a join mysql.help_topic b on b.help_topic_id < (length(a.quotos) - length(replace(a.quotos,',',''))+1) where a.deleted=0 and a.quotos!='') as tt where tt.id=#{id}")
 	public List<String> findQuotoNameByContainQuotoId(int id);
 
+	@Select("select adjective.* from adjective where req_parm_type=1 and adjective.id in (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as id from (select * from quoto where id in (${quotos})) a join mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1))")
+	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
+	public List<Adjective> queryNeedParmAdjectiveByIds(String quotos);
+
+	@Select("select id,name,field,adjective,quotos from quoto where deleted=0 and type!=2 and adjective is not null and adjective!='' and id in ${ids}")
+	@Results({
+			@Result(column = "adjective", property = "adjective"),
+			@Result(property = "needParmAdjective", column = "adjective", javaType =List.class, many = @Many(select = "com.cloudminds.bigdata.dataservice.quoto.manage.mapper.AdjectiveMapper.queryNeedParmAdjectiveByIds")) })
+	public List<QuotoNeedParmResponse> queryQuotoNeedParmAndTypeIsNotTwo(String ids);
+
+	@Select("select id,name,field,adjective,quotos from quoto where deleted=0 and type=2 and id in ${ids}")
+	@Results({
+			@Result(column = "quotos", property = "quotos"),
+			@Result(property = "needParmAdjective", column = "quotos", javaType =List.class, many = @Many(select = "com.cloudminds.bigdata.dataservice.quoto.manage.mapper.QuotoMapper.queryNeedParmAdjectiveByIds")) })
+	public List<QuotoNeedParmResponse> queryQuotoNeedParmAndTypeIsTwo(String ids);
+
+	@Select("select id,name,field,adjective,quotos from quoto where deleted=0 and type!=2 and (adjective is null or adjective='') and id in ${ids}")
+	public List<QuotoNeedParmResponse> queryQuotoNotNeedParmAndTypeIsNotTwo(String ids);
 }
