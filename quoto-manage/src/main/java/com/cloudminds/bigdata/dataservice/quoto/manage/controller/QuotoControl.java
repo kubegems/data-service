@@ -179,6 +179,12 @@ public class QuotoControl {
 		return quotoService.queryQuotoNeedParm(id);
 	}
 
+	// 查询指标变量参数信息
+	@RequestMapping(value = "queryQuotosNeedParm", method = RequestMethod.POST)
+	public CommonResponse queryQuotosNeedParm(@RequestBody DeleteReq deleteReq) {
+		return quotoService.queryQuotosNeedParm(deleteReq.getIds());
+	}
+
 	// 查询指标
 	@RequestMapping(value = "queryAll", method = RequestMethod.POST)
 	public CommonResponse queryAllQuoto(@RequestBody QuotoQuery quotoQuery) {

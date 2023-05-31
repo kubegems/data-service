@@ -49,6 +49,12 @@ public interface DataSetMapper {
     @Result(column = "data_columns", property = "data_columns", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = JsonListTypeHandler.class)
     DataSet findDataSetByById(int id);
 
+    @Select({"<script>select * from data_set where deleted=0 and id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>"})
+    @Result(column = "tag_enum_values", property = "tag_enum_values", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+    @Result(column = "tag_item_complexs", property = "tag_item_complexs", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
+    @Result(column = "data_columns", property = "data_columns", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = JsonListTypeHandler.class)
+    List<DataSet> queryDateSetsByIds(int[] id);
+
     @Select("select * from data_set where ${condition}")
     @Result(column = "tag_enum_values", property = "tag_enum_values", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)
     @Result(column = "tag_item_complexs", property = "tag_item_complexs", jdbcType = JdbcType.VARCHAR, javaType = Array.class, typeHandler = ArrayTypeHandler.class)

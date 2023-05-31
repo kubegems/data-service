@@ -1449,6 +1449,17 @@ public class DataSetService {
         return commonResponse;
     }
 
+    public CommonResponse queryDateSetsByIds(int[] ids) {
+        CommonResponse commonResponse = new CommonResponse();
+        if(ids==null || ids.length==0){
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("ids不能为空");
+            return commonResponse;
+        }
+        commonResponse.setData(dataSetMapper.queryDateSetsByIds(ids));
+        return commonResponse;
+    }
+
     public CommonResponse querySysInfo() {
         CommonResponse commonResponse = new CommonResponse();
         Map<String, Object> result = new HashMap<>();
