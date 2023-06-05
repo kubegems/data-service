@@ -323,7 +323,7 @@ public class AdjectiveService {
 			if(adjectiveQuery.getDimension_id()>0) {
 				condition = condition + " and dimension_id=" + adjectiveQuery.getDimension_id();
 			}else if(adjectiveQuery.getDimension_id()==-1){
-				condition = condition + " and dimension_id is null";
+				condition = condition + " and (dimension_id is null or dimension_id=0)";
 			}
 		}
 

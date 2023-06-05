@@ -15,6 +15,8 @@ public class DataSetTask extends BaseEntity {
     private int data_set_id;
     private int type;
     private int import_type;
+    private int export_type;
+    private String export_parameters;
     private int sync_type;
     private String advanced_parameters;
     private String cron;
