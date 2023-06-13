@@ -1598,6 +1598,7 @@ public class QuotoService {
                     // 查询修饰词信息
                     List<AdjectiveExtend> adjectives = quotoMapper.queryAdjective(quoto.getId());
                     for (int i = 0; i < adjectives.size(); i++) {
+                        boolean isDate = false;
                         //若是时间修饰词,将时间字段填入进去
                         if (adjectives.get(i).getType() == 1) {
                             if (columnAlias == null) {
@@ -1607,53 +1608,75 @@ public class QuotoService {
                             }
                             adjectives.get(i).setColumn_name(columnAlias.getColumn_alias());
                             adjectives.get(i).setDescr(columnAlias.getData_type());
-                        } else {
-                            //带变量的修饰词
-                            if (adjectives.get(i).getReq_parm_type() == 1) {
-                                if (parm_value == null || parm_value.size() < 1) {
-                                    commonResponse.setSuccess(false);
-                                    commonResponse.setMessage("使用了可变参数,需要传入parm_value参数");
-                                    return commonResponse;
-                                }
-                                Set<String> parameter_names = com.cloudminds.bigdata.dataservice.quoto.manage.utils.StringUtils.getParameterNames(adjectives.get(i).getReq_parm());
-                                for (String parameter_name : parameter_names) {
-                                    Object value = parm_value.get(parameter_name);
-                                    if (value == null) {
-                                        commonResponse.setSuccess(false);
-                                        commonResponse.setMessage("请在参数parm_value中传入 " + parameter_name + " 的值");
-                                        return commonResponse;
-                                    }
-                                    String apijsonValue = "";
-                                    if (value instanceof String || value instanceof Integer) {
-                                        apijsonValue = value.toString();
-                                    } else if (value instanceof ArrayList) {
-                                        ArrayList<Object> valueList = (ArrayList<Object>) value;
-                                        if (valueList == null || valueList.size() < 1) {
-                                            apijsonValue = "[]";
-                                        } else {
-                                            apijsonValue = "[";
-                                            String symbol = "";
-                                            if (valueList.get(0) instanceof String) {
-                                                symbol = "'";
-                                            }
-                                            for (int j = 0; j < valueList.size(); j++) {
-                                                apijsonValue = apijsonValue + symbol + valueList.get(j).toString() + symbol;
-                                                if (j != valueList.size() - 1) {
-                                                    apijsonValue = apijsonValue + ",";
-                                                }
-                                            }
-                                            apijsonValue = apijsonValue + "]";
-                                        }
-
-                                    } else {
-                                        commonResponse.setSuccess(false);
-                                        commonResponse.setMessage("请求参数parm_value中 " + parameter_name + " 的值类型不支持,目前只支持string,int,array");
-                                        return commonResponse;
-                                    }
-                                    adjectives.get(i).setReq_parm(adjectives.get(i).getReq_parm().replace("${" + parameter_name + "}", apijsonValue));
-                                }
+                            if (columnAlias.getData_type().toLowerCase().equals("date")) {
+                                isDate = true;
                             }
                         }
+                        //带变量的修饰词
+                        if (adjectives.get(i).getReq_parm_type() == 1) {
+                            if (parm_value == null || parm_value.size() < 1) {
+                                commonResponse.setSuccess(false);
+                                commonResponse.setMessage("使用了可变参数,需要传入parm_value参数");
+                                return commonResponse;
+                            }
+                            Set<String> parameter_names = com.cloudminds.bigdata.dataservice.quoto.manage.utils.StringUtils.getParameterNames(adjectives.get(i).getReq_parm());
+                            for (String parameter_name : parameter_names) {
+                                Object value = parm_value.get(parameter_name);
+                                if (value == null) {
+                                    commonResponse.setSuccess(false);
+                                    commonResponse.setMessage("请在参数parm_value中传入 " + parameter_name + " 的值");
+                                    return commonResponse;
+                                }
+                                String apijsonValue = "";
+                                if (value instanceof String || value instanceof Integer) {
+                                    apijsonValue = value.toString();
+                                    if (isDate) {
+                                        if (apijsonValue.length() > 10) {
+                                            apijsonValue = apijsonValue.substring(0,10);
+                                        }
+                                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+                                        try {
+                                            Date date = format.parse(apijsonValue);
+                                        } catch (ParseException e) {
+                                            e.printStackTrace();
+                                            commonResponse.setSuccess(false);
+                                            commonResponse.setMessage("时间变量入参" + value.toString() + "不符合格式yyyy-MM-dd HH:mm:ss");
+                                            return commonResponse;
+                                        }
+                                    }
+                                } else if (value instanceof ArrayList) {
+                                    if (adjectives.get(i).getType() == 1) {
+                                        commonResponse.setSuccess(false);
+                                        commonResponse.setMessage("时间修饰词只支持yyy-MM-dd HH:mm:ss的string类型,不支持数组");
+                                        return commonResponse;
+                                    }
+                                    ArrayList<Object> valueList = (ArrayList<Object>) value;
+                                    if (valueList == null || valueList.size() < 1) {
+                                        apijsonValue = "[]";
+                                    } else {
+                                        apijsonValue = "[";
+                                        String symbol = "";
+                                        if (valueList.get(0) instanceof String) {
+                                            symbol = "'";
+                                        }
+                                        for (int j = 0; j < valueList.size(); j++) {
+                                            apijsonValue = apijsonValue + symbol + valueList.get(j).toString() + symbol;
+                                            if (j != valueList.size() - 1) {
+                                                apijsonValue = apijsonValue + ",";
+                                            }
+                                        }
+                                        apijsonValue = apijsonValue + "]";
+                                    }
+
+                                } else {
+                                    commonResponse.setSuccess(false);
+                                    commonResponse.setMessage("请求参数parm_value中 " + parameter_name + " 的值类型不支持,目前只支持string,int,array");
+                                    return commonResponse;
+                                }
+                                adjectives.get(i).setReq_parm(adjectives.get(i).getReq_parm().replace("${" + parameter_name + "}", apijsonValue));
+                            }
+                        }
+
                         bodyRequest = bodyRequest + "," + getAdjectiveReq(adjectives.get(i));
                     }
                 }
@@ -1740,11 +1763,16 @@ public class QuotoService {
     public String getAdjectiveReq(AdjectiveExtend adjective) {
         // 1为时间修饰词
         if (adjective.getType() == 1) {
+            String result = "'" + adjective.getColumn_name();
+            //变量或者常量修饰词
+            if (!StringUtils.isEmpty(adjective.getReq_parm())) {
+                return result + adjective.getReq_parm().substring(1);
+            }
+            //系统定义的时间修饰词
             int timeType = 1;//1代表正常的yyyy-MM-dd hh:mm:ss 2代表日期yyyy-MM-dd
             if (!StringUtils.isEmpty(adjective.getDescr()) && adjective.getDescr().toLowerCase().equals("date")) {
                 timeType = 2;
             }
-            String result = "'" + adjective.getColumn_name();
             if (adjective.getCode().equals("last1HOUR")) {
                 result = result + ">=':'" + DateTimeUtils.getlast1HOUR(timeType) + "'";
             } else if (adjective.getCode().equals("last1DAY")) {
@@ -2070,7 +2098,7 @@ public class QuotoService {
             }
             adjectives = adjectiveMapper.queryNeedParmAdjectiveByIds(adjectiveIds);
         }
-        if(adjectives==null||adjectives.size()==0){
+        if (adjectives == null || adjectives.size() == 0) {
             return commonResponse;
         }
         List<Field> fileds = new ArrayList<>();
@@ -2178,8 +2206,10 @@ public class QuotoService {
                 String desc = "";
                 for (int i = 0; i < fields.size(); i++) {
                     JSONObject jsonObject = (JSONObject) JSONObject.toJSON(fields.get(i));
-                    if (jsonObject.get("type").equals("string")||jsonObject.get("type").equals("date")) {
+                    if (jsonObject.get("type").equals("string")) {
                         parm_value.put(jsonObject.get("name").toString(), "XXXX");
+                    } else if(jsonObject.get("type").equals("date")){
+                        parm_value.put(jsonObject.get("name").toString(), "yyyy-MM-dd HH:mm:ss");
                     } else if (jsonObject.get("type").equals("string[]")) {
                         String[] sample = {"XXX", "XXX"};
                         parm_value.put(jsonObject.get("name").toString(), sample);

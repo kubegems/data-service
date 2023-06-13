@@ -18,9 +18,9 @@ public interface AdjectiveMapper {
 			"<script> update adjective set deleted=null where id in <foreach collection='array' item='id' index='no' open='(' separator=',' close=')'> #{id} </foreach></script>" })
 	public int batchDeleteAdjective(int[] id);
 
-	@Select("select * from adjective where name=#{checkValue} and deleted=0")
+	@Select("select * from adjective where name=#{checkValue} and deleted=0 ${condition}")
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
-	public Adjective findAdjectiveByName(String checkValue);
+	public Adjective findAdjectiveByName(String checkValue,String condition);
 
 	@Select("select * from adjective where code=#{checkValue} and deleted=0")
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
@@ -30,7 +30,7 @@ public interface AdjectiveMapper {
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
 	public Adjective findAdjectiveById(int id);
 
-	@Select("select * from adjective LEFT JOIN (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as idddd,count(*) as quotoNum " + 
+	@Select("select * from adjective left join (select `code`,id as dimensionId from dimension where deleted=0) di on dimension_id=di.dimensionId LEFT JOIN (select substring_index(substring_index(a.adjective,',',b.help_topic_id+1),',',-1) as idddd,count(*) as quotoNum " +
 			"from  quoto a " + 
 			"join   mysql.help_topic b on b.help_topic_id < (length(a.adjective) - length(replace(a.adjective,',',''))+1) where a.deleted=0 and a.adjective!='' group by idddd) as tt on id=tt.idddd where ${condition} limit #{startLine},#{size}")
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
@@ -40,7 +40,7 @@ public interface AdjectiveMapper {
 	@Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
 	public List<Adjective> queryAllAdjective(String condition);
 
-	@Select("select count(*) from adjective where ${condition}")
+	@Select("select count(*) from adjective left join (select code,id as dimensionId from dimension where deleted=0) di on dimension_id=di.dimensionId where ${condition}")
 	public int queryAdjectiveCount(String condition);
 
 	@Insert("insert into adjective(dimension_id,fields,name,code,column_name,type,req_parm_type,req_parm,create_time,update_time, creator,descr) "
