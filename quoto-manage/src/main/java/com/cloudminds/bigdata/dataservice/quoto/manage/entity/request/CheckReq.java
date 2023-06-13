@@ -6,4 +6,7 @@ import lombok.Data;
 public class CheckReq {
 	private byte checkflag;   //修饰词: 0名字 1编码 2编码简称  指标 0 名字 1字段
 	private String checkValue;
+	private int dimension_id;
+	private String column_name;
+	private int type;
 }
