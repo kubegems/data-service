@@ -23,10 +23,10 @@ spring:
     nacos:
       config:
         group: bigdata-quoto-roc.bj-fit-86
-        server-addr: 172.16.31.146:8848
+        server-addr: 172.16.31.162:8848
         namespace: dataservice
       discovery:
-        server-addr: 172.16.31.146:8848
+        server-addr: 172.16.31.162:8848
         group: bigdata
         
 ---
