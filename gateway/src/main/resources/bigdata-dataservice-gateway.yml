@@ -9,7 +9,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.162:8848
+        server-addr: localhost:8848
         group: bigdata
     gateway:
       routes:

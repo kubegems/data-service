@@ -1,5 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:clickhouse://172.16.31.116:8123
-    username: readonly
-    password: 123456

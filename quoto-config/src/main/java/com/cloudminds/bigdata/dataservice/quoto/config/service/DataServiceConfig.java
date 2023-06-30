@@ -71,8 +71,6 @@ public class DataServiceConfig {
     RestTemplate restTemplate;
     @Value("${dataServiceUrl}")
     private String dataServiceUrl;
-    @Value("${spring.profiles.active}")
-    private String env;
     @Value("${accessKey}")
     private String accessKey;
     @Value("${secretKey}")

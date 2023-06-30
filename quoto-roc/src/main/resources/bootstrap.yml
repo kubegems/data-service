@@ -8,52 +8,15 @@ spring:
     name: dataServer-quotoRoc
   cloud:
     nacos:
-      config:
-        prefix: roc
-        file-extension: yaml
-  profiles:
-    active: test
-
-
----
-#测试环境配置
-spring:    
-  profiles: test
-  cloud:
-    nacos:
-      config:
-        group: bigdata-quoto-roc.bj-fit-86
-        server-addr: 172.16.31.162:8848
-        namespace: dataservice
       discovery:
         server-addr: 172.16.31.162:8848
         group: bigdata
-        
----
-#线上环境配置
-spring:    
-  profiles: online
-  cloud:
-    nacos:
-      config:
-        group: bigdata-quoto-roc.bj-fit-86
-        server-addr: nacos.cloudminds.com
-        namespace: dataservice
-      discovery:
-        server-addr: nacos.cloudminds.com
-        group: bigdata
-
----
-#线上环境配置
-spring:
-  profiles: prod
-  cloud:
-    nacos:
-      config:
-        group: dataservice-232
-        server-addr: nacos-client.nacos:8848
-        namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
-      discovery:
-        server-addr: nacos-client.nacos:8848
-        group: dataservice-232
-        namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
+  redis:
+    host: 172.16.24.231
+    port: 6379
+configDbUrl: jdbc:mysql://XXXXX:3306
+configDbAccount: root
+configDbPassword: 123456
+dbUrl: jdbc:clickhouse://clickhouse.cloudminds.com:9090
+dbAccount: distributed-read
+dbPassword: cloudminds123

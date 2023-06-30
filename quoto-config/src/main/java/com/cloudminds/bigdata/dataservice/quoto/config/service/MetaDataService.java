@@ -89,8 +89,8 @@ public class MetaDataService {
     private String datahubToken;
     @Value("${datahubGraphqlUrl}")
     private String datahubGraphqlUrl;
-    @Value("${spring.profiles.active}")
-    private String env;
+/*    @Value("${spring.profiles.active}")
+    private String env;*/
     @Autowired
     RestTemplate restTemplate;
 
@@ -264,9 +264,9 @@ public class MetaDataService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if (env.equals("prod")) {
+        //if (env.equals("prod")) {
             executionIngestionDatahub(metaDataTable.getTable_type());
-        }
+       // }
 
         return commonResponse;
     }
