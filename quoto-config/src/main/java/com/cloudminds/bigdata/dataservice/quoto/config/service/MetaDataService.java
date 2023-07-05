@@ -45,13 +45,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -61,12 +61,8 @@ public class MetaDataService {
     private MetaDataTableMapper metaDataTableMapper;
     @Autowired
     private RestEmitter emitter;
-    private String hiveInstance = "prod_hive";
-    private String hiveDataHubIngestionSource = "12e00861-b21d-42fa-8a3c-0d5a048c7151";
-    private String clickhouseInstance = "prod_ck_1";
     private String hdfsInstance = "prod_hdfs";
     private String workFlowPlat = "oozie";
-    private String clickhouseDataHubIngestionSource = "e8701455-d174-4285-bad1-ab2792c6580e";
     @Value("${hiveUrl}")
     private String hiveUrl;
     @Value("${hiveUser}")
@@ -89,8 +85,6 @@ public class MetaDataService {
     private String datahubToken;
     @Value("${datahubGraphqlUrl}")
     private String datahubGraphqlUrl;
-/*    @Value("${spring.profiles.active}")
-    private String env;*/
     @Autowired
     RestTemplate restTemplate;
 
@@ -227,14 +221,19 @@ public class MetaDataService {
             //去datahub上创建节点
             DatasetUrn datasetUrn = null;
             StringMap customerPro = new StringMap();
+            MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(metaDataTable.getTable_type());
+            if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance()) || StringUtils.isEmpty(metaDataSource.getDatahub_ingestion_source())) {
+                System.out.println("数据源不存在或者数据源的datahub_instance或者datahub_ingestion_source为空");
+                return commonResponse;
+            }
             if (metaDataTable.getTable_type() == 1) {
-                datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), hiveInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), metaDataSource.getDatahub_instance() + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
                 customerPro.put("CreateTime", new Date().toString());
                 customerPro.put("Database", metaDataTable.getDatabase_name());
                 customerPro.put("Owner", metaDataTable.getCreator());
                 customerPro.put("OwnerType", "USER");
             } else if (metaDataTable.getTable_type() == 2) {
-                datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), clickhouseInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), metaDataSource.getDatahub_instance() + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
                 customerPro.put("engine", metaDataTable.getStorage_format());
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 customerPro.put("metadata_modification_time", dateFormat.format(new Date()));
@@ -264,10 +263,7 @@ public class MetaDataService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //if (env.equals("prod")) {
-            executionIngestionDatahub(metaDataTable.getTable_type());
-       // }
-
+        executionIngestionDatahub(metaDataTable.getTable_type());
         return commonResponse;
     }
 
@@ -710,10 +706,16 @@ public class MetaDataService {
             return commonResponse;
         }
         DatasetUrn datasetUrn = null;
+        MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(metaDataTable.getTable_type());
+        if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance()) || StringUtils.isEmpty(metaDataSource.getDatahub_ingestion_source())) {
+            System.out.println("数据源不存在或者数据源的datahub_instance或者datahub_ingestion_source为空");
+            return commonResponse;
+        }
+
         if (metaDataTable.getTable_type() == 1) {
-            datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), hiveInstance + "." + oldMetaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+            datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), metaDataSource.getDatahub_instance() + "." + oldMetaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
         } else {
-            datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), clickhouseInstance + "." + oldMetaDataTable.getDatabase_name() + "." + oldMetaDataTable.getName(), FabricType.PROD);
+            datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), metaDataSource.getDatahub_instance() + "." + oldMetaDataTable.getDatabase_name() + "." + oldMetaDataTable.getName(), FabricType.PROD);
         }
 
         if (!metaDataTable.getName().equals(oldMetaDataTable.getName())) {
@@ -898,6 +900,12 @@ public class MetaDataService {
             commonResponse.setMessage("不支持的表类型");
             return commonResponse;
         }
+        String datahubInstance = "";
+        MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(historyDataAddDataBase.getTable_type());
+        if (metaDataSource != null && (!StringUtils.isEmpty(metaDataSource.getDatahub_instance()))) {
+           datahubInstance = metaDataSource.getDatahub_instance();
+        }
+
         if (historyDataAddDataBase.getTable_type() == 1) {
             if (StringUtils.isEmpty(historyDataAddDataBase.getModel_level())) {
                 commonResponse.setSuccess(false);
@@ -968,7 +976,7 @@ public class MetaDataService {
                     ResultSet setTmp = pStemt.executeQuery();
                     int rows = setTmp.getRow();
                     boolean ispaquet = false;
-                    if(rows>0) {
+                    if (rows > 0) {
                         while (setTmp.next()) {
                             ispaquet = true;
                             Partition_field partition_field = new Partition_field();
@@ -1043,7 +1051,7 @@ public class MetaDataService {
                             return commonResponse;
                         }
                         //关联数据域
-                        DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), hiveInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                        DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), datahubInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
                         if (!StringUtils.isEmpty(metaDataTable.getData_domain())) {
                             Domains domains = new Domains();
                             UrnArray urnArray = new UrnArray();
@@ -1259,7 +1267,7 @@ public class MetaDataService {
                         return commonResponse;
                     }
                     //关联数据域
-                    DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), clickhouseInstance + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                    DatasetUrn datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), metaDataSource.getDatahub_instance() + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
                     if (!StringUtils.isEmpty(metaDataTable.getData_domain())) {
                         Domains domains = new Domains();
                         UrnArray urnArray = new UrnArray();
@@ -1292,14 +1300,12 @@ public class MetaDataService {
     }
 
     public void executionIngestionDatahub(int tableType) {
-        String dataHubIngestionSource = "";
-        if (tableType == 2) {
-            dataHubIngestionSource = clickhouseDataHubIngestionSource;
-        } else if (tableType == 1) {
-            dataHubIngestionSource = hiveDataHubIngestionSource;
-        } else {
-            System.out.println("不支持的表类型：" + tableType);
+        MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(tableType);
+        if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance()) || StringUtils.isEmpty(metaDataSource.getDatahub_ingestion_source())) {
+            System.out.println("数据源不存在或者数据源的datahub_instance或者datahub_ingestion_source为空");
+            return;
         }
+        String dataHubIngestionSource = metaDataSource.getDatahub_ingestion_source();
         String bodyRequest = "{\"operationName\":\"createIngestionExecutionRequest\",\"variables\":{\"input\":{\"ingestionSourceUrn\":\"urn:li:dataHubIngestionSource:" + dataHubIngestionSource + "\"}},\"query\":\"mutation createIngestionExecutionRequest($input: CreateIngestionExecutionRequestInput!) {\\n  createIngestionExecutionRequest(input: $input)\\n}\\n\"}";
         System.out.println(bodyRequest);
         // 请求数据服务
@@ -1326,6 +1332,13 @@ public class MetaDataService {
             commonResponse.setMessage("hdfs和hive的库和表不能为空");
             return commonResponse;
         }
+        MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(1);
+        if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance())) {
+            System.out.println("hive数据源不存在或者数据源的datahub_instance为空");
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("hive数据源不存在或者数据源的datahub_instance为空");
+            return commonResponse;
+        }
         try {
             String tableName = hdfsToHiveTableLineReq.getDatabase() + "." + hdfsToHiveTableLineReq.getTable();
             UpstreamArray srcUpstreams = new UpstreamArray();
@@ -1344,7 +1357,7 @@ public class MetaDataService {
             upstreamLineage.setUpstreams(srcUpstreams);
             MetadataChangeProposalWrapper mcpw = MetadataChangeProposalWrapper.builder()
                     .entityType("dataset")
-                    .entityUrn(new DatasetUrn(new DataPlatformUrn("hive"), hiveInstance + "." + tableName, FabricType.PROD))
+                    .entityUrn(new DatasetUrn(new DataPlatformUrn("hive"), metaDataSource.getDatahub_instance() + "." + tableName, FabricType.PROD))
                     .upsert()
                     .aspect(upstreamLineage)
                     .build();
@@ -1530,10 +1543,20 @@ public class MetaDataService {
             platform = "Mqtt";
         } else if (platform.equals("hive")) {
             isExistDataHub = true;
-            instanceName = hiveInstance;
+            MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(1);
+            if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance())) {
+                System.out.println("hive数据源不存在或者数据源的datahub_instance为空");
+                return null;
+            }
+            instanceName = metaDataSource.getDatahub_instance();
         } else if (platform.equals("clickhouse")) {
             isExistDataHub = true;
-            instanceName = clickhouseInstance;
+            MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(2);
+            if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance())) {
+                System.out.println("clickhouse数据源不存在或者数据源的datahub_instance为空");
+                return null;
+            }
+            instanceName = metaDataSource.getDatahub_instance();
         } else if (platform.equals("hdfs")) {
             isExistDataHub = true;
             instanceName = hdfsInstance;
