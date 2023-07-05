@@ -1,5 +1,6 @@
 package com.cloudminds.bigdata.dataservice.quoto.config.mapper;
 
+import com.cloudminds.bigdata.dataservice.quoto.config.entity.MetaDataSource;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.MetaDataTable;
 import com.cloudminds.bigdata.dataservice.quoto.config.entity.MetaDataTableExtendInfo;
 import com.cloudminds.bigdata.dataservice.quoto.config.handler.ArrayVarcharHandlerSpecial;
@@ -51,4 +52,7 @@ public interface MetaDataTableMapper {
             @Result(column = "order_field", property = "order_field", typeHandler = ArrayVarcharHandlerSpecial.class)
     })
     public List<MetaDataTableExtendInfo> findMetaDataTable(String condition);
+
+    @Select("select * from metadata_source where table_type_id=#{table_type_id} and deleted=0")
+    public MetaDataSource findMetaDataSource(int table_type_id);
 }
