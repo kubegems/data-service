@@ -72,11 +72,6 @@
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba.cloud</groupId>
-			<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-			<version>2.2.3.RELEASE</version>
-		</dependency>
-		<dependency>
-			<groupId>com.alibaba.cloud</groupId>
 			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
 			<version>2.2.3.RELEASE</version>
 		</dependency>
@@ -89,11 +84,6 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>27.1-jre</version>
-		</dependency>
-		<dependency>
-			<groupId>com.purgeteam</groupId>
-			<artifactId>dynamic-config-spring-boot-starter</artifactId>
-			<version>0.1.0.RELEASE</version>
 		</dependency>
 	</dependencies>
 	<build>

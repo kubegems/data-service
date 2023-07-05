@@ -3,8 +3,6 @@ server:
 spring:
   application:
     name: dataServer-quotoSearch
-  profiles:
-    active: dev
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -12,3 +10,26 @@ spring:
     multipart:
       maxFileSize: 50MB
       maxRequestSize: 50MB
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 172.16.31.162:8848
+        group: bigdata
+  datasource:
+    url: jdbc:mysql://host:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.jdbc.Driver
+elasticsearch:
+  host: 10.51.202.2
+  port: 9400
+hbase:
+  quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181
+dataServiceUrl: http://172.16.31.96:30515
+ckDataSetDB: dataset
+ckUrl: jdbc:clickhouse://172.16.31.147:8123
+ckUser: default
+ckPassword: 123456
+hiveUrl: jdbc:hive2://172.16.31.145:10000
+hiveUser: hive
+hivePassword: Cm@456123

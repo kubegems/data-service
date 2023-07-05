@@ -1,0 +1,3 @@
+CREATE DATABASE IF NOT EXISTS dataset
+ON CLUSTER cm_ck_cluster
+COMMENT '数据集数据存储库'

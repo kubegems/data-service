@@ -1,9 +1,0 @@
-variables:
-  IMAGE_NAME: "clickhouseAtlas"
-  devBranchName: develop
-  PROJECT_BASE_NAME: "clickhouseAtlas"
-
-include:
-  project: 'devops/ci-template'
-  file: '/bigdata/bigdata-dataservice/child-pipeline/gitlab-ci-template.yml'
-  ref: develop

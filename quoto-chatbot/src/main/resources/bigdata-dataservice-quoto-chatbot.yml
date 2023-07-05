@@ -1,0 +1,22 @@
+server:
+  port: 8072
+# 默认的profile为dev，其他环境通过指定启动参数使用不同的profile，比如：
+#   测试环境：java -jar my-spring-boot.jar --spring.profiles.active=test
+#   生产环境：java -jar my-spring-boot.jar --spring.profiles.active=prod
+spring:
+  application:
+    name: dataServer-quotoChatbot
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        group: bigdata
+  redis:
+    host: localhost
+    port: 6379
+configDbUrl: jdbc:mysql://localhost:3306
+configDbAccount: root
+configDbPassword: root
+dbUrl: jdbc:mysql://localhost:3306
+dbAccount: root
+dbPassword: root

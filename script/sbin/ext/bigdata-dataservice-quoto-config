@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+# http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# description:  gateway start cmd
+#
+# Modified for Linkis 1.0.0
+
+# get log directory
+
+SERVER="bigdata-dataservice-quoto-config.jar"
+
+#export DEBUG_PORT=
+
+if [ "$DATASERVICE_LOG_DIR" = "" ]; then
+  export DATASERVICE_LOG_DIR="$DATASERVICE_HOME/logs"
+fi
+if [ ! -w "$DATASERVICE_LOG_DIR" ] ; then
+  mkdir -p "$DATASERVICE_LOG_DIR"
+fi
+
+if test -z "$SERVER_HEAP_SIZE"
+then
+  export SERVER_HEAP_SIZE="512M"
+fi
+
+
+## conf dir
+export SERVER_CONF_PATH=$DATASERVICE_CONF_DIR
+
+## server lib
+export SERVER_LIB=$DATASERVICE_HOME/lib/$SERVER
+if [ ! -r "$SERVER_LIB" ] ; then
+    echo "server lib not exists $SERVER_LIB"
+    exit 1
+fi
+
+echo  "=====Java Start Command====="
+
+if [ "X${RUN_IN_FOREGROUND}" == "Xtrue" ]; then
+
+  echo  "java $SERVER_JAVA_OPTS -cp $SERVER_CLASS_PATH $SERVER_CLASS $SPRING_ARGS 2>&1"
+  java $SERVER_JAVA_OPTS -cp $SERVER_CLASS_PATH $SERVER_CLASS $SPRING_ARGS 2>&1
+
+else
+
+  echo  "nohup java -jar -Xms$SERVER_HEAP_SIZE -Xmx$SERVER_HEAP_SIZE -Dspring.config.location=$SERVER_CONF_PATH/bigdata-dataservice-quoto-config.yml $SERVER_LIB 2>&1 > $DATASERVICE_LOG_DIR/${SERVER_NAME}.out &"
+  nohup java -jar -Xms$SERVER_HEAP_SIZE -Xmx$SERVER_HEAP_SIZE -Dspring.config.location=$SERVER_CONF_PATH/bigdata-dataservice-quoto-config.yml $SERVER_LIB 2>&1 > $DATASERVICE_LOG_DIR/${SERVER_NAME}.out &
+
+  pid=$!
+  sleep 2
+  if [[ -z "${pid}" ]]; then
+      echo "server $SERVER_NAME start failed!"
+      exit 1
+  else
+      echo "server $SERVER_NAME start succeeded!"
+      echo $pid > $SERVER_PID
+
+      if [ "X${RUN_IN_FOREGROUND}" == "Xtrue" ]; then
+        wait $pid || exit -1
+      fi
+  fi
+
+fi

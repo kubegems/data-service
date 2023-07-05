@@ -1,11 +1,22 @@
+server:
+  port: 8076
 spring:
+  application:
+    name: dataServer-quotoSearch
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  servlet:
+    multipart:
+      maxFileSize: 50MB
+      maxRequestSize: 50MB
   cloud:
     nacos:
       discovery:
-        server-addr: 172.16.31.162:8848
+        server-addr: localhost:8848
         group: bigdata
   datasource:
-    url: jdbc:mysql://172.16.31.145:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
+    url: jdbc:mysql://localhost:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
     username: root
     password: root
     driver-class-name: com.mysql.jdbc.Driver
@@ -14,9 +25,9 @@ elasticsearch:
   port: 9400
 hbase:
   quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181
-dataServiceUrl: http://172.16.31.96:30515
+dataServiceUrl: http://localhost:8001
 ckDataSetDB: dataset
-ckUrl: jdbc:clickhouse://172.16.31.147:8123
+ckUrl: jdbc:clickhouse://localhost:8123
 ckUser: default
 ckPassword: 123456
 hiveUrl: jdbc:hive2://172.16.31.145:10000
