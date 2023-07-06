@@ -331,13 +331,6 @@ CREATE TABLE `metadata_source`  (
   `update_time` timestamp(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0),
   `deleted` bit(1) NULL DEFAULT b'0' COMMENT '0:false-not deleted;null:true-deleted'
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of metadata_source
--- ----------------------------
-INSERT INTO `metadata_source` VALUES (1, 'prod_hive', 'f13ac5a9-e1b8-45b0-a6ed-d710f5e31755', 'tanqiong', 'hive数据源', '2023-07-05 13:21:15', '2023-07-05 13:21:15', b'0');
-INSERT INTO `metadata_source` VALUES (2, 'prod_ck_1', 'b29c8272-9aeb-4c3c-a9d4-97f42d881509', 'tanqiong', 'ck数据源', '2023-07-05 13:21:58', '2023-07-05 13:21:58', b'0');
-
 -- ----------------------------
 -- Table structure for metadata_table
 -- ----------------------------
