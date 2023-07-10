@@ -21,15 +21,15 @@ spring:
     password: root
     driver-class-name: com.mysql.jdbc.Driver
 elasticsearch:
-  host: 10.51.202.2
+  host: ip
   port: 9400
 hbase:
-  quorum: l-172016023037.cloudminds.com:2181,l-172013023038.cloudminds.com:2181,l-172016023039.cloudminds.com:2181
+  quorum: ip1:2181,ip2:2181,ip3:2181
 dataServiceUrl: http://localhost:8001
 ckDataSetDB: dataset
 ckUrl: jdbc:clickhouse://localhost:8123
 ckUser: default
 ckPassword: 123456
-hiveUrl: jdbc:hive2://172.16.31.145:10000
-hiveUser: hive
-hivePassword: Cm@456123
+hiveUrl: jdbc:hive2://localhost:10000
+hiveUser: xxxx
+hivePassword: xxxx
