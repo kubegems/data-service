@@ -38,7 +38,7 @@ public class SaveCsvDataService {
         Set<Integer> stringColumn = new HashSet<>();
         for (int j = 0; j < dataSet.getData_columns().size(); j++) {
             Column column = dataSet.getData_columns().get(j);
-            if (column.getType().equals("String")) {
+            if (column.getType().toLowerCase().equals("string")) {
                 stringColumn.add(j);
             }
         }
