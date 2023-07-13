@@ -81,6 +81,10 @@ public class DataServiceConfig {
     private String endpoint;
     @Value("${bucketName}")
     private String bucketName;
+    @Value("${commonDataserviceUrl}")
+    private String commonDataserviceUrl;
+    @Value("${commonDataserviceName}")
+    private String commonDataserviceName;
 
     // columnAlias
     public CommonResponse getColumnAlias(int tableId) {
@@ -1030,6 +1034,22 @@ public class DataServiceConfig {
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
         }
+        //判断service_name是否重复
+        if (databaseInfoMapper.getDbInfoByServiceName(dbInfo.getService_name()) != null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("服务名称已存在");
+            return commonResponse;
+        }
+
+        if (dbInfo.getService_name().equals("DATASERVICE")) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("DATASERVICE为系统配置服务的名称,请更换其他名称");
+            return commonResponse;
+        }
+
+        if (dbInfo.getCommon_service() == 1) {
+            dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name());
+        }
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoByDbUrl(dbInfo);
         if (dbInfoOld != null) {
             if (dbInfoOld.getIs_delete() == 0) {
@@ -1047,6 +1067,11 @@ public class DataServiceConfig {
             if (databaseInfoMapper.insertDnInfo(dbInfo) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
+            } else {
+                if (dbInfo.getCommon_service() == 1) {
+                    //设置redis订阅通道去更新通用数据服务
+                    redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+                }
             }
         }
         return commonResponse;
@@ -1065,10 +1090,34 @@ public class DataServiceConfig {
             commonResponse.setSuccess(false);
             return commonResponse;
         }
+        //更改服务名称后需要判断是否重复
+        if (!dbInfoOld.getService_name().equals(dbInfo.getService_name())) {
+            if (dbInfo.getService_name().equals("DATASERVICE")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("DATASERVICE为系统配置服务的名称,请更换其他名称");
+                return commonResponse;
+            }
+            if (databaseInfoMapper.getDbInfoByServiceName(dbInfo.getService_name()) != null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("服务名称已存在");
+                return commonResponse;
+            }
+            if (dbInfoOld.getCommon_service() == 1) {
+                dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name());
+            }
+        }
+
         if (databaseInfoMapper.updateDbInfo(dbInfo) < 1) {
             commonResponse.setMessage("更新失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
+        } else {
+            if (dbInfo.getCommon_service() != dbInfoOld.getCommon_service() ||
+                    (dbInfo.getCommon_service() == 1 && ((!dbInfoOld.getService_name().equals(dbInfo.getService_name()) || (!dbInfoOld.getDb_url().equals(dbInfo.getDb_url())) ||
+                            (!dbInfoOld.getUserName().equals(dbInfo.getUserName())) || (!dbInfoOld.getPassword().equals(dbInfo.getPassword())))))) {
+                //设置redis订阅通道去更新通用数据服务
+                redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+            }
         }
         commonResponse.setMessage("更新成功");
         return commonResponse;
@@ -1086,6 +1135,11 @@ public class DataServiceConfig {
             commonResponse.setMessage("删除失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
+        } else {
+            if (dbInfoOld.getCommon_service() == 1) {
+                //设置redis订阅通道去更新通用数据服务
+                redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+            }
         }
         commonResponse.setMessage("删除成功");
         return commonResponse;
@@ -1145,6 +1199,11 @@ public class DataServiceConfig {
         if (org.apache.commons.lang.StringUtils.isEmpty(servicePath)) {
             return;
         }
+        if (servicePath.startsWith(commonDataserviceUrl)) {
+            //设置redis订阅通道去更新通用数据服务的配置信息
+            redisUtil.convertAndSend(commonDataserviceName, "reflushConfig");
+            return;
+        }
         Thread t = new Thread() {
             @Override
             public void run() {
@@ -1199,7 +1258,7 @@ public class DataServiceConfig {
 
     public CommonResponse uploadFile(MultipartFile file, String project) {
         CommonResponse commonResponse = new CommonResponse();
-        if(file==null||file.isEmpty()||StringUtils.isEmpty(project)){
+        if (file == null || file.isEmpty() || StringUtils.isEmpty(project)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("file和project不能为空");
             return commonResponse;
@@ -1209,7 +1268,7 @@ public class DataServiceConfig {
         String fileKey = project + "/" + nowTime + "_" + file.getOriginalFilename();
         PutObjectResult result = OssUtils.uploadFile(bucketName, fileKey, tmpFile);
         tmpFile.delete();
-        commonResponse.setData(endpoint+"/bigdata/"+fileKey);
+        commonResponse.setData(endpoint + "/bigdata/" + fileKey);
         return commonResponse;
     }
 
@@ -1248,18 +1307,18 @@ public class DataServiceConfig {
 
     public CommonResponse deleteFile(String url) {
         CommonResponse commonResponse = new CommonResponse();
-        if(StringUtils.isEmpty(url)){
+        if (StringUtils.isEmpty(url)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("url和project不能为空");
             return commonResponse;
         }
-        if(!url.contains(endpoint+"/"+bucketName+"/")){
+        if (!url.contains(endpoint + "/" + bucketName + "/")) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("url不是通过上传接口生成的,不支持删除");
             return commonResponse;
         }
-        String fileName = url.replace(endpoint+"/"+bucketName+"/","");
-        OssUtils.deleteFile(bucketName,fileName);
+        String fileName = url.replace(endpoint + "/" + bucketName + "/", "");
+        OssUtils.deleteFile(bucketName, fileName);
         return commonResponse;
     }
 
@@ -1267,5 +1326,9 @@ public class DataServiceConfig {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(tableInfoMapper.getApiActiveUserTop(startDate, endDate, top));
         return commonResponse;
+    }
+
+    public void test(String message) {
+        redisUtil.convertAndSend(commonDataserviceName, message);
     }
 }

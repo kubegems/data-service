@@ -64,5 +64,6 @@
 		<module>markdown-manage</module>
 		<module>quoto-search</module>
         <module>label-manage</module>
-    </modules>
+		<module>dataservice-common</module>
+	</modules>
 </project>
