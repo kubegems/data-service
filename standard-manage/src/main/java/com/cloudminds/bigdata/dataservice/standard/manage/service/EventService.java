@@ -110,11 +110,11 @@ public class EventService {
         }
 
         if (eventQuery.getEvent_name() != null && (!eventQuery.getEvent_name().equals(""))) {
-            condition = condition + " and event_name like '" + eventQuery.getEvent_name() + "%'";
+            condition = condition + " and event_name like '%" + eventQuery.getEvent_name() + "%'";
         }
 
         if (eventQuery.getEvent_code() != null && (!eventQuery.getEvent_code().equals(""))) {
-            condition = condition + " and event_code like '" + eventQuery.getEvent_code() + "%'";
+            condition = condition + " and event_code like '%" + eventQuery.getEvent_code() + "%'";
         }
 
         if (eventQuery.getType() != -1) {
@@ -150,11 +150,11 @@ public class EventService {
         }
 
         if (eventQuery.getEvent_name() != null && (!eventQuery.getEvent_name().equals(""))) {
-            condition = condition + " and event_name like '" + eventQuery.getEvent_name() + "%'";
+            condition = condition + " and event_name like '%" + eventQuery.getEvent_name() + "%'";
         }
 
         if (eventQuery.getEvent_code() != null && (!eventQuery.getEvent_code().equals(""))) {
-            condition = condition + " and event_code like '" + eventQuery.getEvent_code() + "%'";
+            condition = condition + " and event_code like '%" + eventQuery.getEvent_code() + "%'";
         }
 
         if (eventQuery.getType() != -1) {
