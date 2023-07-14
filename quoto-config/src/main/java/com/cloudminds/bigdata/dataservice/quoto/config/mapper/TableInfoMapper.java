@@ -22,7 +22,7 @@ public interface TableInfoMapper {
 	@Update("update Table_info set is_delete=#{delete} where id=#{id}")
 	public int updateTableInfoDelete(int id, int delete);
 	
-	@Update("update Table_info set table_alias=#{table_alias},theme_id=#{theme_id},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
+	@Update("update Table_info set table_alias=#{table_alias},department=#{department},theme_id=#{theme_id},des=#{des},table_name=#{table_name},is_delete=0,state=1 where id=#{id}")
 	public int updateTableInfo(TableInfo tableInfo);
 
 	@Select("SELECT * FROM Table_info WHERE table_name=#{table_name} AND database_id=#{database_id} ")
@@ -34,7 +34,7 @@ public interface TableInfoMapper {
 	@Select("SELECT * FROM Table_info WHERE is_delete=0 and id=#{tableId}")
 	public TableInfo getTableInfoById(int tableId);
 
-	@Update("insert into Table_info(table_name,database_id,theme_id,table_alias,des) VALUES(#{table_name},#{database_id},#{theme_id},#{table_alias},#{des})")
+	@Update("insert into Table_info(table_name,database_id,theme_id,table_alias,des,department) VALUES(#{table_name},#{database_id},#{theme_id},#{table_alias},#{des},#{department})")
 	@Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
 	public int insertTableInfo(TableInfo tableInfo);
 
@@ -46,6 +46,9 @@ public interface TableInfoMapper {
 
 	@Select("SELECT t.*,tt.*,CONCAT(i.service_path,dd.service_path) as service_path FROM Table_info t LEFT JOIN Database_info dd on t.database_id=dd.id LEFT JOIN Db_info i on dd.db_id=i.id LEFT JOIN (select d.id, d.name as theme_name,bb.name as business_name,bb.id as business_id from theme d LEFT JOIN business bb on d.business_id=bb.id) as tt on t.theme_id=tt.id WHERE t.is_delete=0 and t.state=1 AND t.theme_id=#{themeId}")
 	public List<TableExtendInfo> getTableInfoByThemeId(int themeId);
+
+	@Select("SELECT t.*,tt.*,CONCAT(i.service_path,dd.service_path) as service_path FROM Table_info t LEFT JOIN Database_info dd on t.database_id=dd.id LEFT JOIN Db_info i on dd.db_id=i.id LEFT JOIN (select d.id, d.name as theme_name,bb.name as business_name,bb.id as business_id from theme d LEFT JOIN business bb on d.business_id=bb.id) as tt on t.theme_id=tt.id WHERE t.is_delete=0 and t.state=1 AND t.department=#{department}")
+	public List<TableExtendInfo> getTableInfoByDepartment(String department);
 
 	@Select("select count(*) from Table_info where is_delete=0 and state=1")
 	public int getTableNum();

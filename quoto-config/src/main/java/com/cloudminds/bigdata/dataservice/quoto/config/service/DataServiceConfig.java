@@ -1175,6 +1175,12 @@ public class DataServiceConfig {
         return commonResponse;
     }
 
+    public CommonResponse getTableInfoByDepartment(String department) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getTableInfoByDepartment(department));
+        return commonResponse;
+    }
+
     public CommonResponse getTableNum() {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(tableInfoMapper.getTableNum());
