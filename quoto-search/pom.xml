@@ -106,7 +106,7 @@
                     <artifactId>jetty-runner</artifactId>
                 </exclusion>
             </exclusions>
-            <version>2.1.1-cdh6.1.1</version>
+            <version>3.1.2000.7.0.3.0-79</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
