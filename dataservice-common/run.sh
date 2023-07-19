@@ -27,7 +27,7 @@ run_service() {
         java -jar -Duser.timezone=Asia/Shanghai /dataservice/quoto-manage/bigdata-dataservice-quoto-manage.jar --spring.profiles.active=${2}
         ;;
 
-  "dataserver-common")
+  "dataservice-common")
         java -jar -Duser.timezone=Asia/Shanghai /dataservice/dataservice-common/dataservice-common.jar --spring.profiles.active=${2}
         ;;
 

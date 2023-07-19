@@ -34,7 +34,7 @@ run_service() {
   "label-manage")
         java -jar -Duser.timezone=Asia/Shanghai /dataservice/label-manage/bigdata-dataservice-label-manage.jar --spring.profiles.active=${2}
         ;;
-  "dataserver-common")
+  "dataservice-common")
         java -jar -Duser.timezone=Asia/Shanghai /dataservice/dataservice-common/dataservice-common.jar --spring.profiles.active=${2}
         ;;
     *)
