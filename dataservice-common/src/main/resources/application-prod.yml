@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos-client.nacos:8848
+        group: dataservice-232
+        namespace: dfa8081f69a4d787646c492a6faa83decbbecbda
+  redis:
+    host: bigdata-redis-master
+    port: 6379
+configDbUrl: jdbc:mysql://bigdata-mysql:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=true
+configDbAccount: root
+configDbPassword: bigdata-mysql-cloud1688

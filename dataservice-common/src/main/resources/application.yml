@@ -2,6 +2,6 @@ server:
   port: 8078
 spring:
   application:
-    name: dataServer-common
+    name: dataserver-common
   profiles:
     active: dev
