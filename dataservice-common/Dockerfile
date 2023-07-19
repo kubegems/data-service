@@ -6,6 +6,6 @@ WORKDIR /dataservice/dataserver-common
 
 COPY run.sh /run.sh
 
-COPY target/bigdata-dataservice-quoto-config.jar /dataservice/dataserver-common/
+COPY target/dataservice-common.jar /dataservice/dataserver-common/
 
 CMD ["java","-jar","-Duser.timezone=Asia/Shanghai","/dataservice/dataserver-common/dataserver-common.jar","--spring.profiles.active=prod"]
