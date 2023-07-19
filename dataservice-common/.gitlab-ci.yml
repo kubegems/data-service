@@ -8,3 +8,4 @@ include:
   project: 'devops/ci-template'
   file: '/bigdata/bigdata-dataservice/dataservice-common/gitlab-ci-template.yml'
   ref: develop
+
