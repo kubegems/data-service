@@ -147,18 +147,33 @@ public class DataServiceConfig {
     }
 
     public CommonResponse insertColumnAlias(ColumnAlias columnAlias) {
+        if (columnAlias == null || StringUtils.isEmpty(columnAlias.getColumn_name()) || StringUtils.isEmpty(columnAlias.getColumn_alias())) {
+            CommonResponse commonResponse = new CommonResponse();
+            commonResponse.setMessage("列名和列别名不能为空");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         CommonResponse commonResponse = new CommonResponse();
         ColumnAlias columnAliasOld = columnAliasMapper.getColumnAlias(columnAlias);
         if (columnAliasOld != null) {
             if (columnAliasOld.getIs_delete() == 0) {
                 commonResponse.setMessage("数据已存在,请不要重复新增！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             } else {
                 columnAliasOld.setDes(columnAlias.getDes());
                 columnAliasOld.setColumn_alias(columnAlias.getColumn_alias());
+                String dataType = getColunmType(columnAlias.getTable_id(), columnAlias.getColumn_name());
+                if (dataType == null) {
+                    commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+                    commonResponse.setSuccess(false);
+                    return commonResponse;
+                }
+                columnAliasOld.setData_type(dataType);
                 if (columnAliasMapper.updateColumnAlias(columnAliasOld) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
+                    return commonResponse;
                 }
             }
         } else {
@@ -174,8 +189,8 @@ public class DataServiceConfig {
                 commonResponse.setSuccess(false);
                 return commonResponse;
             }
-            refreshDataService(columnAlias.getTable_id());
         }
+        refreshDataService(columnAlias.getTable_id());
         return commonResponse;
     }
 
@@ -489,6 +504,16 @@ public class DataServiceConfig {
 
     public CommonResponse insertTableInfo(TableInfo tableInfo) {
         CommonResponse commonResponse = new CommonResponse();
+        if (tableInfo == null || StringUtils.isEmpty(tableInfo.getTable_name()) || StringUtils.isEmpty(tableInfo.getTable_alias())) {
+            commonResponse.setMessage("表名和表别名不能为空！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        if (tableInfo.getTable_alias().contains(".")) {
+            commonResponse.setMessage("表别名不能带.符号！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         TableInfo existTable = tableInfoMapper.getTableInfoByTableAlias(tableInfo);
         if (existTable != null && existTable.getIs_delete() == 0) {
             commonResponse.setMessage("此别名已存在,请重新命名！");
@@ -597,10 +622,24 @@ public class DataServiceConfig {
         // 与数据库的连接
         PreparedStatement pStemt = null;
         try {
-            conn = DriverManager.getConnection(dbConnInfo.getDb_url(), dbConnInfo.getUserName(),
+            String url = dbConnInfo.getDb_url();
+            String dbType = url.substring(5, url.indexOf(":", 5));
+            String sql = "SELECT \"" + columnName + "\" FROM \"" + dbConnInfo.getDatabase() + "\".\""
+                    + dbConnInfo.getTable_name() + "\" limit 1";
+            if (dbType.equals("postgresql")) {
+                url = url + "/" + dbConnInfo.getDatabase();
+                sql = "SELECT " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name() + " limit 1";
+            } else if (dbType.equals("sqlserver")) {
+                sql = "SELECT top 1 " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name();
+            }else if (dbType.equals("oracle")) {
+                sql = "SELECT " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name() + " where rownum=1";
+            }
+            conn = DriverManager.getConnection(url, dbConnInfo.getUserName(),
                     dbConnInfo.getPassword());
-            pStemt = conn.prepareStatement("SELECT \"" + columnName + "\" FROM \"" + dbConnInfo.getDatabase() + "\".\""
-                    + dbConnInfo.getTable_name() + "\" limit 1");
+            pStemt = conn.prepareStatement(sql);
             ResultSet set = pStemt.executeQuery();
             // 结果集元数据
             ResultSetMetaData rsmd = set.getMetaData();
@@ -773,10 +812,127 @@ public class DataServiceConfig {
                     }
                 }
             }
+        } else if (dbType.equals("postgresql")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                String table_name = dbConnInfo.getTable_name();
+                String db_name = "public";
+                if (dbConnInfo.getTable_name().contains(".")) {
+                    table_name = dbConnInfo.getTable_name().substring(dbConnInfo.getTable_name().indexOf(".") + 1);
+                    db_name = dbConnInfo.getTable_name().substring(0, dbConnInfo.getTable_name().indexOf("."));
+                }
+                conn = DriverManager.getConnection(url + "/" + dbConnInfo.getDatabase(), dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select tmp.*,columns.udt_name as type from (SELECT a.attname AS name,d.description AS comment FROM pg_attribute a LEFT JOIN pg_description d ON d.objoid  = a.attrelid AND d.objsubid = a.attnum WHERE  a.attnum > 0 AND    NOT a.attisdropped AND a.attrelid = '" + dbConnInfo.getTable_name() + "'::regclass) tmp left join (SELECT column_name, udt_name " +
+                        "FROM information_schema.columns " +
+                        "WHERE table_name='" + table_name + "' and table_schema='" + db_name + "') columns on tmp.name=columns.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("name"));
+                    columnAlias.setColumn_alias(set.getString("name"));
+                    columnAlias.setData_type(set.getString("type"));
+                    columnAlias.setDes(set.getString("comment"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        return false;
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        } else if (dbType.equals("sqlserver")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                String table_name = dbConnInfo.getTable_name();
+                String db_name = "public";
+                if (dbConnInfo.getTable_name().contains(".")) {
+                    table_name = dbConnInfo.getTable_name().substring(dbConnInfo.getTable_name().indexOf(".") + 1);
+                    db_name = dbConnInfo.getTable_name().substring(0, dbConnInfo.getTable_name().indexOf("."));
+                }
+                conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select tmp.*,cc.data_type from (SELECT\n" +
+                        "B.name AS column_name,\n" +
+                        "C.value AS comment\n" +
+                        "FROM " + dbConnInfo.getDatabase() + ".sys.tables A\n" +
+                        "INNER JOIN " + dbConnInfo.getDatabase() + ".sys.columns B ON B.object_id = A.object_id\n" +
+                        "LEFT JOIN " + dbConnInfo.getDatabase() + ".sys.extended_properties C ON C.major_id = B.object_id AND C.minor_id = B.column_id\n" +
+                        "WHERE a.object_id=Object_Id('" + dbConnInfo.getDatabase() + "." + dbConnInfo.getTable_name() + "')) tmp left join (SELECT column_name,data_type FROM " + dbConnInfo.getDatabase() + ".information_schema.columns WHERE table_name='" + table_name + "' and table_schema='" + db_name + "' and table_catalog='" + dbConnInfo.getDatabase() + "') cc on tmp.column_name=cc.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("column_name"));
+                    columnAlias.setColumn_alias(set.getString("column_name"));
+                    columnAlias.setData_type(set.getString("data_type"));
+                    columnAlias.setDes(set.getString("comment"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        return false;
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        } else if (dbType.equals("oracle")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select a.*,b.comments from (select column_name,data_type from all_tab_columns where table_name=upper('" + dbConnInfo.getTable_name() + "') and owner=upper('" + dbConnInfo.getDatabase() + "')) a left join (select column_name,comments from all_col_comments where table_name=upper('" + dbConnInfo.getTable_name() + "') and owner=upper('" + dbConnInfo.getDatabase() + "')) b on a.column_name=b.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("column_name"));
+                    columnAlias.setColumn_alias(set.getString("column_name"));
+                    columnAlias.setData_type(set.getString("data_type"));
+                    columnAlias.setDes(set.getString("comments"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        return false;
+                    }
+                }
+
+            } catch (
+
+                    SQLException e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
         } else {
             return false;
         }
-
         return true;
     }
 

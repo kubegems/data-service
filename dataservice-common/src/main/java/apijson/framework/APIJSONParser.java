@@ -222,7 +222,9 @@ public class APIJSONParser extends AbstractParser<Long> {
             request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Database_info\": {\"is_delete\":0,\"state\":1,\"db_id\":"
                     + dbId + "},\"count\":0}}";
             object = parseResponse(request);
-
+            if (object.get("[]") == null) {
+                continue;
+            }
             List<JSONObject> database_infos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
             for (int n = 0; n < database_infos.size(); n++) {
                 DatabaseInfo databaseInfo = JSONObject.parseObject(database_infos.get(n).getString("Database_info"), DatabaseInfo.class);

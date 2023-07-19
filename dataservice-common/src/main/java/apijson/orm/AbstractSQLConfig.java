@@ -331,46 +331,58 @@ public abstract class AbstractSQLConfig implements SQLConfig {
     }
 
     public static boolean isKYLIN(String db) {
-        return DATABASE_KYLIN.equals(db);
+        return DATABASE_KYLIN.equals(db.toUpperCase());
     }
 
     public static boolean isDATASERVICE(String db) {
-        return DATABASE_DATASERVICE.equals(db);
+        return DATABASE_DATASERVICE.equals(db.toUpperCase());
     }
 
     public static boolean isCLICKHOUSE(String db) {
-        return DATABASE_CLICKHOUSE.equals(db);
+        return DATABASE_CLICKHOUSE.equals(db.toUpperCase());
     }
 
     public static boolean isMySQL(String db) {
-        return DATABASE_MYSQL.equals(db);
+        return DATABASE_MYSQL.equals(db.toUpperCase());
     }
 
     @Override
     public boolean isPostgreSQL() {
-        return isPostgreSQL(getSQLDatabase());
+        DbInfo dbInfo = dbInfoMap.get(getSQLDatabase());
+        if(dbInfo==null){
+            throw new IllegalArgumentException("没有名字为:"+getSQLDatabase()+" 的数据服务！");
+        }
+        return isPostgreSQL(dbInfoMap.get(getSQLDatabase()).getDb_name());
     }
 
     public static boolean isPostgreSQL(String db) {
-        return DATABASE_POSTGRESQL.equals(db);
+        return DATABASE_POSTGRESQL.equals(db.toUpperCase());
     }
 
     @Override
     public boolean isSQLServer() {
-        return isSQLServer(getSQLDatabase());
+        DbInfo dbInfo = dbInfoMap.get(getSQLDatabase());
+        if(dbInfo==null){
+            throw new IllegalArgumentException("没有名字为:"+getSQLDatabase()+" 的数据服务！");
+        }
+        return isSQLServer(dbInfoMap.get(getSQLDatabase()).getDb_name());
     }
 
     public static boolean isSQLServer(String db) {
-        return DATABASE_SQLSERVER.equals(db);
+        return DATABASE_SQLSERVER.equals(db.toUpperCase());
     }
 
     @Override
     public boolean isOracle() {
-        return isOracle(getSQLDatabase());
+        DbInfo dbInfo = dbInfoMap.get(getSQLDatabase());
+        if(dbInfo==null){
+            throw new IllegalArgumentException("没有名字为:"+getSQLDatabase()+" 的数据服务！");
+        }
+        return isOracle(dbInfoMap.get(getSQLDatabase()).getDb_name());
     }
 
     public static boolean isOracle(String db) {
-        return DATABASE_ORACLE.equals(db);
+        return DATABASE_ORACLE.equals(db.toUpperCase());
     }
 
     @Override
@@ -379,7 +391,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
     }
 
     public static boolean isDb2(String db) {
-        return DATABASE_DB2.equals(db);
+        return DATABASE_DB2.equals(db.toUpperCase());
     }
 
     @Override
@@ -483,6 +495,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
         // String t = TABLE_KEY_MAP.containsKey(table) ? TABLE_KEY_MAP.get(table) :
         // table;
         // 如果要强制小写，则可在子类重写这个方法再 toLowerCase return
+        String t = getDatabase()+"."+getSchema() + "." + table;
         // DATABASE_POSTGRESQL.equals(getDatabase()) ? t.toLowerCase() : t;
         if (TABLE_KEY_MAP.containsKey(getDatabase()+"."+getSchema() + "." + table)) {
             return TABLE_KEY_MAP.get(getDatabase() + "." +getSchema() + "." + table);
@@ -498,7 +511,9 @@ public abstract class AbstractSQLConfig implements SQLConfig {
     @Override
     public String getTablePath() {
         String q = getQuote();
-
+        if(isPostgreSQL()||isSQLServer()||isOracle()){
+            q="";
+        }
         String sch = getSQLSchema();
         String sqlTable = getSQLTable();
 
@@ -823,7 +838,7 @@ public abstract class AbstractSQLConfig implements SQLConfig {
         // ", ");
         // }
 
-        if (getCount() > 0 && (isOracle() || isSQLServer() || isDb2())) { // Oracle, SQL Server, DB2 的 OFFSET 必须加 ORDER
+        if (getCount() > 0 && (isSQLServer() || isDb2())) { // Oracle, SQL Server, DB2 的 OFFSET 必须加 ORDER
             // BY
 
             // String[] ss = StringUtil.split(order);

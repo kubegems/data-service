@@ -729,7 +729,11 @@ public abstract class AbstractSQLExecutor implements SQLExecutor {
         if (connection == null || connection.isClosed()) {
             Log.i(TAG, "select  connection " + (connection == null ? " = null" : ("isClosed = " + connection.isClosed())));
             // PostgreSQL 不允许 cross-database
-            connection = DriverManager.getConnection(config.getDBUri(), config.getDBAccount(), config.getDBPassword());
+            String url = config.getDBUri();
+            if(config.isPostgreSQL()){
+                url = url + "/" + config.getSchema();
+            }
+            connection = DriverManager.getConnection(url, config.getDBAccount(), config.getDBPassword());
             connectionMap.put(config.getDatabase(), connection);
         }
 
