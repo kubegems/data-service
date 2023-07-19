@@ -1,11 +1,11 @@
 FROM harbor.cloudminds.com/library/openjdk:15.0.2-jdk-oraclelinux8
 
-ENV PROJECT=bigdata-service MODULE=dataserver-common
+ENV PROJECT=bigdata-service MODULE=dataservice-common
 
-WORKDIR /dataservice/dataserver-common
+WORKDIR /dataservice/dataservice-common
 
 COPY run.sh /run.sh
 
-COPY target/bigdata-dataservice-quoto-config.jar /dataservice/dataserver-common/
+COPY target/dataservice-common.jar /dataservice/dataservice-common/
 
-CMD ["java","-jar","-Duser.timezone=Asia/Shanghai","/dataservice/dataserver-common/dataserver-common.jar","--spring.profiles.active=prod"]
+CMD ["java","-jar","-Duser.timezone=Asia/Shanghai","/dataservice/dataservice-common/dataservice-common.jar","--spring.profiles.active=prod"]
