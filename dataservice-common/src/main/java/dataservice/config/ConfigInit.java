@@ -15,6 +15,6 @@ public class ConfigInit implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         dataServiceControl.initAPIJSONApplication();
         dataServiceControl.refreshConfig();
-        System.out.println("\n\n<<<<<<<<<<<<<<<<<<<<<<<< APIJSON 启动完成，试试调用自动化 API 吧 ^_^ >>>>>>>>>>>>>>>>>>>>>>>>\n");
+        System.out.println("\n\n<<<<<<<<<<<<<<<<<<<<<<<<< APIJSON 启动完成，试试调用自动化 API 吧 ^_^ >>>>>>>>>>>>>>>>>>>>>>>>\n");
     }
 }
