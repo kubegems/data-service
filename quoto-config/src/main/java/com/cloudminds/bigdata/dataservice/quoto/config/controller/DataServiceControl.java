@@ -146,6 +146,11 @@ public class DataServiceControl {
 		return dataServiceConfig.getTableInfoByThemeId(themeId);
 	}
 
+	@RequestMapping(value = "getTableInfoByDepartment", method = RequestMethod.GET)
+	public CommonResponse getTableInfoByDepartment(String department){
+		return dataServiceConfig.getTableInfoByDepartment(department);
+	}
+
 	@RequestMapping(value = "updateTableInfoStatus", method = RequestMethod.POST)
 	public CommonResponse updateTableInfoStatus(int id, int status) {
 		return dataServiceConfig.updateTableInfoStatus(id, status);

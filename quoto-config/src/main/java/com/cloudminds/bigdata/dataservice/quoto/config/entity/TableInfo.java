@@ -12,6 +12,7 @@ public class TableInfo extends BaseEntity{
 	private int business_id;
 	private String table_name;
 	private String table_alias;
+	private String department;
 	private int business_id_three_level;
 	private String business_name_three_level;
 	private int business_id_two_level;
