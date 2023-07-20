@@ -48,8 +48,8 @@ public class DataServiceControl {
 
 	// dbInfo
 	@RequestMapping(value = "getDbInfo", method = RequestMethod.GET)
-	public CommonResponse getDbInfo() {
-		return dataServiceConfig.getdbInfo();
+	public CommonResponse getDbInfo(Integer common_service) {
+		return dataServiceConfig.getdbInfo(common_service);
 	}
 
 	@RequestMapping(value = "insertDbInfo", method = RequestMethod.POST)

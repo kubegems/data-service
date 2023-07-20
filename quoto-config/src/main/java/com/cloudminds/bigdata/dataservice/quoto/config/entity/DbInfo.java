@@ -13,5 +13,7 @@ public class DbInfo extends BaseEntity {
     private String password;
     private String service_name;
     private String service_path;
+    private String creator;
     private int common_service = 1;
+    private DbInfoExtend extend;
 }

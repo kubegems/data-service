@@ -15,7 +15,7 @@ spring:
     port: 6379
 dataServiceUrl: http://bigdata-service-gw:8001
 datahubToken: eyJhbGciOiJIUzI1NiJ9.eyJhY3RvclR5cGUiOiJVU0VSIiwiYWN0b3JJZCI6ImRhdGFodWIiLCJ0eXBlIjoiUEVSU09OQUwiLCJ2ZXJzaW9uIjoiMiIsImp0aSI6IjhkMjcxY2RkLTI1YTItNGJiYS04MzIyLTZjNGQ1ZTc3NDkyOSIsInN1YiI6ImRhdGFodWIiLCJpc3MiOiJkYXRhaHViLW1ldGFkYXRhLXNlcnZpY2UifQ.vs3m07LL2-lkQMu-y_l4iflaq0kDlsHUDOzJ6Ai4Lig
-datahubUrl: http://172.16.32.95:8080
+datahubUrl: http://172.16.32.95:8082
 datahubGraphqlUrl: http://172.16.32.95:9002/api/v2/graphql
 hiveUrl: jdbc:hive2://172.16.23.37:10000
 hiveUser: dataserver
