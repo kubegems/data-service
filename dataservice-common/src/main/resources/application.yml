@@ -3,14 +3,16 @@ server:
 spring:
   application:
     name: dataservice-common
+  profiles:
+    active: dev
   cloud:
     nacos:
       discovery:
-        server-addr: localhost:8848
+        server-addr: 172.16.31.162:8848
         group: bigdata
   redis:
-    host: localhost
+    host: 172.16.24.231
     port: 6379
-configDbUrl: jdbc:mysql://localhost:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
-configDbAccount: xxxx
-configDbPassword: xxxx
+configDbUrl: jdbc:mysql://172.16.31.145:3306/bigdata_dataservice?characterEncoding=utf8&useSSL=false
+configDbAccount: root
+configDbPassword: root

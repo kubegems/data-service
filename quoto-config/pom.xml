@@ -105,6 +105,8 @@
 			<groupId>com.oracle</groupId>
 			<artifactId>ojdbc6</artifactId>
 			<version>11.2.0.4</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/src/main/resources/lib/ojdbc6-11.2.0.4.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba.cloud</groupId>
