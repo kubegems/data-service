@@ -59,27 +59,11 @@
 		<module>quoto-config</module>
 		<module>quoto-chatbot</module>
 		<module>standard-manage</module>
+		<module>clickhouseAtlas</module>
 		<module>quoto-manage</module>
 		<module>markdown-manage</module>
 		<module>quoto-search</module>
         <module>label-manage</module>
-		<module>assembly</module>
+		<module>dataservice-common</module>
 	</modules>
-	<build>
-	<plugins>
-	<plugin>
-		<artifactId>maven-assembly-plugin</artifactId>
-		<version>2.6</version>
-		<configuration>
-			<finalName>bigdata-dataservice-bin</finalName>
-			<descriptors>
-				<descriptor>assembly/assembly.xml</descriptor>
-			</descriptors>
-			<outputDirectory>../bin</outputDirectory>
-			<appendAssemblyId>false</appendAssemblyId>
-
-		</configuration>
-	</plugin>
-	</plugins>
-	</build>
 </project>

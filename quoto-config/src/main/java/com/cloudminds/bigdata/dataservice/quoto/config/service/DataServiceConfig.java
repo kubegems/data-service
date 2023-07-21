@@ -79,6 +79,10 @@ public class DataServiceConfig {
     private String endpoint;
     @Value("${bucketName}")
     private String bucketName;
+    @Value("${commonDataserviceUrl}")
+    private String commonDataserviceUrl;
+    @Value("${commonDataserviceName}")
+    private String commonDataserviceName;
 
     // columnAlias
     public CommonResponse getColumnAlias(int tableId) {
@@ -141,18 +145,33 @@ public class DataServiceConfig {
     }
 
     public CommonResponse insertColumnAlias(ColumnAlias columnAlias) {
+        if (columnAlias == null || StringUtils.isEmpty(columnAlias.getColumn_name()) || StringUtils.isEmpty(columnAlias.getColumn_alias())) {
+            CommonResponse commonResponse = new CommonResponse();
+            commonResponse.setMessage("列名和列别名不能为空");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         CommonResponse commonResponse = new CommonResponse();
         ColumnAlias columnAliasOld = columnAliasMapper.getColumnAlias(columnAlias);
         if (columnAliasOld != null) {
             if (columnAliasOld.getIs_delete() == 0) {
                 commonResponse.setMessage("数据已存在,请不要重复新增！");
                 commonResponse.setSuccess(false);
+                return commonResponse;
             } else {
                 columnAliasOld.setDes(columnAlias.getDes());
                 columnAliasOld.setColumn_alias(columnAlias.getColumn_alias());
+                String dataType = getColunmType(columnAlias.getTable_id(), columnAlias.getColumn_name());
+                if (dataType == null) {
+                    commonResponse.setMessage("列不存在或者查询列的数据类型失败！");
+                    commonResponse.setSuccess(false);
+                    return commonResponse;
+                }
+                columnAliasOld.setData_type(dataType);
                 if (columnAliasMapper.updateColumnAlias(columnAliasOld) != 1) {
                     commonResponse.setMessage("新增数据失败,请稍后再试！");
                     commonResponse.setSuccess(false);
+                    return commonResponse;
                 }
             }
         } else {
@@ -168,8 +187,8 @@ public class DataServiceConfig {
                 commonResponse.setSuccess(false);
                 return commonResponse;
             }
-            refreshDataService(columnAlias.getTable_id());
         }
+        refreshDataService(columnAlias.getTable_id());
         return commonResponse;
     }
 
@@ -210,9 +229,12 @@ public class DataServiceConfig {
     }
 
     // datainfo
-    public CommonResponse getdbInfo() {
+    public CommonResponse getdbInfo(Integer common_service) {
         CommonResponse commonResponse = new CommonResponse();
-        commonResponse.setData(databaseInfoMapper.getdbInfo());
+        if (common_service == null) {
+            common_service = 0;
+        }
+        commonResponse.setData(databaseInfoMapper.getdbInfo(common_service));
         return commonResponse;
     }
 
@@ -483,6 +505,16 @@ public class DataServiceConfig {
 
     public CommonResponse insertTableInfo(TableInfo tableInfo) {
         CommonResponse commonResponse = new CommonResponse();
+        if (tableInfo == null || StringUtils.isEmpty(tableInfo.getTable_name()) || StringUtils.isEmpty(tableInfo.getTable_alias())) {
+            commonResponse.setMessage("表名和表别名不能为空！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        if (tableInfo.getTable_alias().contains(".")) {
+            commonResponse.setMessage("表别名不能带.符号！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         TableInfo existTable = tableInfoMapper.getTableInfoByTableAlias(tableInfo);
         if (existTable != null && existTable.getIs_delete() == 0) {
             commonResponse.setMessage("此别名已存在,请重新命名！");
@@ -511,7 +543,11 @@ public class DataServiceConfig {
             }
         }
         if (commonResponse.isSuccess()) {
-            insertColumnAlias(tableInfo.getId());
+            commonResponse.setMessage(null);
+            CommonResponse commonResponse1 = insertColumnAlias(tableInfo.getId());
+            if(!commonResponse1.isSuccess()){
+                commonResponse.setMessage(commonResponse1.getMessage());
+            }
             QuotoInfo quotoInfo = new QuotoInfo();
             quotoInfo.setTable_id(tableInfo.getId());
             quotoInfo.setQuoto_sql("count(*)");
@@ -547,7 +583,7 @@ public class DataServiceConfig {
             commonResponse.setMessage("列别名数据库删除失败,请联系管理员");
             return commonResponse;
         }
-        insertColumnAlias(tableInfo.getId());
+        commonResponse = insertColumnAlias(tableInfo.getId());
         refreshDataService(id);
         return commonResponse;
     }
@@ -591,10 +627,24 @@ public class DataServiceConfig {
         // 与数据库的连接
         PreparedStatement pStemt = null;
         try {
-            conn = DriverManager.getConnection(dbConnInfo.getDb_url(), dbConnInfo.getUserName(),
+            String url = dbConnInfo.getDb_url();
+            String dbType = url.substring(5, url.indexOf(":", 5));
+            String sql = "SELECT \"" + columnName + "\" FROM \"" + dbConnInfo.getDatabase() + "\".\""
+                    + dbConnInfo.getTable_name() + "\" limit 1";
+            if (dbType.equals("postgresql")) {
+                url = url + "/" + dbConnInfo.getDatabase();
+                sql = "SELECT " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name() + " limit 1";
+            } else if (dbType.equals("sqlserver")) {
+                sql = "SELECT top 1 " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name();
+            } else if (dbType.equals("oracle")) {
+                sql = "SELECT " + columnName + " FROM " + dbConnInfo.getDatabase() + "."
+                        + dbConnInfo.getTable_name() + " where rownum=1";
+            }
+            conn = DriverManager.getConnection(url, dbConnInfo.getUserName(),
                     dbConnInfo.getPassword());
-            pStemt = conn.prepareStatement("SELECT \"" + columnName + "\" FROM \"" + dbConnInfo.getDatabase() + "\".\""
-                    + dbConnInfo.getTable_name() + "\" limit 1");
+            pStemt = conn.prepareStatement(sql);
             ResultSet set = pStemt.executeQuery();
             // 结果集元数据
             ResultSetMetaData rsmd = set.getMetaData();
@@ -620,11 +670,13 @@ public class DataServiceConfig {
         return commonResponse;
     }
 
-    public boolean insertColumnAlias(int tableId) {
+    public CommonResponse insertColumnAlias(int tableId) {
+        CommonResponse commonResponse = new CommonResponse();
         DbConnInfo dbConnInfo = databaseInfoMapper.getdbConnInfoByTableId(tableId);
         if (dbConnInfo == null) {
-            System.out.println("tableId:" + tableId + " 不存在");
-            return false;
+            commonResponse.setMessage("tableId:" + tableId + " 不存在");
+            commonResponse.setSuccess(false);
+            return commonResponse;
         }
         String url = dbConnInfo.getDb_url();
         String dbType = url.substring(5, url.indexOf(":", 5));
@@ -645,15 +697,18 @@ public class DataServiceConfig {
                     columnAlias.setDes(set.getString("comment"));
                     columnAlias.setTable_id(tableId);
                     if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
-                        return false;
+                        commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
                     }
                 }
 
             } catch (
-
                     SQLException e) {
                 e.printStackTrace();
-                return false;
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage(e.getMessage());
+                return commonResponse;
             } finally {
                 if (pStemt != null) {
                     try {
@@ -689,8 +744,9 @@ public class DataServiceConfig {
                     response = httpclient.execute(target, httpget, localContext);
                     // 失败返回
                     if (response.getStatusLine().getStatusCode() != 200) {
-                        System.out.println("kylin访问失败");
-                        return false;
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("kylin访问失败");
+                        return commonResponse;
                     }
                     List<JSONObject> result = JSONObject.parseArray(EntityUtils.toString(response.getEntity()),
                             JSONObject.class);
@@ -707,14 +763,18 @@ public class DataServiceConfig {
                                 columnAlias.setDes(column.getString("comment"));
                                 columnAlias.setTable_id(tableId);
                                 if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
-                                    return false;
+                                    commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                                    commonResponse.setSuccess(false);
+                                    return commonResponse;
                                 }
                             }
-                            return true;
+                            return commonResponse;
                         }
                     }
                     System.out.println("kylin查询表信息的接口返回数据有问题");
-                    return false;
+                    commonResponse.setMessage("kylin查询表信息的接口返回数据有问题");
+                    commonResponse.setSuccess(false);
+                    return commonResponse;
                 } catch (IOException e) {
                     System.out.println(e);
                 } finally {
@@ -728,7 +788,7 @@ public class DataServiceConfig {
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
-                    return true;
+                    return commonResponse;
                 }
             }
 
@@ -749,15 +809,145 @@ public class DataServiceConfig {
                     columnAlias.setDes(set.getString("comment"));
                     columnAlias.setTable_id(tableId);
                     if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
-                        return false;
+                        commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
                     }
                 }
 
-            } catch (
-
-                    SQLException e) {
+            } catch (SQLException e) {
                 e.printStackTrace();
-                return false;
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        } else if (dbType.equals("postgresql")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                String table_name = dbConnInfo.getTable_name();
+                String db_name = "public";
+                if (dbConnInfo.getTable_name().contains(".")) {
+                    table_name = dbConnInfo.getTable_name().substring(dbConnInfo.getTable_name().indexOf(".") + 1);
+                    db_name = dbConnInfo.getTable_name().substring(0, dbConnInfo.getTable_name().indexOf("."));
+                }
+                conn = DriverManager.getConnection(url + "/" + dbConnInfo.getDatabase(), dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select tmp.*,columns.udt_name as type from (SELECT a.attname AS name,d.description AS comment FROM pg_attribute a LEFT JOIN pg_description d ON d.objoid  = a.attrelid AND d.objsubid = a.attnum WHERE  a.attnum > 0 AND    NOT a.attisdropped AND a.attrelid = '" + dbConnInfo.getTable_name() + "'::regclass) tmp left join (SELECT column_name, udt_name " +
+                        "FROM information_schema.columns " +
+                        "WHERE table_name='" + table_name + "' and table_schema='" + db_name + "') columns on tmp.name=columns.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("name"));
+                    columnAlias.setColumn_alias(set.getString("name"));
+                    columnAlias.setData_type(set.getString("type"));
+                    columnAlias.setDes(set.getString("comment"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        } else if (dbType.equals("sqlserver")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                String table_name = dbConnInfo.getTable_name();
+                String db_name = "public";
+                if (dbConnInfo.getTable_name().contains(".")) {
+                    table_name = dbConnInfo.getTable_name().substring(dbConnInfo.getTable_name().indexOf(".") + 1);
+                    db_name = dbConnInfo.getTable_name().substring(0, dbConnInfo.getTable_name().indexOf("."));
+                }
+                conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select tmp.*,cc.data_type from (SELECT\n" +
+                        "B.name AS column_name,\n" +
+                        "C.value AS comment\n" +
+                        "FROM " + dbConnInfo.getDatabase() + ".sys.tables A\n" +
+                        "INNER JOIN " + dbConnInfo.getDatabase() + ".sys.columns B ON B.object_id = A.object_id\n" +
+                        "LEFT JOIN " + dbConnInfo.getDatabase() + ".sys.extended_properties C ON C.major_id = B.object_id AND C.minor_id = B.column_id\n" +
+                        "WHERE a.object_id=Object_Id('" + dbConnInfo.getDatabase() + "." + dbConnInfo.getTable_name() + "')) tmp left join (SELECT column_name,data_type FROM " + dbConnInfo.getDatabase() + ".information_schema.columns WHERE table_name='" + table_name + "' and table_schema='" + db_name + "' and table_catalog='" + dbConnInfo.getDatabase() + "') cc on tmp.column_name=cc.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("column_name"));
+                    columnAlias.setColumn_alias(set.getString("column_name"));
+                    columnAlias.setData_type(set.getString("data_type"));
+                    columnAlias.setDes(set.getString("comment"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
+            } finally {
+                if (pStemt != null) {
+                    try {
+                        pStemt.close();
+                        conn.close();
+                    } catch (SQLException e) {
+                    }
+                }
+            }
+        } else if (dbType.equals("oracle")) {
+            Connection conn = null;
+            // 与数据库的连接
+            PreparedStatement pStemt = null;
+            try {
+                conn = DriverManager.getConnection(url, dbConnInfo.getUserName(), dbConnInfo.getPassword());
+                pStemt = conn.prepareStatement("select a.*,b.comments from (select column_name,data_type from all_tab_columns where table_name=upper('" + dbConnInfo.getTable_name() + "') and owner=upper('" + dbConnInfo.getDatabase() + "')) a left join (select column_name,comments from all_col_comments where table_name=upper('" + dbConnInfo.getTable_name() + "') and owner=upper('" + dbConnInfo.getDatabase() + "')) b on a.column_name=b.column_name");
+                ResultSet set = pStemt.executeQuery();
+                while (set.next()) {
+                    ColumnAlias columnAlias = new ColumnAlias();
+                    columnAlias.setColumn_name(set.getString("column_name"));
+                    columnAlias.setColumn_alias(set.getString("column_name"));
+                    columnAlias.setData_type(set.getString("data_type"));
+                    columnAlias.setDes(set.getString("comments"));
+                    columnAlias.setTable_id(tableId);
+                    if (columnAliasMapper.insertColumnAlias(columnAlias) != 1) {
+                        commonResponse.setMessage("插入列" + columnAlias.getColumn_name() + "失败,请稍后再试！");
+                        commonResponse.setSuccess(false);
+                        return commonResponse;
+                    }
+                }
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+                commonResponse.setMessage(e.getMessage());
+                commonResponse.setSuccess(false);
+                return commonResponse;
             } finally {
                 if (pStemt != null) {
                     try {
@@ -768,10 +958,11 @@ public class DataServiceConfig {
                 }
             }
         } else {
-            return false;
+            commonResponse.setMessage("不支持自动拉列的数据库类型："+dbType+"，请手动添加列！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
         }
-
-        return true;
+        return commonResponse;
     }
 
     public synchronized CommonResponse insertUserToken(UserToken userToken) {
@@ -1023,10 +1214,64 @@ public class DataServiceConfig {
 
     public CommonResponse insertDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
+        if (dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
+        }
+        if (StringUtils.isEmpty(dbInfo.getDb_url()) && dbInfo.getExtend() == null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("服务连接参数不能为空");
+            return commonResponse;
+        }
+        if (StringUtils.isEmpty(dbInfo.getDb_url())) {
+            String dbType = dbInfo.getDb_name().toLowerCase();
+            if (dbType.equals("mysql") || dbType.equals("kylin") || dbType.equals("clickhouse") || dbType.equals("postgresql") || dbType.equals("sqlserver") || dbType.equals("oracle")) {
+                String dbUrl = "jdbc:" + dbType;
+                if (dbType.equals("oracle")) {
+                    dbUrl = dbUrl + ":thin:@";
+                    if (StringUtils.isEmpty(dbInfo.getExtend().getService_name())) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("oracle服务名不能为空");
+                        return commonResponse;
+                    }
+                } else {
+                    dbUrl = dbUrl + "://";
+                }
+                dbUrl = dbUrl + dbInfo.getExtend().getHost() + ":" + dbInfo.getExtend().getPort();
+
+                if (dbType.equals("oracle")) {
+                    dbUrl = dbUrl + ":" + dbInfo.getExtend().getService_name();
+                }
+                if (!StringUtils.isEmpty(dbInfo.getExtend().getConnect_param())) {
+                    if (dbInfo.getExtend().getConnect_param().startsWith("?")) {
+                        dbUrl = dbUrl + dbInfo.getExtend().getConnect_param();
+                    } else {
+                        dbUrl = dbUrl + "?" + dbInfo.getExtend().getConnect_param();
+                    }
+                }
+                dbInfo.setDb_url(dbUrl);
+            } else {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("不支持得dbType");
+                return commonResponse;
+            }
+        }
+        //判断service_name是否重复
+        if (databaseInfoMapper.getDbInfoByServiceName(dbInfo.getService_name()) != null) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("服务名称已存在");
+            return commonResponse;
+        }
+
+        if (dbInfo.getService_name().equals("DATASERVICE")) {
+            commonResponse.setSuccess(false);
+            commonResponse.setMessage("DATASERVICE为系统配置服务的名称,请更换其他名称");
+            return commonResponse;
+        }
+
+        if (dbInfo.getCommon_service() == 1) {
+            dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name()+"/");
         }
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoByDbUrl(dbInfo);
         if (dbInfoOld != null) {
@@ -1045,6 +1290,11 @@ public class DataServiceConfig {
             if (databaseInfoMapper.insertDnInfo(dbInfo) != 1) {
                 commonResponse.setMessage("新增数据失败,请稍后再试！");
                 commonResponse.setSuccess(false);
+            } else {
+                if (dbInfo.getCommon_service() == 1) {
+                    //设置redis订阅通道去更新通用数据服务
+                    redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+                }
             }
         }
         return commonResponse;
@@ -1052,21 +1302,78 @@ public class DataServiceConfig {
 
     public CommonResponse updateDbInfo(DbInfo dbInfo) {
         CommonResponse commonResponse = new CommonResponse();
-        if (dbInfo.getDb_url().isEmpty() || dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
+        if (dbInfo.getDb_name().isEmpty() || dbInfo.getUserName().isEmpty() || dbInfo.getPassword().isEmpty() || dbInfo.getService_name().isEmpty()) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("服务地址,服务类型,用户名,密码都不能为空");
             return commonResponse;
         }
+        if (dbInfo.getCommon_service() == 1) {
+            String dbType = dbInfo.getDb_name().toLowerCase();
+            if (dbType.equals("mysql") || dbType.equals("kylin") || dbType.equals("clickhouse") || dbType.equals("postgresql") || dbType.equals("sqlserver") || dbType.equals("oracle")) {
+                String dbUrl = "jdbc:" + dbType;
+                if (dbType.equals("oracle")) {
+                    dbUrl = dbUrl + ":thin:@";
+                    if (StringUtils.isEmpty(dbInfo.getExtend().getService_name())) {
+                        commonResponse.setSuccess(false);
+                        commonResponse.setMessage("oracle服务名不能为空");
+                        return commonResponse;
+                    }
+                } else {
+                    dbUrl = dbUrl + "://";
+                }
+                dbUrl = dbUrl + dbInfo.getExtend().getHost() + ":" + dbInfo.getExtend().getPort();
+
+                if (dbType.equals("oracle")) {
+                    dbUrl = dbUrl + ":" + dbInfo.getExtend().getService_name();
+                }
+                if (!StringUtils.isEmpty(dbInfo.getExtend().getConnect_param())) {
+                    if (dbInfo.getExtend().getConnect_param().startsWith("?")) {
+                        dbUrl = dbUrl + dbInfo.getExtend().getConnect_param();
+                    } else {
+                        dbUrl = dbUrl + "?" + dbInfo.getExtend().getConnect_param();
+                    }
+                }
+                dbInfo.setDb_url(dbUrl);
+            }
+        }
+
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
+        if (dbInfoOld.getCommon_service() == 1) {
+            dbInfo.setService_path(dbInfoOld.getService_path());
+        }
         if (dbInfoOld == null) {
             commonResponse.setMessage("原始数据不存在,请刷新后再操作");
             commonResponse.setSuccess(false);
             return commonResponse;
         }
+        //更改服务名称后需要判断是否重复
+        if (!dbInfoOld.getService_name().equals(dbInfo.getService_name())) {
+            if (dbInfo.getService_name().equals("DATASERVICE")) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("DATASERVICE为系统配置服务的名称,请更换其他名称");
+                return commonResponse;
+            }
+            if (databaseInfoMapper.getDbInfoByServiceName(dbInfo.getService_name()) != null) {
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("服务名称已存在");
+                return commonResponse;
+            }
+            if (dbInfoOld.getCommon_service() == 1) {
+                dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name()+"/");
+            }
+        }
+
         if (databaseInfoMapper.updateDbInfo(dbInfo) < 1) {
             commonResponse.setMessage("更新失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
+        } else {
+            if (dbInfo.getCommon_service() != dbInfoOld.getCommon_service() ||
+                    (dbInfo.getCommon_service() == 1 && ((!dbInfoOld.getService_name().equals(dbInfo.getService_name()) || (!dbInfoOld.getDb_url().equals(dbInfo.getDb_url())) ||
+                            (!dbInfoOld.getUserName().equals(dbInfo.getUserName())) || (!dbInfoOld.getPassword().equals(dbInfo.getPassword())))))) {
+                //设置redis订阅通道去更新通用数据服务
+                redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+            }
         }
         commonResponse.setMessage("更新成功");
         return commonResponse;
@@ -1084,6 +1391,11 @@ public class DataServiceConfig {
             commonResponse.setMessage("删除失败,请稍后再试");
             commonResponse.setSuccess(false);
             return commonResponse;
+        } else {
+            if (dbInfoOld.getCommon_service() == 1) {
+                //设置redis订阅通道去更新通用数据服务
+                redisUtil.convertAndSend(commonDataserviceName, "reflushDbInfo");
+            }
         }
         commonResponse.setMessage("删除成功");
         return commonResponse;
@@ -1119,6 +1431,12 @@ public class DataServiceConfig {
         return commonResponse;
     }
 
+    public CommonResponse getTableInfoByDepartment(String department) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(tableInfoMapper.getTableInfoByDepartment(department));
+        return commonResponse;
+    }
+
     public CommonResponse getTableNum() {
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setData(tableInfoMapper.getTableNum());
@@ -1141,6 +1459,11 @@ public class DataServiceConfig {
         //查询数据服务刷新地址
         String servicePath = tableInfoMapper.getDataServicePathByTableId(tableId);
         if (org.apache.commons.lang.StringUtils.isEmpty(servicePath)) {
+            return;
+        }
+        if (servicePath.startsWith(commonDataserviceUrl)) {
+            //设置redis订阅通道去更新通用数据服务的配置信息
+            redisUtil.convertAndSend(commonDataserviceName, "reflushConfig");
             return;
         }
         Thread t = new Thread() {
@@ -1197,7 +1520,7 @@ public class DataServiceConfig {
 
     public CommonResponse uploadFile(MultipartFile file, String project) {
         CommonResponse commonResponse = new CommonResponse();
-        if(file==null||file.isEmpty()||StringUtils.isEmpty(project)){
+        if (file == null || file.isEmpty() || StringUtils.isEmpty(project)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("file和project不能为空");
             return commonResponse;
@@ -1207,7 +1530,7 @@ public class DataServiceConfig {
         String fileKey = project + "/" + nowTime + "_" + file.getOriginalFilename();
         PutObjectResult result = OssUtils.uploadFile(bucketName, fileKey, tmpFile);
         tmpFile.delete();
-        commonResponse.setData(endpoint+"/bigdata/"+fileKey);
+        commonResponse.setData(endpoint + "/bigdata/" + fileKey);
         return commonResponse;
     }
 
@@ -1246,18 +1569,18 @@ public class DataServiceConfig {
 
     public CommonResponse deleteFile(String url) {
         CommonResponse commonResponse = new CommonResponse();
-        if(StringUtils.isEmpty(url)){
+        if (StringUtils.isEmpty(url)) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("url和project不能为空");
             return commonResponse;
         }
-        if(!url.contains(endpoint+"/"+bucketName+"/")){
+        if (!url.contains(endpoint + "/" + bucketName + "/")) {
             commonResponse.setSuccess(false);
             commonResponse.setMessage("url不是通过上传接口生成的,不支持删除");
             return commonResponse;
         }
-        String fileName = url.replace(endpoint+"/"+bucketName+"/","");
-        OssUtils.deleteFile(bucketName,fileName);
+        String fileName = url.replace(endpoint + "/" + bucketName + "/", "");
+        OssUtils.deleteFile(bucketName, fileName);
         return commonResponse;
     }
 

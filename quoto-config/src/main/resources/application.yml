@@ -40,3 +40,5 @@ accessKey: JQBD6AYPLOLJD91MZUJA
 secretKey: 4R0XVWCEEhdgN3cmHu3Wl9249apfq2QNU1yijmJ5
 endpoint: https://s3.harix.iamidata.com
 bucketName: bigdata
+commonDataserviceUrl: /common/dataservice/data/
+commonDataserviceName: common

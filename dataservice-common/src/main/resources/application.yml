@@ -1,0 +1,7 @@
+server:
+  port: 8078
+spring:
+  application:
+    name: dataservice-common
+  profiles:
+    active: dev

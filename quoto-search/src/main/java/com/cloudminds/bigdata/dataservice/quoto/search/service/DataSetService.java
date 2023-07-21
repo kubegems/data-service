@@ -884,7 +884,7 @@ public class DataSetService {
             if (dataSet.getData_connect_type() == 1) {
                 sql = dataSet.getData_rule().replaceAll("\n", " ");
                 if (!StringUtils.isEmpty(queryDataReq.getSql())) {
-                    sql = queryDataReq.getSql().replaceAll("source_table", "(" + sql + ")");
+                    sql = queryDataReq.getSql().replaceAll("source_table", "(" + sql + ") alias_table");
                 }
             } else {
                 sql = "select * from " + ckDataSetDB + ".dis_" + dataSet.getMapping_ck_table();

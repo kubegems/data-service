@@ -8,3 +8,4 @@ COPY standard-manage/target/bigdata-dataservice-standard-manage.jar /dataservice
 COPY quoto-manage/target/bigdata-dataservice-quoto-manage.jar /dataservice/quoto-manage/
 COPY quoto-search/target/bigdata-dataservice-quoto-search.jar /dataservice/quoto-search/
 COPY label-manage/target/bigdata-dataservice-label-manage.jar /dataservice/label-manage/
+COPY dataservice-common/target/dataservice-common.jar /dataservice/dataservice-common/

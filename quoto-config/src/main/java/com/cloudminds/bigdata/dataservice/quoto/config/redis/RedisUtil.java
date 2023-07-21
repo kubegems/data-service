@@ -186,6 +186,29 @@ public final class RedisUtil {
         }
  
     }
+
+    /**
+     * 给某个渠道发消息
+     * @param channel
+     * @param value
+     * @return
+     */
+    public boolean convertAndSend(String channel, Object value) {
+
+        try {
+            redisTemplate.convertAndSend(channel,value);
+
+            return true;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return false;
+
+        }
+
+    }
  
     /**
      * 109
