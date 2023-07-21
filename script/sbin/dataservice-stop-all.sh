@@ -67,4 +67,8 @@ stopApp
 SERVER_NAME="quoto-search"
 stopApp
 
+#dataservice-common
+SERVER_NAME="dataservice-common"
+stopApp
+
 echo "stop-all shell script executed completely"

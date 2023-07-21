@@ -59,7 +59,6 @@
 		<module>quoto-config</module>
 		<module>quoto-chatbot</module>
 		<module>standard-manage</module>
-		<module>clickhouseAtlas</module>
 		<module>quoto-manage</module>
 		<module>markdown-manage</module>
 		<module>quoto-search</module>

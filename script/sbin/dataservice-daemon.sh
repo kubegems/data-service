@@ -169,6 +169,9 @@ case $SERVER_NAME in
   "dataservice-quoto-search"|"quoto-search"|"bigdata-dataservice-quoto-search")
     export SERVER_NAME="bigdata-dataservice-quoto-search"
     ;;
+  "common"|"dataservice-common"|"bigdata-dataservice-common")
+    export SERVER_NAME="bigdata-dataservice-common"
+    ;;
   *)
     ;;
 esac

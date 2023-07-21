@@ -84,6 +84,10 @@ startApp
 SERVER_NAME="quoto-search"
 startApp
 
+#dataservice-common
+SERVER_NAME="dataservice-common"
+startApp
+
 echo "start-all shell script executed completely"
 sleep 15
 echo "Start to check all dataserver microservice"
@@ -129,6 +133,10 @@ checkServer
 
 #quoto-search
 SERVER_NAME="quoto-search"
+checkServer
+
+#dataservice-common
+SERVER_NAME="dataservice-common"
 checkServer
 
 echo "dataservice started successfully"

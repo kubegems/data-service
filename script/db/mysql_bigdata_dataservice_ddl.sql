@@ -45,6 +45,9 @@ CREATE TABLE `Db_info`  (
   `service_name` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `service_path` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
   `state` int(11) NOT NULL DEFAULT 1 COMMENT '1是可用 0是不可用',
+  `common_service` smallint(1) NOT NULL COMMENT '1是通用服务 0是非通用服务',
+  `extend` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  `creator` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `des` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
   `is_delete` int(11) NULL DEFAULT 0 COMMENT '1 删除 0未删除',
   PRIMARY KEY (`id`) USING BTREE

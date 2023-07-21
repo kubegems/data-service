@@ -18,6 +18,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>../dataservice-common/target</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>../quoto-chatbot/target</directory>
             <outputDirectory>lib</outputDirectory>
             <includes>
@@ -50,6 +57,13 @@
             <outputDirectory>conf</outputDirectory>
             <includes>
                 <include>*gateway.yml</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../dataservice-common/src/main/resources</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>*common.yml</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -106,6 +120,7 @@
                 <include>bigdata-dataservice:quoto-config</include>
                 <include>bigdata-dataservice:quoto-roc</include>
                 <include>bigdata-dataservice:quoto-search</include>
+                <include>bigdata-dataservice:dataservice-common</include>
             </includes>
         </moduleSet>
     </moduleSets>
