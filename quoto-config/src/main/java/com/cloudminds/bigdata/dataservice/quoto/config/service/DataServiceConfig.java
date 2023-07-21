@@ -264,6 +264,13 @@ public class DataServiceConfig {
 
     public CommonResponse deleteDatabaseInfo(int id) {
         CommonResponse commonResponse = new CommonResponse();
+        //查询库下面是否有表
+        List<TableInfo> tableInfos = tableInfoMapper.getTableInfoByDataBaseId(id);
+        if (tableInfos != null && tableInfos.size() > 0) {
+            commonResponse.setMessage("该库下面有表,请先删除表！");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
         if (databaseInfoMapper.updateDatabaseInfoDelete(id, 1) != 1) {
             commonResponse.setMessage("删除失败,请稍后再试！");
             commonResponse.setSuccess(false);
@@ -547,7 +554,7 @@ public class DataServiceConfig {
         if (commonResponse.isSuccess()) {
             commonResponse.setMessage(null);
             CommonResponse commonResponse1 = insertColumnAlias(tableInfo.getId());
-            if(!commonResponse1.isSuccess()){
+            if (!commonResponse1.isSuccess()) {
                 commonResponse.setMessage(commonResponse1.getMessage());
             }
             QuotoInfo quotoInfo = new QuotoInfo();
@@ -960,7 +967,7 @@ public class DataServiceConfig {
                 }
             }
         } else {
-            commonResponse.setMessage("不支持自动拉列的数据库类型："+dbType+"，请手动添加列！");
+            commonResponse.setMessage("不支持自动拉列的数据库类型：" + dbType + "，请手动添加列！");
             commonResponse.setSuccess(false);
             return commonResponse;
         }
@@ -1273,7 +1280,7 @@ public class DataServiceConfig {
         }
 
         if (dbInfo.getCommon_service() == 1) {
-            dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name()+"/");
+            dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name() + "/");
         }
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoByDbUrl(dbInfo);
         if (dbInfoOld != null) {
@@ -1361,7 +1368,7 @@ public class DataServiceConfig {
                 return commonResponse;
             }
             if (dbInfoOld.getCommon_service() == 1) {
-                dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name()+"/");
+                dbInfo.setService_path(commonDataserviceUrl + dbInfo.getService_name() + "/");
             }
         }
 
@@ -1386,6 +1393,13 @@ public class DataServiceConfig {
         DbInfo dbInfoOld = databaseInfoMapper.getDbInfoById(dbInfo.getId());
         if (dbInfoOld == null) {
             commonResponse.setMessage("原始数据不存在,请刷新后再操作");
+            commonResponse.setSuccess(false);
+            return commonResponse;
+        }
+        //判断下面是不是有库
+        List<DatabaseInfo> databaseInfos = databaseInfoMapper.getDataBaseByDbid(dbInfo.getId());
+        if (databaseInfos != null && databaseInfos.size() > 0) {
+            commonResponse.setMessage("该服务下面有库,请先删除库");
             commonResponse.setSuccess(false);
             return commonResponse;
         }
