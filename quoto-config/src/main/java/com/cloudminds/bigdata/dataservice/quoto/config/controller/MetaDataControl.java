@@ -76,4 +76,9 @@ public class MetaDataControl {
         return metaDataService.hiveScriptBloodLine(hiveScriptBloodLineReq);
     }
 
+    @RequestMapping(value = "syncMetaDataDomainAndOwner", method = RequestMethod.GET)
+    public CommonResponse syncMetaDataDomainAndOwner(Integer table_type, String database_name, String name){
+        return metaDataService.syncMetaDataDomainAndOwner(table_type,database_name,name);
+    }
+
 }
