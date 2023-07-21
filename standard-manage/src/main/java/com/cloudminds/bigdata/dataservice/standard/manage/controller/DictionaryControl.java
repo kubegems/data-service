@@ -60,6 +60,12 @@ public class DictionaryControl {
         return dictionaryService.findDictionary(dictionaryQuery);
     }
 
+    // 查询字典
+    @RequestMapping(value = "queryByCode", method = RequestMethod.GET)
+    public CommonResponse queryDictionaryByCode(String code) {
+        return dictionaryService.queryDictionaryByCode(code);
+    }
+
     //上传文件获取字典信息
     @RequestMapping(value = "analysisFile", method = RequestMethod.POST)
     public CommonResponse analysisFile(@RequestParam MultipartFile file, HttpServletRequest request)  {

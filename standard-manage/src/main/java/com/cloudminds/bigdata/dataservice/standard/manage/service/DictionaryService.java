@@ -248,6 +248,13 @@ public class DictionaryService {
     }
 
 
+    public CommonResponse queryDictionaryByCode(String code) {
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setData(dictionaryMapper.findDictionaryByCode(code));
+        return commonResponse;
+    }
+
+
     public CommonResponse analysisFile(MultipartFile file) {
         CommonResponse commonResponse = new CommonResponse();
         List<DictionaryValue> dictionaryValueList = new ArrayList<>();
