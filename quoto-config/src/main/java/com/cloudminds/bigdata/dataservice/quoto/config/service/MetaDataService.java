@@ -903,7 +903,7 @@ public class MetaDataService {
         String datahubInstance = "";
         MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(historyDataAddDataBase.getTable_type());
         if (metaDataSource != null && (!StringUtils.isEmpty(metaDataSource.getDatahub_instance()))) {
-           datahubInstance = metaDataSource.getDatahub_instance();
+            datahubInstance = metaDataSource.getDatahub_instance();
         }
 
         if (historyDataAddDataBase.getTable_type() == 1) {
@@ -1765,5 +1765,57 @@ public class MetaDataService {
 
         }
         return path;
+    }
+
+    public CommonResponse syncMetaDataDomainAndOwner(Integer table_type, String database_name, String name) {
+        CommonResponse commonResponse = new CommonResponse();
+        String condition = "m.deleted=0";
+        if(table_type!=null){
+            condition = condition + " and m.table_type=" + table_type;
+        }
+        if(!StringUtils.isEmpty(database_name)){
+            condition = condition + " and m.database_name='" + database_name + "'";
+        }
+        if(!StringUtils.isEmpty(name)){
+            condition = condition + " and m.name='" + name + "'";
+        }
+        List<MetaDataTableExtendInfo> tables = metaDataTableMapper.findMetaDataTable(condition);
+        for (MetaDataTableExtendInfo metaDataTable : tables) {
+            try {
+                DatasetUrn datasetUrn = null;
+                MetaDataSource metaDataSource = metaDataTableMapper.findMetaDataSource(metaDataTable.getTable_type());
+                if (metaDataSource == null || StringUtils.isEmpty(metaDataSource.getDatahub_instance()) || StringUtils.isEmpty(metaDataSource.getDatahub_ingestion_source())) {
+                    System.out.println("数据源不存在或者数据源的datahub_instance或者datahub_ingestion_source为空");
+                    return commonResponse;
+                }
+                if (metaDataTable.getTable_type() == 1) {
+                    datasetUrn = new DatasetUrn(new DataPlatformUrn("hive"), metaDataSource.getDatahub_instance() + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                } else if (metaDataTable.getTable_type() == 2) {
+                    datasetUrn = new DatasetUrn(new DataPlatformUrn("clickhouse"), metaDataSource.getDatahub_instance() + "." + metaDataTable.getDatabase_name() + "." + metaDataTable.getName(), FabricType.PROD);
+                }
+                //关联数据域
+                if(!StringUtils.isEmpty(metaDataTable.getData_domain())){
+                    Domains domains = new Domains();
+                    UrnArray urnArray = new UrnArray();
+                    urnArray.add(new Urn(metaDataTable.getData_domain()));
+                    domains.setDomains(urnArray);
+                    addMetadata("dataset", datasetUrn, domains, emitter);
+                }
+                //入ownerShip
+                if(!StringUtils.isEmpty(metaDataTable.getCreator())) {
+                    Ownership ownership = new Ownership();
+                    OwnerArray ownerArray = new OwnerArray();
+                    ownerArray.add(new Owner().setOwner(new Urn("urn:li:corpuser:" + metaDataTable.getCreator())).setType(OwnershipType.DATA_STEWARD));
+                    ownership.setOwners(ownerArray);
+                    addMetadata("dataset", datasetUrn, ownership, emitter);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                commonResponse.setSuccess(false);
+                commonResponse.setMessage("同步数据域和owner失败");
+                return commonResponse;
+            }
+        }
+        return commonResponse;
     }
 }

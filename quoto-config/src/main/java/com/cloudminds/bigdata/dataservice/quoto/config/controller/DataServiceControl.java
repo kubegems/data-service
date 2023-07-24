@@ -48,8 +48,8 @@ public class DataServiceControl {
 
 	// dbInfo
 	@RequestMapping(value = "getDbInfo", method = RequestMethod.GET)
-	public CommonResponse getDbInfo() {
-		return dataServiceConfig.getdbInfo();
+	public CommonResponse getDbInfo(Integer common_service) {
+		return dataServiceConfig.getdbInfo(common_service);
 	}
 
 	@RequestMapping(value = "insertDbInfo", method = RequestMethod.POST)
@@ -144,6 +144,11 @@ public class DataServiceControl {
 	@RequestMapping(value = "getTableInfoByThemeId", method = RequestMethod.GET)
 	public CommonResponse getTableInfoByThemeId(int themeId){
 		return dataServiceConfig.getTableInfoByThemeId(themeId);
+	}
+
+	@RequestMapping(value = "getTableInfoByDepartment", method = RequestMethod.GET)
+	public CommonResponse getTableInfoByDepartment(String department){
+		return dataServiceConfig.getTableInfoByDepartment(department);
 	}
 
 	@RequestMapping(value = "updateTableInfoStatus", method = RequestMethod.POST)

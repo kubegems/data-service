@@ -17,6 +17,7 @@ public interface DictionaryMapper {
     public Dictionary findDictionaryByEn(String en);
 
     @Select("select * from dictionary where code=#{code} and deleted=0")
+    @Result(column = "fields", property = "fields", typeHandler = JsonListTypeHandler.class)
     public Dictionary findDictionaryByCode(String code);
 
     @Select("select * from dictionary where id=#{id} and deleted=0")
