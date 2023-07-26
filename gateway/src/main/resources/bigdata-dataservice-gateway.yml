@@ -45,3 +45,7 @@ spring:
           uri: lb://datart-server
           predicates:
             - Path=/api/v1/**
+        - id: dataservice-common
+          uri: lb://dataservice-common
+          predicates:
+          - Path=/common/dataservice/**

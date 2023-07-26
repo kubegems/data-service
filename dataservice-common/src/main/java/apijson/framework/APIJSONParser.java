@@ -208,6 +208,9 @@ public class APIJSONParser extends AbstractParser<Long> {
         String request = "{\"@database\":\"DATASERVICE\",\"@schema\":\"bigdata_dataservice\",\"[]\":{\"Db_info\": {\"is_delete\":0,\"state\":1,\"common_service\":1},\"count\":0}}";
         setNeedVerify(false);
         JSONObject object = parseResponse(request);
+        if (object.get("[]") == null) {
+            return;
+        }
         List<JSONObject> db_infos = JSONArray.parseArray(object.get("[]").toString(), JSONObject.class);
         Map<String, String> TABLE_KEY_MAP = new HashMap<String, String>();
         Map<String, Map<String, String>> tableColumnMap = new HashMap<String, Map<String, String>>();
